@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HIV Prescribing Cascade Auditor – Decision support tool for detecting prescribing cascades in PLHIV">
+  <title>HIV Prescribing Cascade Auditor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-content">
+    <div class="header-title">
+      <h1>HIV Prescribing Cascade Auditor</h1>
+      <span class="subtitle">Auditor de Cascadas de Prescripción en VIH</span>
+    </div>
+    <div class="header-actions">
+      <button id="btn-import" class="btn btn-secondary btn-sm" title="Import saved case JSON">
+        &#8593; Import Case
+      </button>
+      <button id="btn-export-json" class="btn btn-secondary btn-sm" title="Export case as JSON" disabled>
+        &#8595; Export JSON
+      </button>
+      <button id="btn-export-csv" class="btn btn-secondary btn-sm" title="Export cascades as CSV" disabled>
+        &#8595; Export CSV
+      </button>
+      <button id="btn-delete-data" class="btn btn-danger btn-sm" title="Delete all local data">
+        &#128465; Delete All Data
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Safety Banner -->
+<div id="safety-banner" class="safety-banner">
+  <button class="safety-toggle" id="safety-toggle" aria-expanded="true">
+    <span class="safety-icon">&#9888;</span>
+    <strong>Safety &amp; Limitations / Seguridad y Limitaciones</strong>
+    <span class="toggle-arrow" id="safety-arrow">&#9650;</span>
+  </button>
+  <div class="safety-content" id="safety-content">
+    <div class="safety-grid">
+      <div class="safety-item">
+        <strong>&#127468;&#127463; Decision Support Only</strong>
+        <p>This tool is for decision support, not autonomous clinical decision-making. All findings must be reviewed by a qualified clinician.</p>
+      </div>
+      <div class="safety-item">
+        <strong>&#127466;&#127480; Solo Apoyo a la Decisión</strong>
+        <p>Esta herramienta es de apoyo a la decisión, no toma decisiones clínicas autónomas. Todos los hallazgos deben ser revisados por un clínico cualificado.</p>
+      </div>
+      <div class="safety-item">
+        <strong>&#128274; No Real Patient Data</strong>
+        <p>Do not enter real patient-identifying information. Use pseudonymized/anonymized data only.</p>
+      </div>
+      <div class="safety-item">
+        <strong>&#128274; Sin Datos Reales de Pacientes</strong>
+        <p>No introduzca información identificativa real de pacientes. Use solo datos seudonimizados/anonimizados.</p>
+      </div>
+      <div class="safety-item">
+        <strong>&#9888; Interactions Not Exhaustive</strong>
+        <p>The interaction knowledge base is not exhaustive. Always verify with current HIV guidelines and clinical pharmacist consultation.</p>
+      </div>
+      <div class="safety-item">
+        <strong>&#9888; Interacciones No Exhaustivas</strong>
+        <p>La base de conocimiento de interacciones no es exhaustiva. Verificar siempre con guías VIH actuales y consulta con farmacéutico clínico.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<main class="app-main">
+
+  <!-- Patient ID Bar -->
+  <div class="patient-bar">
+    <label for="patient-id"><strong>Patient ID / ID Paciente:</strong></label>
+    <input type="text" id="patient-id" placeholder="e.g. PAT-001 (pseudonymized)" maxlength="50">
+    <span id="save-indicator" class="save-indicator" aria-live="polite"></span>
+  </div>
+
+  <!-- Step Progress -->
+  <nav class="wizard-nav" aria-label="Pipeline steps">
+    <button class="step-btn active" data-step="1">
+      <span class="step-num">1</span>
+      <span class="step-label">Input</span>
+    </button>
+    <span class="step-connector"></span>
+    <button class="step-btn" data-step="2">
+      <span class="step-num">2</span>
+      <span class="step-label">Extractor</span>
+    </button>
+    <span class="step-connector"></span>
+    <button class="step-btn" data-step="3">
+      <span class="step-num">3</span>
+      <span class="step-label">Normalizer</span>
+    </button>
+    <span class="step-connector"></span>
+    <button class="step-btn" data-step="4">
+      <span class="step-num">4</span>
+      <span class="step-label">Detector</span>
+    </button>
+    <span class="step-connector"></span>
+    <button class="step-btn" data-step="5">
+      <span class="step-num">5</span>
+      <span class="step-label">Plan &amp; Verify</span>
+    </button>
+    <span class="step-connector"></span>
+    <button class="step-btn" data-step="6">
+      <span class="step-num">&#9654;</span>
+      <span class="step-label">Report</span>
+    </button>
+  </nav>
+
+  <!-- Step Content Area -->
+  <div id="step-content" class="step-content">
+    <!-- Dynamically rendered by app.js -->
+    <div class="loading-placeholder">Loading application...</div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="wizard-nav-buttons">
+    <button id="btn-prev" class="btn btn-secondary" disabled>&#8592; Previous</button>
+    <div class="step-counter" id="step-counter">Step 1 of 6</div>
+    <button id="btn-next" class="btn btn-primary">Next &#8594;</button>
+  </div>
+
+</main>
+
+<!-- Import file input (hidden) -->
+<input type="file" id="import-file-input" accept=".json" style="display:none">
+
+<!-- Toast notifications -->
+<div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
+<footer class="app-footer">
+  <p>
+    HIV Prescribing Cascade Auditor v1.0 &mdash;
+    Local-first, no external API calls &mdash;
+    All data stored in your browser (IndexedDB) &mdash;
+    <span id="kb-status">Loading KB...</span>
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
