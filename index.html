@@ -127,6 +127,158 @@
 
 </main>
 
+<!-- Help / Best Practices / Legal -->
+<section id="help-section" style="background:#f0f7ff;border-bottom:2px solid #2980b9;max-width:100%;">
+  <button class="safety-toggle" id="help-toggle" aria-expanded="false"
+    style="color:#1a5276;"
+    onclick="(function(b){var c=document.getElementById('help-content'),a=document.getElementById('help-arrow'),x=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!x));c.style.display=x?'none':'';a.classList.toggle('collapsed',x);})(this)">
+    <span class="safety-icon">&#8505;</span>
+    <strong>Buenas pr&#225;cticas &amp; Ayuda / Best Practices &amp; Help</strong>
+    <span class="toggle-arrow collapsed" id="help-arrow">&#9650;</span>
+  </button>
+
+  <div class="safety-content" id="help-content" style="display:none;">
+
+    <!-- ── Best Practices ── -->
+    <div style="max-width:1100px;margin:0 auto 1.25rem;">
+      <h3 style="color:#1a5276;margin-bottom:.75rem;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;">
+        &#128273; Buenas pr&#225;cticas / Best Practices
+      </h3>
+      <div class="safety-grid">
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#8595; Copias de seguridad</strong>
+          <p>Utiliza &#171;Export JSON&#187; peri&#243;dicamente y guarda una copia en un lugar seguro.</p>
+        </div>
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#8595; Backups</strong>
+          <p>Use &#171;Export JSON&#187; regularly and keep a copy in a safe location.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#128274; Local-first &amp; RGPD</strong>
+          <p>Los datos se guardan &#250;nicamente en este navegador. Usa un ID seudonimizado. No introduzcas nombre, historia cl&#237;nica, tel&#233;fono u otros datos personales.</p>
+        </div>
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#128274; Local-first &amp; GDPR</strong>
+          <p>Data is stored only in this browser. Use a pseudonymized ID. Do not enter name, medical record number, phone, or other personal identifiers.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#128200; Investigaci&#243;n</strong>
+          <p>Exporta JSON/CSV para an&#225;lisis metodol&#243;gico. Los resultados de cascadas requieren validaci&#243;n cl&#237;nica profesional.</p>
+        </div>
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#128200; Research</strong>
+          <p>Export JSON/CSV for methodological analysis. Cascade findings require professional clinical validation.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#9888; Interacciones</strong>
+          <p>La base de conocimiento <strong>NO es exhaustiva</strong>. Verificar siempre con gu&#237;as VIH actuales y farmac&#233;utico cl&#237;nico.</p>
+        </div>
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#9888; Interactions</strong>
+          <p>The knowledge base is <strong>NOT exhaustive</strong>. Always verify with current HIV guidelines and clinical pharmacist consultation.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── About + Software Identification ── -->
+    <div style="max-width:1100px;margin:0 auto 1.25rem;">
+      <h3 style="color:#1a5276;margin-bottom:.75rem;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;">
+        &#128196; Acerca de / About &amp; Identificaci&#243;n del software
+      </h3>
+      <div class="safety-grid">
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#127466;&#127480; Acerca de</strong>
+          <p>HIV Prescribing Cascade Auditor &#8212; Prototipo de apoyo a la decisi&#243;n cl&#237;nica para la detecci&#243;n de posibles cascadas de prescripci&#243;n en personas que viven con el VIH.</p>
+        </div>
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">&#127468;&#127463; About</strong>
+          <p>HIV Prescribing Cascade Auditor &#8212; Clinical decision-support prototype for detecting potential prescribing cascades in people living with HIV.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;grid-column:span 2;">
+          <strong style="color:#1a5276;">&#128196; Identificaci&#243;n del software / Software Identification</strong>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem;margin-top:.4rem;font-size:.8125rem;">
+            <span><strong>Nombre / Name:</strong> HIV Prescribing Cascade Auditor</span>
+            <span><strong>Tipo / Type:</strong> Web application</span>
+            <span><strong>Versi&#243;n / Version:</strong> v1.0</span>
+            <span><strong>Autor / Author:</strong> Ram&#243;n Morillo</span>
+            <span><strong>Fecha / Date:</strong> February 2026</span>
+            <span><strong>Arquitectura / Architecture:</strong> Local-first, no external API</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Conceptual Reference ── -->
+    <div style="max-width:1100px;margin:0 auto 1.25rem;">
+      <h3 style="color:#1a5276;margin-bottom:.75rem;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;">
+        &#128218; Referencia conceptual / Conceptual Reference
+      </h3>
+      <div class="safety-item" style="border-color:#85c1e9;max-width:1100px;">
+        <strong style="color:#1a5276;">Rochon &amp; Gurwitz (BMJ, 1997)</strong>
+        <p style="margin-top:.35rem;">
+          <strong>EN:</strong> This tool is conceptually inspired by the prescribing cascade framework described by Rochon and Gurwitz (<em>BMJ</em>, 1997) and subsequent literature on medication-related prescribing cascades. This software is an original implementation and does not reproduce any copyrighted content.<br>
+          <strong>ES:</strong> Esta herramienta est&#225; conceptualmente inspirada en el marco de las cascadas de prescripci&#243;n descrito por Rochon y Gurwitz (<em>BMJ</em>, 1997) y la literatura posterior sobre cascadas de prescripci&#243;n relacionadas con medicamentos. Este software es una implementaci&#243;n original y no reproduce ning&#250;n contenido protegido por derechos de autor.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Legal Notice ── -->
+    <div style="max-width:1100px;margin:0 auto 1rem;">
+      <h3 style="color:#1a5276;margin-bottom:.75rem;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;">
+        &#9878; Aviso legal / Legal Notice
+      </h3>
+      <div class="safety-grid">
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">1. Finalidad / Purpose</strong>
+          <p><strong>ES:</strong> Herramienta de apoyo a la decisi&#243;n para contextos cl&#237;nicos, educativos y de investigaci&#243;n. No reemplaza el juicio cl&#237;nico profesional.</p>
+          <p><strong>EN:</strong> Decision-support tool for clinical, educational, and research contexts. Does not replace professional clinical judgment.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">2. Marco regulatorio / Regulatory Status</strong>
+          <p><strong>ES:</strong> Esta herramienta <strong>NO es un producto sanitario</strong> en el sentido del Reglamento (UE) 2017/745 (MDR).</p>
+          <p><strong>EN:</strong> This tool is <strong>NOT a medical device</strong> under Regulation (EU) 2017/745 (MDR).</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">3. Protecci&#243;n de datos / Data Protection</strong>
+          <p><strong>ES:</strong> Arquitectura local-first. No se transmiten datos. El usuario es responsable de la seudonimizaci&#243;n y del cumplimiento del RGPD.</p>
+          <p><strong>EN:</strong> Local-first architecture. No data transmitted. User is responsible for pseudonymization and GDPR compliance.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">4. Responsabilidad del usuario / User Responsibility</strong>
+          <p><strong>ES:</strong> Verificar la exactitud de los datos introducidos, realizar copias de seguridad peri&#243;dicas y validar cl&#237;nicamente los resultados.</p>
+          <p><strong>EN:</strong> Verify data accuracy, perform regular backups, and clinically validate all outputs before acting on them.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">5. Propiedad intelectual / Intellectual Property</strong>
+          <p><strong>ES:</strong> Software original. Los derechos corresponden al autor. La base de conocimiento es de elaboraci&#243;n propia con fines acad&#233;micos y no reproduce contenido protegido.</p>
+          <p><strong>EN:</strong> Original software. Rights belong to the author. The knowledge base is an original work for academic purposes and does not reproduce protected content.</p>
+        </div>
+
+        <div class="safety-item" style="border-color:#85c1e9;">
+          <strong style="color:#1a5276;">6. Limitaci&#243;n de responsabilidad / Disclaimer</strong>
+          <p><strong>ES:</strong> Proporcionado TAL CUAL, sin garant&#237;as. El autor no asume responsabilidad por decisiones cl&#237;nicas tomadas a partir de los resultados ni por p&#233;rdida de datos.</p>
+          <p><strong>EN:</strong> Provided AS IS without warranties. No liability for clinical decisions made based on outputs, or for any data loss.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /help-content -->
+</section>
+
 <!-- Import file input (hidden) -->
 <input type="file" id="import-file-input" accept=".json" style="display:none">
 
