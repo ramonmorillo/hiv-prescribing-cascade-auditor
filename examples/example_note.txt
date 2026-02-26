@@ -1,0 +1,47 @@
+CLINICAL NOTE – PSEUDONYMIZED EXAMPLE
+Patient ID: PAT-001
+Date: 2024-03-15
+Attending: HIV Clinic / Infectious Diseases
+
+=== PATIENT SUMMARY ===
+58-year-old male, PLHIV since 2010, on stable ART. Current regimen: darunavir/cobicistat/emtricitabine/tenofovir alafenamide (Symtuza) since 2019. CD4: 620 cells/μL (last measured 2024-01). Viral load: undetectable (<50 copies/mL, 2024-01). Non-smoker. No alcohol.
+
+=== CURRENT COMORBIDITIES ===
+1. HIV infection – well controlled
+2. Arterial hypertension – diagnosed 2021, currently on amlodipine 5mg/day
+3. Bilateral ankle edema – new onset 2022-09, treated with furosemide 40mg/day since 2023-02 (cardiology referral)
+4. Dyslipidemia – diagnosed 2020, on atorvastatin 20mg/night since 2021-06
+5. Type 2 diabetes mellitus – diagnosed 2023-06, initiated metformin 500mg BID (recently increased to 1g BID per endocrinology, 2024-01)
+6. Lumbar osteoarthritis – chronic, flares treated with ibuprofen PRN (600mg TID x5-7 days, last course 2024-02)
+7. Insomnia – onset 2023-03, treated with zolpidem 5mg nocte since 2023-04
+
+=== CURRENT MEDICATION LIST ===
+1. Darunavir/cobicistat/emtricitabine/TAF (Symtuza) 800/150/200/10mg – 1 tablet/day orally – HIV (ARV) – since 2019-03
+2. Amlodipine 5mg – 1 tablet/day orally – Hypertension – since 2021-07
+3. Atorvastatin 20mg – 1 tablet/night orally – Dyslipidemia – since 2021-06 – cardiology
+4. Furosemide 40mg – 1 tablet/day orally – Ankle edema – since 2023-02 – cardiology
+5. Metformin 1000mg – 1 tablet BID orally – T2DM – since 2024-01 (was 500mg BID since 2023-06) – endocrinology
+6. Ibuprofen 600mg – 1 tablet TID PRN – Lumbar pain – osteoarthritis – PRN (last course Feb 2024)
+7. Zolpidem 5mg – 1 tablet nocte PRN – Insomnia – since 2023-04 – GP
+
+=== SYMPTOMS / COMPLAINTS ===
+- Ankle/leg edema: bilateral, pitting, mild-moderate. First noted ~Sep 2022. Worse at end of day. No dyspnoea, no orthopnoea. Echo normal (Nov 2022).
+- Insomnia: difficulty initiating sleep. Onset ~March 2023. Patient reports stress at work. Tried sleep hygiene without success.
+- Polyuria/polydipsia: mild, onset ~May 2023. Fasting glucose 7.8 mmol/L (June 2023). HbA1c 7.2% (June 2023).
+- Occasional lumbar pain: chronic, mechanical. Treated PRN with ibuprofen. No radiculopathy.
+
+=== RECENT LABS (2024-01) ===
+- CD4: 620 cells/μL
+- VL: <50 copies/mL
+- HbA1c: 6.9% (improved from 7.2%)
+- Creatinine: 98 μmol/L, eGFR: 72 mL/min/1.73m²
+- Total cholesterol: 5.1 mmol/L, LDL: 3.1 mmol/L, TG: 2.8 mmol/L (↑), HDL: 1.0 mmol/L
+- ALT: 28 IU/L, AST: 24 IU/L
+- Serum potassium: 3.5 mmol/L (low-normal)
+- Fasting glucose: 6.4 mmol/L
+- CK: 180 IU/L (upper limit 200)
+
+=== CLINICIAN NOTES ===
+Patient tolerating ART well. Concerned about growing polypharmacy. Asking for pharmacist review of medication list. Possible interactions with cobicistat? Recent increase in metformin dose noted.
+
+=== END OF NOTE ===
