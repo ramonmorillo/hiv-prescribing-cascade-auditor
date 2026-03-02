@@ -582,3 +582,27 @@ td.badge-cell { white-space: nowrap; }
   .app-main { margin: 0.75rem auto; }
   .step-content { padding: 1rem; }
 }
+
+/* ---------- KB mode selector ---------- */
+.kb-mode-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.kb-mode-select {
+  font-size: var(--font-size-sm);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  height: 2rem;
+}
+
+.kb-mode-select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
