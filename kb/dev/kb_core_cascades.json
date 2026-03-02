@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
-  "description": "Core prescribing cascade knowledge base for clinical decision support",
-  "last_updated": "2025-01-01",
+  "version": "0.2-dev",
+  "description": "Core prescribing cascade knowledge base for clinical decision support — DEV build",
+  "last_updated": "2026-03-02",
   "disclaimer": "For decision support only. Always verify with current clinical guidelines.",
   "cascades": [
     {
@@ -267,6 +267,565 @@
       "clinical_note_es": "Solución preferida: formulación de liberación prolongada o reducción de dosis, no añadir antidiarreico.",
       "clinical_note_en": "Preferred solution: extended-release formulation or dose reduction, not adding an antidiarrheal.",
       "references": ["Bailey CJ et al. Lancet 1996"]
+    },
+    {
+      "id": "CORE-013",
+      "name_en": "Beta-Blocker → Depression → Antidepressant",
+      "index_drug_classes": ["Beta-blocker"],
+      "index_drug_examples": ["propranolol", "atenolol", "metoprolol", "bisoprolol", "carvedilol"],
+      "ade": "Depression, low mood, fatigue, emotional blunting",
+      "cascade_drug_examples": ["sertraline", "escitalopram", "mirtazapine", "venlafaxine", "bupropion", "amitriptyline"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["CNS", "cardiovascular"],
+      "differential_hints": [
+        "Underlying major depressive disorder independent of beta-blocker",
+        "Hypothyroidism causing depressive symptoms (check TSH)",
+        "Social isolation or situational psychosocial factors",
+        "Chronic heart failure causing fatigue misattributed to depression",
+        "Anemia or other medical comorbidities",
+        "Sleep apnea contributing to fatigue and low mood"
+      ],
+      "clinical_note_en": "Evidence for beta-blocker-induced depression is debated; lipophilic agents (propranolol, metoprolol) have higher CNS penetration. Consider switching to a hydrophilic agent (atenolol) before adding an antidepressant."
+    },
+    {
+      "id": "CORE-014",
+      "name_en": "Statin → Myalgia / Myopathy → Analgesic",
+      "index_drug_classes": ["HMG-CoA reductase inhibitor (Statin)"],
+      "index_drug_examples": ["atorvastatin", "simvastatin", "rosuvastatin", "pravastatin", "fluvastatin", "lovastatin"],
+      "ade": "Myalgia, muscle weakness, myopathy, rhabdomyolysis (rare)",
+      "cascade_drug_examples": ["ibuprofen", "naproxen", "paracetamol", "diclofenac", "cyclobenzaprine"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["musculoskeletal"],
+      "differential_hints": [
+        "Polymyalgia rheumatica (check ESR/CRP)",
+        "Viral myalgia",
+        "Physical deconditioning or overexertion",
+        "Hypothyroidism as independent cause (check TSH and CK)",
+        "Vitamin D deficiency",
+        "Inflammatory myopathy or dermatomyositis"
+      ],
+      "clinical_note_en": "Check CK levels. If statin-induced myalgia confirmed, consider dose reduction, drug holiday, or switch to less myotoxic statin (pravastatin, fluvastatin). In PLHIV, protease inhibitors increase statin exposure—drug interaction is critical."
+    },
+    {
+      "id": "CORE-015",
+      "name_en": "Loop Diuretic → Hypokalemia → Potassium Supplement",
+      "index_drug_classes": ["Loop diuretic"],
+      "index_drug_examples": ["furosemide", "torasemide", "bumetanide", "ethacrynic acid"],
+      "ade": "Hypokalemia, muscle cramps, weakness, cardiac arrhythmia",
+      "cascade_drug_examples": ["potassium chloride oral", "potassium gluconate", "spironolactone", "amiloride", "eplerenone"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["electrolyte", "cardiovascular", "renal"],
+      "differential_hints": [
+        "Inadequate dietary potassium intake",
+        "Concurrent vomiting or diarrhea as additional potassium loss",
+        "Hyperaldosteronism (primary or secondary)",
+        "Hypomagnesemia preventing effective potassium correction",
+        "Digoxin toxicity potentiated by hypokalemia",
+        "Thiazide co-administration compounding potassium loss"
+      ],
+      "clinical_note_en": "Hypomagnesemia must be corrected simultaneously—it prevents effective potassium repletion. Consider addition of a potassium-sparing diuretic instead of oral supplement if ongoing loop diuretic is needed."
+    },
+    {
+      "id": "CORE-016",
+      "name_en": "ACE Inhibitor / ARB → Hyperkalemia → Potassium Binder",
+      "index_drug_classes": ["ACE inhibitor", "Angiotensin receptor blocker"],
+      "index_drug_examples": ["enalapril", "lisinopril", "ramipril", "losartan", "valsartan", "candesartan", "telmisartan"],
+      "ade": "Hyperkalemia, bradycardia, cardiac conduction abnormalities",
+      "cascade_drug_examples": ["patiromer", "sodium zirconium cyclosilicate", "sodium polystyrene sulfonate", "calcium resonium"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["electrolyte", "renal", "cardiovascular"],
+      "differential_hints": [
+        "CKD-related hyperkalemia independent of ACEi/ARB",
+        "Concurrent NSAID use reducing renal potassium excretion",
+        "Dietary potassium excess or potassium supplement over-supplementation",
+        "Potassium-sparing diuretic combination (aldosterone antagonist)",
+        "Type 4 renal tubular acidosis",
+        "Trimethoprim-induced hyperkalemia (relevant in PLHIV on TMP-SMX for PCP prophylaxis)"
+      ],
+      "clinical_note_en": "Before adding a potassium binder, reassess ACEi/ARB dose and consider dietary modification. In PLHIV, trimethoprim-sulfamethoxazole (used for PCP prophylaxis) also causes hyperkalemia—additive risk warrants close monitoring."
+    },
+    {
+      "id": "CORE-017",
+      "name_en": "Antihypertensive → Orthostatic Hypotension → Vasopressor / Fludrocortisone",
+      "index_drug_classes": ["Antihypertensive", "Alpha-1 blocker", "Vasodilator"],
+      "index_drug_examples": ["doxazosin", "tamsulosin", "amlodipine", "hydralazine", "isosorbide mononitrate", "furosemide"],
+      "ade": "Orthostatic hypotension, dizziness, presyncope, syncope, falls",
+      "cascade_drug_examples": ["fludrocortisone", "midodrine", "droxidopa", "pyridostigmine"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["cardiovascular", "falls", "CNS"],
+      "differential_hints": [
+        "Volume depletion or dehydration from inadequate fluid intake",
+        "Autonomic neuropathy (diabetes, Parkinson's disease)",
+        "Adrenal insufficiency",
+        "Polypharmacy with multiple hypotensive agents (additive effect)",
+        "Amyloidosis or other systemic autonomic dysfunction",
+        "Post-prandial hypotension in older adults"
+      ],
+      "clinical_note_en": "Dose reduction or medication elimination is preferred over adding vasopressors. Fludrocortisone carries hypokalemia and fluid retention risk; avoid in heart failure. Non-pharmacological measures (head-of-bed elevation, compression stockings, hydration) first."
+    },
+    {
+      "id": "CORE-018",
+      "name_en": "Amiodarone → Hypothyroidism → Levothyroxine",
+      "index_drug_classes": ["Class III antiarrhythmic"],
+      "index_drug_examples": ["amiodarone"],
+      "ade": "Hypothyroidism, fatigue, weight gain, cold intolerance, bradycardia worsening",
+      "cascade_drug_examples": ["levothyroxine", "liothyronine"],
+      "confidence": "high",
+      "age_sensitivity": "medium",
+      "risk_focus": ["endocrine", "cardiovascular"],
+      "differential_hints": [
+        "Autoimmune thyroiditis (Hashimoto's) as independent cause",
+        "Prior thyroid pathology or thyroid surgery",
+        "Iodine excess from radiographic contrast agents or diet",
+        "Subclinical hypothyroidism evolving independently",
+        "Drug-induced thyroiditis from other agents (lithium, interferon)"
+      ],
+      "clinical_note_en": "Amiodarone contains ~37% iodine by weight and has a half-life of 40–55 days; thyroid monitoring is needed for years after discontinuation. Hypothyroidism may be treated while amiodarone continues if arrhythmia control is critical."
+    },
+    {
+      "id": "CORE-019",
+      "name_en": "Benzodiazepine / Z-Drug → Falls / Fractures → Bone Treatment",
+      "index_drug_classes": ["Benzodiazepine", "Z-drug (non-benzodiazepine hypnotic)"],
+      "index_drug_examples": ["diazepam", "lorazepam", "alprazolam", "clonazepam", "temazepam", "zolpidem", "zopiclone", "zaleplon"],
+      "ade": "Sedation, cognitive impairment, gait instability, falls, hip fractures",
+      "cascade_drug_examples": ["alendronate", "risedronate", "zoledronic acid", "calcium carbonate", "cholecalciferol", "analgesics for fracture pain"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["falls", "CNS", "musculoskeletal"],
+      "differential_hints": [
+        "Environmental hazards (poor lighting, loose rugs, unsafe bathroom)",
+        "Cognitive impairment or dementia as primary fall cause",
+        "Vestibular disorder or benign paroxysmal positional vertigo (BPPV)",
+        "Parkinson's disease or other movement disorder",
+        "Orthostatic hypotension from other medications",
+        "Muscle weakness from deconditioning, sarcopenia, or vitamin D deficiency"
+      ],
+      "clinical_note_en": "Benzodiazepines and Z-drugs are Beers Criteria drugs in older adults. Gradual tapering and discontinuation is the correct intervention, not treating the downstream fracture risk while perpetuating the cause."
+    },
+    {
+      "id": "CORE-020",
+      "name_en": "Tricyclic Antidepressant → Urinary Retention → Alpha-Blocker",
+      "index_drug_classes": ["Tricyclic antidepressant"],
+      "index_drug_examples": ["amitriptyline", "imipramine", "clomipramine", "nortriptyline", "doxepin", "trimipramine"],
+      "ade": "Urinary retention, overflow incontinence, bladder outlet obstruction",
+      "cascade_drug_examples": ["tamsulosin", "alfuzosin", "terazosin", "doxazosin", "bethanechol"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["urinary", "CNS"],
+      "differential_hints": [
+        "Benign prostatic hyperplasia as independent cause (particularly in older men)",
+        "High cumulative anticholinergic burden from multiple medications",
+        "Urethral stricture",
+        "Neurogenic bladder from diabetes or spinal cord pathology",
+        "Postoperative urinary retention",
+        "Pelvic organ prolapse in women"
+      ],
+      "clinical_note_en": "Consider switching TCA to an SSRI or SNRI with much lower anticholinergic burden. In older men with BPH, TCAs are particularly high-risk. Adding an alpha-blocker perpetuates the anticholinergic cause without addressing it."
+    },
+    {
+      "id": "CORE-021",
+      "name_en": "Gabapentinoid → Dizziness / Falls → Analgesic for Fall Injury",
+      "index_drug_classes": ["Gabapentinoid"],
+      "index_drug_examples": ["gabapentin", "pregabalin"],
+      "ade": "Dizziness, somnolence, ataxia, peripheral edema, falls",
+      "cascade_drug_examples": ["ibuprofen", "naproxen", "paracetamol", "tramadol", "opioids", "corticosteroids"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["falls", "CNS", "musculoskeletal"],
+      "differential_hints": [
+        "Menière's disease or labyrinthitis",
+        "Vertebrobasilar insufficiency",
+        "Benign paroxysmal positional vertigo (BPPV)",
+        "Orthostatic hypotension from other medications",
+        "Underlying neurological disorder (cerebellar, peripheral neuropathy)",
+        "Polypharmacy interactions with other CNS depressants (opioids, benzodiazepines)"
+      ],
+      "clinical_note_en": "Gabapentinoids are increasingly recognized as high-risk in elderly patients, especially at higher doses or with renal impairment. Dose reduction or discontinuation should be considered before treating fall-related injuries with additional analgesics."
+    },
+    {
+      "id": "CORE-022",
+      "name_en": "Atypical Antipsychotic → Metabolic Syndrome / Weight Gain → Metformin",
+      "index_drug_classes": ["Atypical antipsychotic"],
+      "index_drug_examples": ["olanzapine", "clozapine", "quetiapine", "risperidone", "aripiprazole"],
+      "ade": "Weight gain, metabolic syndrome, dyslipidemia, impaired glucose tolerance",
+      "cascade_drug_examples": ["metformin", "orlistat", "liraglutide", "semaglutide", "atorvastatin"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["metabolic", "cardiovascular", "endocrine"],
+      "differential_hints": [
+        "Dietary habits and sedentary lifestyle as primary drivers",
+        "Depression-related hyperphagia and weight changes",
+        "Hypothyroidism contributing to weight gain",
+        "Pre-existing metabolic syndrome before antipsychotic initiation",
+        "Corticosteroid co-administration compounding metabolic effects",
+        "Psychiatric illness itself affecting eating regulation"
+      ],
+      "clinical_note_en": "Consider switching to a metabolically neutral antipsychotic (aripiprazole, ziprasidone, amisulpride) before adding metabolic agents. In PLHIV, also consider ARV contribution to lipodystrophy and metabolic syndrome."
+    },
+    {
+      "id": "CORE-023",
+      "name_en": "Levodopa / Dopamine Agonist → Orthostatic Hypotension → Vasopressor",
+      "index_drug_classes": ["Dopaminergic agent", "Dopamine agonist"],
+      "index_drug_examples": ["levodopa", "levodopa/carbidopa", "pramipexole", "ropinirole", "rotigotine", "cabergoline"],
+      "ade": "Orthostatic hypotension, syncope, falls, dizziness on standing",
+      "cascade_drug_examples": ["fludrocortisone", "midodrine", "droxidopa", "domperidone"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["cardiovascular", "falls", "CNS"],
+      "differential_hints": [
+        "Parkinson's disease-related autonomic dysfunction (independent of medications)",
+        "Volume depletion or inadequate fluid intake",
+        "Co-administration of antihypertensives compounding hypotension",
+        "Cardiac dysfunction with reduced output",
+        "Dehydration secondary to dysphagia or swallowing difficulties",
+        "Multiple system atrophy (severe autonomic involvement)"
+      ],
+      "clinical_note_en": "Parkinson's disease itself causes autonomic dysfunction; disentangling drug effect from disease progression is challenging. Non-pharmacological interventions (head-of-bed elevation, physical countermaneuvers, compression garments) should precede pharmacological treatment."
+    },
+    {
+      "id": "CORE-024",
+      "name_en": "First-Generation Antihistamine → Cognitive Impairment → Cholinesterase Inhibitor",
+      "index_drug_classes": ["First-generation antihistamine", "Sedating antihistamine"],
+      "index_drug_examples": ["diphenhydramine", "chlorphenamine", "hydroxyzine", "promethazine", "cyproheptadine", "doxylamine"],
+      "ade": "Anticholinergic-induced cognitive impairment, confusion, delirium, acute memory complaints",
+      "cascade_drug_examples": ["donepezil", "rivastigmine", "galantamine", "memantine"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["CNS", "cognitive"],
+      "differential_hints": [
+        "Early Alzheimer's disease or other dementia onset",
+        "Delirium from infection (UTI, pneumonia, sepsis)",
+        "Depression presenting as pseudodementia",
+        "Other anticholinergic medications in polypharmacy (cumulative burden)",
+        "Metabolic encephalopathy (hyponatremia, hypothyroidism, hepatic failure)",
+        "Normal cognitive aging misinterpreted as pathological"
+      ],
+      "clinical_note_en": "Particularly harmful cascade: first-generation antihistamines have very high anticholinergic burden and directly antagonize cholinesterase inhibitors. Stopping the antihistamine may fully resolve apparent cognitive decline—a therapeutic trial before prescribing dementia drugs."
+    },
+    {
+      "id": "CORE-025",
+      "name_en": "Anticholinergic (Urinary) → Constipation → Laxative",
+      "index_drug_classes": ["Anticholinergic (urinary)"],
+      "index_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin", "trospium"],
+      "ade": "Constipation, bloating, straining, fecal impaction",
+      "cascade_drug_examples": ["macrogol", "lactulose", "senna", "bisacodyl", "sodium docusate"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["GI", "urinary"],
+      "differential_hints": [
+        "Dietary fiber deficiency or inadequate fluid intake",
+        "Concurrent opioid use as primary or additive cause",
+        "Other anticholinergic medications in polypharmacy (cumulative GI effect)",
+        "Hypothyroidism",
+        "Colorectal pathology (do not miss structural cause)",
+        "Immobility or deconditioning"
+      ],
+      "clinical_note_en": "Consider mirabegron (beta-3 agonist) as an alternative to anticholinergic urinary agents—similar efficacy with lower constipation and cognitive burden. Cumulative anticholinergic burden across all medications must be assessed in older patients."
+    },
+    {
+      "id": "CORE-026",
+      "name_en": "Alpha-1 Blocker → Orthostatic Hypotension → Vasopressor / Fall Injury Treatment",
+      "index_drug_classes": ["Alpha-1 adrenergic blocker"],
+      "index_drug_examples": ["tamsulosin", "doxazosin", "alfuzosin", "terazosin", "silodosin"],
+      "ade": "Orthostatic hypotension, dizziness, syncope, falls, fall-related injury",
+      "cascade_drug_examples": ["fludrocortisone", "midodrine", "analgesics for fall injury", "bisphosphonates for fracture risk"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["cardiovascular", "falls", "urinary"],
+      "differential_hints": [
+        "Volume depletion from concurrent diuretic use",
+        "Antihypertensive polypharmacy with additive hypotensive effect",
+        "Autonomic neuropathy from diabetes",
+        "BPH as the primary indication driving continued use",
+        "PDE5 inhibitor co-administration (dangerous additive hypotension)",
+        "Dehydration from warm climate or inadequate intake"
+      ],
+      "clinical_note_en": "Alpha-1 blockers for BPH in older men frequently cause first-dose and positional orthostatic hypotension. Consider 5-alpha reductase inhibitor or beta-3 agonist alternatives. If continued, start at very low dose at bedtime and counsel on rising slowly."
+    },
+    {
+      "id": "CORE-027",
+      "name_en": "Anticholinergic Drug → Delirium / Agitation → Antipsychotic",
+      "index_drug_classes": ["Anticholinergic", "Tricyclic antidepressant", "First-generation antihistamine", "Bladder anticholinergic"],
+      "index_drug_examples": ["oxybutynin", "diphenhydramine", "amitriptyline", "hyoscine", "atropine", "benztropine", "promethazine"],
+      "ade": "Delirium, acute confusion, agitation, hallucinations, paranoia",
+      "cascade_drug_examples": ["haloperidol", "quetiapine", "olanzapine", "risperidone", "lorazepam"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["CNS", "cognitive", "delirium"],
+      "differential_hints": [
+        "Infection-related delirium (UTI, pneumonia, sepsis)—most common cause in elderly",
+        "Metabolic derangement (hyponatremia, hypoglycemia, hepatic failure)",
+        "Alcohol or benzodiazepine withdrawal state",
+        "Cerebrovascular event (stroke or TIA)",
+        "Underlying dementia with behavioural and psychological symptoms",
+        "Hypoxia or respiratory failure"
+      ],
+      "clinical_note_en": "Identify and remove the offending anticholinergic drug first—this alone may resolve delirium. Antipsychotics for delirium management may be appropriate short-term but have their own anticholinergic burden, potentially worsening the root cause."
+    },
+    {
+      "id": "CORE-028",
+      "name_en": "Loop Diuretic → Urinary Urgency / Nocturia → Anticholinergic",
+      "index_drug_classes": ["Loop diuretic"],
+      "index_drug_examples": ["furosemide", "torasemide", "bumetanide"],
+      "ade": "Urinary urgency, frequency, nocturia (pharmacological diuresis misattributed to overactive bladder)",
+      "cascade_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "mirabegron"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["urinary", "GI", "CNS"],
+      "differential_hints": [
+        "True overactive bladder disease independent of diuretic",
+        "Interstitial cystitis",
+        "Urinary tract infection",
+        "Benign prostatic hyperplasia with urge component",
+        "Poorly controlled diabetes mellitus causing osmotic diuresis",
+        "High caffeine or fluid intake"
+      ],
+      "clinical_note_en": "Repositioning the time of diuretic administration (e.g., morning dose only, avoiding evening) may resolve nocturia without adding any new medication. Urological evaluation is warranted before starting an anticholinergic agent."
+    },
+    {
+      "id": "CORE-029",
+      "name_en": "PPI (Chronic) → Hypomagnesemia → Magnesium Supplement",
+      "index_drug_classes": ["Proton pump inhibitor"],
+      "index_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole", "rabeprazole"],
+      "ade": "Hypomagnesemia, muscle cramps, tetany, cardiac arrhythmia, refractory hypokalemia",
+      "cascade_drug_examples": ["magnesium oxide", "magnesium glycinate", "magnesium citrate", "magnesium sulfate IV"],
+      "confidence": "high",
+      "age_sensitivity": "medium",
+      "risk_focus": ["electrolyte", "GI", "cardiovascular"],
+      "differential_hints": [
+        "Malabsorption syndrome (celiac disease, Crohn's)",
+        "Chronic diarrhea from other causes",
+        "Alcoholism or alcohol use disorder",
+        "Loop diuretic co-administration (CORE-038) with additive magnesium wasting",
+        "Diabetes mellitus with renal magnesium wasting",
+        "Hungry bone syndrome post-parathyroidectomy"
+      ],
+      "clinical_note_en": "FDA issued a safety communication in 2011 about PPI-induced hypomagnesemia. Oral supplementation may be insufficient if PPI is continued; switching from PPI to H2 blocker may be necessary. Co-existing hypokalemia is resistant to correction until magnesium is normalized."
+    },
+    {
+      "id": "CORE-030",
+      "name_en": "PPI (Chronic) → Vitamin B12 Deficiency → Cyanocobalamin",
+      "index_drug_classes": ["Proton pump inhibitor"],
+      "index_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole", "rabeprazole"],
+      "ade": "Vitamin B12 deficiency, macrocytic anemia, peripheral neuropathy, cognitive impairment",
+      "cascade_drug_examples": ["cyanocobalamin oral", "cyanocobalamin IM", "hydroxocobalamin IM", "multivitamin with B12"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["GI", "CNS", "hematology"],
+      "differential_hints": [
+        "Dietary deficiency (veganism, restrictive diet)",
+        "Pernicious anemia with intrinsic factor deficiency",
+        "Crohn's disease or ileal resection impairing absorption",
+        "Metformin-induced B12 depletion (additive with PPI, very common in PLHIV)",
+        "Atrophic gastritis as primary gastric cause",
+        "Small intestinal bacterial overgrowth"
+      ],
+      "clinical_note_en": "B12 deficiency from PPIs is more common with long-term use (>2 years) and higher doses. In older adults, neurological manifestations may precede anemia. In PLHIV, B12 deficiency can worsen ARV-related peripheral neuropathy—important cascade to detect."
+    },
+    {
+      "id": "CORE-031",
+      "name_en": "Opioid → Nausea / Vomiting → Antiemetic",
+      "index_drug_classes": ["Opioid analgesic"],
+      "index_drug_examples": ["morphine", "oxycodone", "fentanyl", "tramadol", "codeine", "buprenorphine", "hydromorphone"],
+      "ade": "Nausea, vomiting, gastroparesis, delayed gastric emptying",
+      "cascade_drug_examples": ["ondansetron", "metoclopramide", "prochlorperazine", "domperidone", "haloperidol", "cyclizine"],
+      "confidence": "high",
+      "age_sensitivity": "medium",
+      "risk_focus": ["GI", "CNS"],
+      "differential_hints": [
+        "Underlying GI pathology (gastric outlet obstruction, gastroparesis)",
+        "Vestibular origin nausea (labyrinthitis, motion sickness)",
+        "Chemotherapy-induced nausea in oncology patients (CINV)",
+        "Anxiety or psychogenic nausea",
+        "Hypercalcemia from malignancy or immobility",
+        "Constipation-related nausea (opioid-induced, see CC008)"
+      ],
+      "clinical_note_en": "Opioid-induced nausea typically occurs at initiation and often resolves within days—watchful waiting is appropriate. Metoclopramide may worsen EPS risk in patients already on antipsychotics. In PLHIV, antiretroviral-related nausea may compound opioid-induced nausea."
+    },
+    {
+      "id": "CORE-032",
+      "name_en": "Oral Iron Supplement → Constipation / GI Upset → Laxative or Antacid",
+      "index_drug_classes": ["Oral iron supplement"],
+      "index_drug_examples": ["ferrous sulfate", "ferrous gluconate", "ferrous fumarate", "iron polysaccharide complex"],
+      "ade": "Constipation, nausea, abdominal cramps, dark stools, GI upset",
+      "cascade_drug_examples": ["lactulose", "macrogol", "senna", "bisacodyl", "magnesium hydroxide", "omeprazole", "calcium carbonate"],
+      "confidence": "high",
+      "age_sensitivity": "medium",
+      "risk_focus": ["GI"],
+      "differential_hints": [
+        "Underlying constipation from other causes (opioids, anticholinergics)",
+        "Hypothyroidism as concurrent contributor",
+        "Low-fiber diet or inadequate hydration",
+        "Celiac disease or GI malabsorption causing GI symptoms",
+        "Colorectal cancer (important not to miss in new GI symptoms)",
+        "IBD exacerbation"
+      ],
+      "clinical_note_en": "Consider alternative iron formulations (ferric carboxymaltose IV, alternate-day oral dosing, lower-dose formulations) to reduce GI side effects. Adding antacids or PPIs paradoxically reduces iron absorption, defeating the purpose of supplementation."
+    },
+    {
+      "id": "CORE-033",
+      "name_en": "Broad-Spectrum Antibiotic → C. difficile Diarrhea → Metronidazole / Vancomycin",
+      "index_drug_classes": ["Antibiotic (broad-spectrum)", "Fluoroquinolone", "Clindamycin", "Cephalosporin", "Carbapenem"],
+      "index_drug_examples": ["clindamycin", "ciprofloxacin", "amoxicillin-clavulanate", "ceftriaxone", "meropenem", "levofloxacin", "ampicillin"],
+      "ade": "Clostridioides difficile infection, pseudomembranous colitis, watery diarrhea, colonic inflammation",
+      "cascade_drug_examples": ["metronidazole oral", "vancomycin oral", "fidaxomicin", "bezlotoxumab"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["GI", "infectious"],
+      "differential_hints": [
+        "Antibiotic-associated diarrhea (non-C. diff, osmotic/secretory mechanism)",
+        "IBD exacerbation (Crohn's colitis or UC flare)",
+        "Viral gastroenteritis (norovirus, rotavirus)",
+        "Ischemic colitis (consider in patients with vascular risk factors)",
+        "Laxative overuse or osmotic diarrhea",
+        "Enteric infection from other pathogen (Salmonella, Campylobacter)"
+      ],
+      "clinical_note_en": "C. difficile must be confirmed by stool toxin or PCR before treating. In PLHIV, C. difficile is more common and may be more severe. Oral vancomycin is now first-line over metronidazole; fidaxomicin preferred for recurrent cases. Stop the precipitating antibiotic if clinically feasible."
+    },
+    {
+      "id": "CORE-034",
+      "name_en": "Corticosteroid → Hypertension → Antihypertensive",
+      "index_drug_classes": ["Corticosteroid"],
+      "index_drug_examples": ["prednisone", "prednisolone", "methylprednisolone", "dexamethasone", "fludrocortisone", "hydrocortisone"],
+      "ade": "Hypertension, sodium and water retention, elevated cardiovascular risk",
+      "cascade_drug_examples": ["amlodipine", "enalapril", "lisinopril", "losartan", "hydrochlorothiazide", "furosemide", "bisoprolol"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["cardiovascular", "renal"],
+      "differential_hints": [
+        "Essential hypertension that was poorly controlled before corticosteroid",
+        "Pain-related or anxiety-related blood pressure elevation",
+        "White coat hypertension",
+        "Obstructive sleep apnea as an independent cause",
+        "Renal artery stenosis",
+        "NSAID co-administration further worsening blood pressure"
+      ],
+      "clinical_note_en": "Distinct from CC005 (hyperglycemia cascade). Corticosteroid-induced hypertension is dose-dependent; fludrocortisone has the greatest mineralocorticoid effect. Corticosteroid dose minimization is preferred before adding antihypertensive. ACEi/ARB preferred if microalbuminuria is present."
+    },
+    {
+      "id": "CORE-035",
+      "name_en": "Corticosteroid → Peripheral Edema / Fluid Retention → Diuretic",
+      "index_drug_classes": ["Corticosteroid"],
+      "index_drug_examples": ["prednisone", "prednisolone", "methylprednisolone", "dexamethasone", "hydrocortisone"],
+      "ade": "Peripheral edema, fluid retention, weight gain",
+      "cascade_drug_examples": ["furosemide", "hydrochlorothiazide", "spironolactone", "torasemide", "indapamide"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["cardiovascular", "renal"],
+      "differential_hints": [
+        "Cardiac failure causing peripheral edema",
+        "Calcium channel blocker-related edema (see CC004)",
+        "Chronic venous insufficiency",
+        "Hypoalbuminemia causing distributive edema",
+        "Lymphedema",
+        "Deep vein thrombosis (DVT)—important to exclude"
+      ],
+      "clinical_note_en": "Edema from corticosteroids is often dose-dependent. Sodium restriction and corticosteroid dose minimization are preferred over adding diuretics. Adding a diuretic increases hypokalemia risk, especially if patient is also on a loop diuretic."
+    },
+    {
+      "id": "CORE-036",
+      "name_en": "Atypical Antipsychotic → Hyperlipidemia → Statin",
+      "index_drug_classes": ["Atypical antipsychotic"],
+      "index_drug_examples": ["olanzapine", "clozapine", "quetiapine", "risperidone"],
+      "ade": "Hyperlipidemia, hypertriglyceridemia, increased cardiovascular risk",
+      "cascade_drug_examples": ["atorvastatin", "rosuvastatin", "simvastatin", "pravastatin", "fenofibrate", "ezetimibe"],
+      "confidence": "medium",
+      "age_sensitivity": "medium",
+      "risk_focus": ["metabolic", "cardiovascular"],
+      "differential_hints": [
+        "Primary hyperlipidemia (familial hypercholesterolemia)",
+        "Dietary habits and sedentary lifestyle as dominant factors",
+        "Hypothyroidism causing secondary dyslipidemia (check TSH)",
+        "Diabetes mellitus-related dyslipidemia",
+        "Nephrotic syndrome",
+        "Protease inhibitor-related dyslipidemia in PLHIV"
+      ],
+      "clinical_note_en": "Consider switching to a metabolically neutral antipsychotic (aripiprazole, amisulpride) before adding a statin. In PLHIV, statin-ARV interactions are critical: simvastatin is contraindicated with PIs; pravastatin or rosuvastatin are preferred."
+    },
+    {
+      "id": "CORE-037",
+      "name_en": "Thiazide → Hyponatremia → Sodium Supplement / Fluid Management",
+      "index_drug_classes": ["Thiazide diuretic"],
+      "index_drug_examples": ["hydrochlorothiazide", "chlorthalidone", "indapamide"],
+      "ade": "Hyponatremia, lethargy, cognitive impairment, falls, seizures (severe cases)",
+      "cascade_drug_examples": ["sodium chloride oral", "hypertonic saline IV", "tolvaptan", "demeclocycline", "fluid restriction guidance"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["electrolyte", "CNS", "renal"],
+      "differential_hints": [
+        "SIADH from other medications or CNS/pulmonary disease",
+        "Heart failure-related dilutional hyponatremia",
+        "SSRI/SNRI co-administration (major additive SIADH risk, see CORE-039)",
+        "Hypothyroidism",
+        "Adrenal insufficiency",
+        "Polydipsia or excessive water intake"
+      ],
+      "clinical_note_en": "Thiazide-induced hyponatremia is most common in elderly women and often occurs within first weeks of starting or dose increase. Discontinuing the thiazide is the primary intervention. Avoid rapid correction (>8 mEq/L per 24h) to prevent osmotic demyelination syndrome."
+    },
+    {
+      "id": "CORE-038",
+      "name_en": "Loop Diuretic → Hypomagnesemia → Magnesium Supplement",
+      "index_drug_classes": ["Loop diuretic"],
+      "index_drug_examples": ["furosemide", "torasemide", "bumetanide"],
+      "ade": "Hypomagnesemia, muscle cramps, refractory hypokalemia, cardiac arrhythmia",
+      "cascade_drug_examples": ["magnesium oxide", "magnesium glycinate", "magnesium citrate", "magnesium sulfate IV"],
+      "confidence": "high",
+      "age_sensitivity": "medium",
+      "risk_focus": ["electrolyte", "cardiovascular", "renal"],
+      "differential_hints": [
+        "Malabsorption syndromes",
+        "Alcoholism or chronic alcohol use disorder",
+        "PPI co-administration (CORE-029) with additive magnesium wasting effect",
+        "Diabetes mellitus with renal tubular magnesium wasting",
+        "Aminoglycoside nephrotoxicity",
+        "Chronic diarrhea or short bowel syndrome"
+      ],
+      "clinical_note_en": "Hypomagnesemia causes refractory hypokalemia—both electrolytes must be corrected together. Loop diuretics are the most common drug cause of hypomagnesemia. Potassium-sparing diuretics (amiloride) also spare magnesium and may be preferred where clinically appropriate."
+    },
+    {
+      "id": "CORE-039",
+      "name_en": "SSRI / SNRI → Hyponatremia (SIADH) → Sodium Supplement",
+      "index_drug_classes": ["SSRI", "SNRI"],
+      "index_drug_examples": ["fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram", "venlafaxine", "duloxetine"],
+      "ade": "SIADH-mediated hyponatremia, confusion, cognitive impairment, falls, seizures",
+      "cascade_drug_examples": ["sodium chloride oral", "tolvaptan", "hypertonic saline IV", "fluid restriction guidance", "demeclocycline"],
+      "confidence": "high",
+      "age_sensitivity": "high",
+      "risk_focus": ["electrolyte", "CNS", "renal"],
+      "differential_hints": [
+        "Thiazide diuretic co-administration (major additive risk, CORE-037)",
+        "CNS disease causing SIADH (stroke, tumor, meningitis)",
+        "Pulmonary disease causing SIADH (pneumonia, TB, SCLC)",
+        "Hypothyroidism",
+        "Adrenal insufficiency",
+        "Heart failure-related dilutional hyponatremia"
+      ],
+      "clinical_note_en": "SSRI-induced hyponatremia is most common in elderly patients, especially within the first weeks of starting or dose increase. Paroxetine carries additional anticholinergic risk. Concurrent thiazide greatly amplifies hyponatremia risk. Antidepressant dose reduction or switch is the primary intervention."
+    },
+    {
+      "id": "CORE-040",
+      "name_en": "Enzyme-Inducing Antiepileptic → Vitamin D Deficiency / Osteomalacia → Vitamin D Supplement",
+      "index_drug_classes": ["Enzyme-inducing antiepileptic"],
+      "index_drug_examples": ["carbamazepine", "phenytoin", "phenobarbital", "primidone", "oxcarbazepine"],
+      "ade": "Vitamin D deficiency, osteomalacia, osteoporosis, increased fracture risk",
+      "cascade_drug_examples": ["cholecalciferol", "ergocalciferol", "calcitriol", "calcium carbonate", "alendronate", "risedronate"],
+      "confidence": "medium",
+      "age_sensitivity": "high",
+      "risk_focus": ["musculoskeletal", "metabolic", "CNS"],
+      "differential_hints": [
+        "Dietary vitamin D deficiency from inadequate intake or sun exposure",
+        "Malabsorption syndrome (celiac disease, inflammatory bowel disease)",
+        "Chronic kidney disease with impaired 1-alpha-hydroxylation",
+        "Primary hypoparathyroidism",
+        "Age-related decline in cutaneous vitamin D synthesis",
+        "Post-bariatric surgery fat-soluble vitamin malabsorption"
+      ],
+      "clinical_note_en": "Enzyme-inducing antiepileptics accelerate vitamin D catabolism via CYP450 induction. Bone mineral density monitoring is recommended in long-term users. In PLHIV, these antiepileptics may also accelerate ARV metabolism (especially NNRTIs, PIs), creating complex pharmacokinetic drug interactions."
     }
   ]
 }
