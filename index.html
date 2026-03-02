@@ -16,6 +16,14 @@
       <span class="subtitle">Auditor de Cascadas de Prescripción en VIH</span>
     </div>
     <div class="header-actions">
+      <label class="kb-mode-label" for="kb-mode-select" title="Switch between PROD and DEV knowledge base tracks">KB mode</label>
+      <select id="kb-mode-select" class="kb-mode-select" title="Switch KB track">
+        <option value="PROD">PROD</option>
+        <option value="DEV">DEV</option>
+      </select>
+      <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Download currently loaded KB as a single JSON bundle">
+        &#128190; Export KB bundle
+      </button>
       <button id="btn-import" class="btn btn-secondary btn-sm" title="Import saved case JSON">
         &#8593; Import Case
       </button>
@@ -292,7 +300,7 @@
     All data stored in your browser (IndexedDB) &mdash;
     <span id="kb-status">Loading KB...</span>
   </p>
-  <p><strong>Pipeline version: v1.0 | KB version: 0.1</strong></p>
+  <p><strong>Pipeline version: v1.0 | <span id="kb-footer-mode">KB mode: PROD | KB version: unknown</span></strong></p>
 </footer>
 
 <script src="app.js"></script>

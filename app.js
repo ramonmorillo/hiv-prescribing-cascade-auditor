@@ -16,6 +16,7 @@ const state = {
   step: 1,
   patientId: '',
   clinicalNote: '',
+  kbMode: 'PROD',
   kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null }
 };
 
@@ -62,11 +63,12 @@ function clearState() {
 /* ============================================================
    KB loading
    ============================================================ */
-async function loadKB() {
+async function loadKB(track) {
+  var folder = 'kb/' + (track || state.kbMode).toLowerCase();
   const files = {
-    coreCascades: 'kb/kb_core_cascades.json',
-    vihModifiers: 'kb/kb_vih_modifiers.json',
-    ddiWatchlist: 'kb/ddi_watchlist.json'
+    coreCascades: folder + '/kb_core_cascades.json',
+    vihModifiers: folder + '/kb_vih_modifiers.json',
+    ddiWatchlist: folder + '/ddi_watchlist.json'
   };
 
   const results = await Promise.allSettled(
@@ -90,16 +92,56 @@ async function loadKB() {
   return failed.length === 0;
 }
 
+function getKBVersion() {
+  var src = state.kb.coreCascades || state.kb.vihModifiers || state.kb.ddiWatchlist;
+  return (src && src.version) ? src.version : 'unknown';
+}
+
 function updateKBStatus(loaded, failed) {
-  const el = document.getElementById('kb-status');
-  if (!el) return;
-  if (failed === 0) {
-    el.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/3)</span>';
-  } else {
-    el.innerHTML =
-      '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
-      '<span class="kb-chip fail">&#10007; ' + failed + ' failed</span>';
+  var mode = state.kbMode;
+  var version = getKBVersion();
+
+  var statusEl = document.getElementById('kb-status');
+  if (statusEl) {
+    if (failed === 0) {
+      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/3) &mdash; ' + mode + '</span>';
+    } else {
+      statusEl.innerHTML =
+        '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
+        '<span class="kb-chip fail">&#10007; ' + failed + ' failed</span> ' +
+        '<span class="kb-chip ok">' + mode + '</span>';
+    }
   }
+
+  var footerModeEl = document.getElementById('kb-footer-mode');
+  if (footerModeEl) {
+    footerModeEl.textContent = 'KB mode: ' + mode + ' | KB version: ' + version;
+  }
+}
+
+/* Export KB bundle — downloads core+modifiers+watchlist as single JSON */
+function exportKBBundle() {
+  if (!state.kb.coreCascades && !state.kb.vihModifiers && !state.kb.ddiWatchlist) {
+    alert('KB not loaded yet. Please wait for KB to finish loading.');
+    return;
+  }
+  var bundle = {
+    exportedAt: new Date().toISOString(),
+    kbMode: state.kbMode,
+    kbVersion: getKBVersion(),
+    coreCascades: state.kb.coreCascades,
+    vihModifiers: state.kb.vihModifiers,
+    ddiWatchlist: state.kb.ddiWatchlist
+  };
+  var blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'kb-bundle-' + state.kbMode.toLowerCase() + '-' + isoDate() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
 /* ============================================================
@@ -399,6 +441,33 @@ function wireEvents() {
   /* Delete All Data */
   var btnDelete = document.getElementById('btn-delete-data');
   if (btnDelete) btnDelete.addEventListener('click', deleteAllData);
+
+  /* KB mode selector */
+  var kbModeSelect = document.getElementById('kb-mode-select');
+  if (kbModeSelect) {
+    kbModeSelect.value = state.kbMode;
+    kbModeSelect.addEventListener('change', async function () {
+      var newMode = kbModeSelect.value;
+      if (newMode !== state.kbMode) {
+        state.kbMode = newMode;
+        state.kb.coreCascades = null;
+        state.kb.vihModifiers = null;
+        state.kb.ddiWatchlist = null;
+        var statusEl = document.getElementById('kb-status');
+        if (statusEl) statusEl.innerHTML = '<span class="kb-chip">Loading ' + newMode + '&hellip;</span>';
+        var ok = await loadKB(newMode);
+        if (!ok) {
+          console.error('[KB] Some files failed to load from ' + newMode + ' track.');
+        }
+        /* Re-render current step in case it depends on KB */
+        renderStepContent(state.step);
+      }
+    });
+  }
+
+  /* Export KB bundle */
+  var btnExportKB = document.getElementById('btn-export-kb');
+  if (btnExportKB) btnExportKB.addEventListener('click', exportKBBundle);
 }
 
 /* ============================================================
