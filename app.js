@@ -88,6 +88,7 @@ async function loadKB(track) {
 
   const loaded = results.filter(r => r.status === 'fulfilled').length;
   updateKBStatus(loaded, failed.length);
+  runKBValidation();
 
   return failed.length === 0;
 }
@@ -116,6 +117,65 @@ function updateKBStatus(loaded, failed) {
   var footerModeEl = document.getElementById('kb-footer-mode');
   if (footerModeEl) {
     footerModeEl.textContent = 'KB mode: ' + mode + ' | KB version: ' + version;
+  }
+}
+
+/* ============================================================
+   KB validation banner
+   ============================================================ */
+function runKBValidation() {
+  /* validateKB is loaded by kb/dev/kb_validator.js script tag */
+  if (typeof validateKB !== 'function') return;
+
+  var kbData = state.kb.coreCascades;
+  if (!kbData) return;
+
+  var result = validateKB(kbData);
+
+  var banner = document.getElementById('kb-validation-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'kb-validation-banner';
+    banner.style.cssText = [
+      'position:relative', 'z-index:100', 'font-size:.8rem',
+      'font-family:inherit', 'padding:0'
+    ].join(';');
+    var main = document.querySelector('main.app-main') || document.body;
+    main.insertBefore(banner, main.firstChild);
+  }
+
+  if (!result.ok && result.errors.length > 0) {
+    /* Blocking error panel */
+    banner.innerHTML =
+      '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
+        '<strong>&#9888; KB load error &mdash; ' + result.errors.length + ' schema error(s) detected. Some features may be unavailable.</strong>' +
+        '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
+          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">View errors</button>' +
+      '</div>' +
+      '<div id="kb-val-detail" style="display:none;background:#fadbd8;color:#922b21;padding:.6rem 1rem;border-bottom:2px solid #c0392b;">' +
+        '<strong>Errors:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+          result.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
+        '</ul>' +
+        (result.warnings.length ? '<strong>Warnings:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+          result.warnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') + '</ul>' : '') +
+      '</div>';
+  } else if (result.warnings.length > 0) {
+    /* Non-blocking warning banner */
+    banner.innerHTML =
+      '<div style="background:#f39c12;color:#fff;padding:.4rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
+        '<span>&#9888; KB warnings (' + result.warnings.length + ')</span>' +
+        '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
+          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">click to view</button>' +
+        '<button onclick="this.parentElement.parentElement.style.display=\'none\'" ' +
+          'style="margin-left:auto;background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;" title="Dismiss">&times;</button>' +
+      '</div>' +
+      '<div id="kb-val-detail" style="display:none;background:#fef9e7;color:#7d6608;padding:.5rem 1rem;border-bottom:2px solid #f39c12;">' +
+        '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' +
+          result.warnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') +
+        '</ul>' +
+      '</div>';
+  } else {
+    banner.innerHTML = '';
   }
 }
 
