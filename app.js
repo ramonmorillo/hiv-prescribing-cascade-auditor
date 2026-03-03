@@ -241,8 +241,8 @@ function detectCascades(noteText) {
   /* --- Core cascades (kb_core_cascades.json) --- */
   var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
   coreCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drug_examples   || [];
-    var cascadeExamples = cascade.cascade_drug_examples || [];
+    var indexExamples   = cascade.index_drugs_examples   || [];
+    var cascadeExamples = cascade.cascade_drugs_examples || [];
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
@@ -253,9 +253,9 @@ function detectCascades(noteText) {
         cascade_name:  cascade.name_en || cascade.id,
         index_drug:    foundIndex,
         cascade_drug:  foundCascade,
-        confidence:    cascade.confidence || 'unknown',
+        confidence:    cascade.plausibility || 'unknown',
         risk_focus:    cascade.risk_focus || [],
-        clinical_hint: cascade.recommended_first_action_en || ''
+        clinical_hint: cascade.clinical_note_en || ''
       });
     }
   });
@@ -285,6 +285,101 @@ function detectCascades(noteText) {
   });
 
   return detected;
+}
+
+/**
+ * Scan `noteText` for any drug name present in the KB (both index and cascade
+ * drug examples across all loaded cascade entries).
+ *
+ * @param {string} noteText
+ * @returns {string[]} Unique drug names found (in KB casing)
+ */
+function extractDrugs(noteText) {
+  if (!noteText || !noteText.trim()) return [];
+
+  var seen   = {};
+  var result = [];
+
+  var allCascades = [].concat(
+    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+  );
+
+  allCascades.forEach(function (cascade) {
+    var examples = [].concat(
+      cascade.index_drugs_examples   || [],
+      cascade.cascade_drugs_examples || []
+    );
+    examples.forEach(function (drug) {
+      var key = drug.toLowerCase();
+      if (!seen[key] && drugFoundInNote(noteText, drug)) {
+        seen[key] = true;
+        result.push(drug);
+      }
+    });
+  });
+
+  return result;
+}
+
+/**
+ * Map an array of drug names to their canonical drug classes using the KB.
+ * A drug can appear as an index drug (→ index_drug_class) or a cascade drug
+ * (→ cascade_drug_class); both classes are included.
+ *
+ * @param {string[]} drugs  Output of extractDrugs()
+ * @returns {string[]} Unique drug class names
+ */
+function normalizeDrugs(drugs) {
+  if (!drugs || !drugs.length) return [];
+
+  var drugToClasses = {};
+
+  var allCascades = [].concat(
+    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+  );
+
+  allCascades.forEach(function (cascade) {
+    var idxClass = cascade.index_drug_class   || '';
+    var casClass = cascade.cascade_drug_class || '';
+
+    (cascade.index_drugs_examples || []).forEach(function (drug) {
+      var key = drug.toLowerCase();
+      if (!drugToClasses[key]) drugToClasses[key] = {};
+      if (idxClass) drugToClasses[key][idxClass] = true;
+    });
+
+    (cascade.cascade_drugs_examples || []).forEach(function (drug) {
+      var key = drug.toLowerCase();
+      if (!drugToClasses[key]) drugToClasses[key] = {};
+      if (casClass) drugToClasses[key][casClass] = true;
+    });
+  });
+
+  var classSet = {};
+  drugs.forEach(function (drug) {
+    var classes = drugToClasses[drug.toLowerCase()] || {};
+    Object.keys(classes).forEach(function (cls) { classSet[cls] = true; });
+  });
+
+  return Object.keys(classSet);
+}
+
+/**
+ * Look up a full cascade entry by its ID across both loaded KB files.
+ *
+ * @param {string} cascadeId  e.g. "CC001" or "VIH001"
+ * @returns {Object|null}
+ */
+function findCascadeEntry(cascadeId) {
+  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
+  var vihCascades  = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
+  var all = [].concat(coreCascades, vihCascades);
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].id === cascadeId) return all[i];
+  }
+  return null;
 }
 
 /* ============================================================
@@ -318,22 +413,115 @@ const STEP_CONTENT = {
     }
   },
   2: {
-    title: '&#128269; Step 2 — Extractor',
+    title: '&#128269; Step 2 — Drug Extractor',
     body: function () {
+      var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
+      if (!kbReady) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
+            'Check the KB status in the footer and reload the page if needed.' +
+          '</div>'
+        );
+      }
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No clinical note found.</strong> ' +
+            'Please enter a clinical note in Step 1 before running extraction.' +
+          '</div>'
+        );
+      }
+
+      var drugs = extractDrugs(state.clinicalNote);
+
+      if (drugs.length === 0) {
+        return (
+          '<div class="callout callout-success">' +
+            '<strong>&#10003; No known drug names detected</strong> in the clinical note. ' +
+            'The note may use trade names, abbreviations, or drugs not covered by the current KB.' +
+          '</div>'
+        );
+      }
+
+      var tags = drugs.map(function (d) {
+        return (
+          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:3px;' +
+            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
+            escHtml(d) +
+          '</span>'
+        );
+      }).join('');
+
       return (
-        '<div class="callout callout-info">' +
-          '<strong>Coming soon.</strong> This step will extract drug names from the clinical note.' +
+        '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
+          '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
+          ' extracted</strong> from the clinical note.' +
+        '</div>' +
+        '<div style="padding:.35rem 0 .6rem;">' + tags + '</div>' +
+        '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
+          '&#9888;&nbsp;Extraction is keyword-based. Trade names and abbreviations not in the KB will be missed.' +
         '</div>'
       );
     }
   },
   3: {
-    title: '&#9881;&#65039; Step 3 — Normalizer',
+    title: '&#9881;&#65039; Step 3 — Drug Normalizer',
     body: function () {
+      var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
+      if (!kbReady) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
+            'Check the KB status in the footer and reload the page if needed.' +
+          '</div>'
+        );
+      }
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No clinical note found.</strong> ' +
+            'Please enter a clinical note in Step 1 before running normalization.' +
+          '</div>'
+        );
+      }
+
+      var drugs   = extractDrugs(state.clinicalNote);
+      var classes = normalizeDrugs(drugs);
+
+      if (drugs.length === 0) {
+        return (
+          '<div class="callout callout-success">' +
+            '<strong>&#10003; No drugs to normalize.</strong> ' +
+            'No known drug names were detected in the clinical note (Step 2).' +
+          '</div>'
+        );
+      }
+
+      if (classes.length === 0) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No drug classes mapped.</strong> ' +
+            'Extracted drugs could not be mapped to any KB drug class.' +
+          '</div>'
+        );
+      }
+
+      var classTags = classes.map(function (cls) {
+        return (
+          '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
+            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
+            escHtml(cls) +
+          '</span>'
+        );
+      }).join('');
+
       return (
-        '<div class="callout callout-info">' +
-          '<strong>Coming soon.</strong> This step will normalize extracted names to canonical drug classes.' +
-        '</div>'
+        '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
+          '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
+          ' mapped to ' + classes.length + ' drug class' + (classes.length === 1 ? '' : 'es') + '.</strong>' +
+        '</div>' +
+        '<div style="padding:.35rem 0 .6rem;">' + classTags + '</div>'
       );
     }
   },
@@ -438,19 +626,162 @@ const STEP_CONTENT = {
   5: {
     title: '&#128221; Step 5 — Plan &amp; Verify',
     body: function () {
+      var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
+      if (!kbReady) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
+            'Check the KB status in the footer and reload the page if needed.' +
+          '</div>'
+        );
+      }
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No clinical note found.</strong> ' +
+            'Please enter a clinical note in Step 1 before reviewing the plan.' +
+          '</div>'
+        );
+      }
+
+      var detected = detectCascades(state.clinicalNote);
+
+      if (detected.length === 0) {
+        return (
+          '<div class="callout callout-success">' +
+            '<strong>&#10003; No cascade signals detected.</strong> ' +
+            'No prescribing cascade patterns were identified — no action plan required.' +
+          '</div>'
+        );
+      }
+
+      var rows = detected.map(function (c) {
+        var entry      = findCascadeEntry(c.cascade_id);
+        var clinNote   = entry ? (entry.clinical_note_en   || '') : '';
+        var ddiWarning = entry ? (entry.ddi_warning_en     || '') : '';
+
+        var ddiHtml = ddiWarning
+          ? '<div style="background:#fadbd8;border-left:3px solid #c0392b;padding:.45rem .75rem;' +
+              'margin-top:.55rem;font-size:.83rem;color:#922b21;border-radius:0 3px 3px 0;">' +
+              '&#9888;&nbsp;' + escHtml(ddiWarning) +
+            '</div>'
+          : '';
+
+        var noteHtml = clinNote
+          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.45rem .75rem;' +
+              'margin-top:.55rem;font-size:.83rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
+              '&#128203;&nbsp;<strong>Recommended first action:</strong> ' + escHtml(clinNote) +
+            '</div>'
+          : '';
+
+        return (
+          '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
+            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
+            '<div style="font-weight:600;font-size:.93rem;">' + escHtml(c.cascade_name) + '</div>' +
+            '<div style="font-size:.87rem;color:#555;margin-top:.3rem;">' +
+              '&#128138;&nbsp;Index drug: <strong>' + escHtml(c.index_drug) + '</strong>' +
+              '&nbsp;&rarr;&nbsp;Cascade drug: <strong>' + escHtml(c.cascade_drug) + '</strong>' +
+            '</div>' +
+            ddiHtml + noteHtml +
+          '</div>'
+        );
+      });
+
       return (
-        '<div class="callout callout-info">' +
-          '<strong>Coming soon.</strong> This step will let you confirm or rule out each detected cascade.' +
-        '</div>'
+        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.85rem;">' +
+          '&#9888;&nbsp;Review each signal below. These are clinician-facing decision-support prompts only.' +
+        '</div>' +
+        rows.join('')
       );
     }
   },
   6: {
-    title: '&#9654; Step 6 — Report',
+    title: '&#128196; Step 6 — Report',
     body: function () {
+      var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
+      if (!kbReady) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
+            'Check the KB status in the footer and reload the page if needed.' +
+          '</div>'
+        );
+      }
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No clinical note found.</strong> ' +
+            'Please enter a clinical note in Step 1 to generate a report.' +
+          '</div>'
+        );
+      }
+
+      var drugs    = extractDrugs(state.clinicalNote);
+      var classes  = normalizeDrugs(drugs);
+      var detected = detectCascades(state.clinicalNote);
+      var pid      = state.patientId || '&mdash;';
+      var now      = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+
+      var drugsCell = drugs.length
+        ? escHtml(drugs.join(', '))
+        : '<em style="color:#888;">None detected</em>';
+
+      var classesCell = classes.length
+        ? escHtml(classes.join(', '))
+        : '<em style="color:#888;">None</em>';
+
+      var cascadeRows = detected.length === 0
+        ? '<p style="color:#1e8449;margin:.4rem 0;">&#10003; No prescribing cascade signals detected.</p>'
+        : detected.map(function (c) {
+            var entry = findCascadeEntry(c.cascade_id);
+            var rec   = entry ? (entry.clinical_note_en || '') : '';
+            return (
+              '<div style="margin:.45rem 0;padding:.6rem .85rem;border:1px solid #d0d7de;' +
+                'border-radius:5px;background:#fafafa;">' +
+                '<strong>' + escHtml(c.cascade_name) + '</strong>' +
+                '&nbsp;<code style="font-size:.74rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
+                '<br><span style="font-size:.84rem;">&#128138;&nbsp;' +
+                  escHtml(c.index_drug) + ' &rarr; ' + escHtml(c.cascade_drug) +
+                '</span>' +
+                (rec
+                  ? '<br><span style="font-size:.81rem;color:#1a5276;">&#128203;&nbsp;' + escHtml(rec) + '</span>'
+                  : '') +
+              '</div>'
+            );
+          }).join('');
+
       return (
-        '<div class="callout callout-info">' +
-          '<strong>Coming soon.</strong> The final report with export options will appear here.' +
+        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;padding:1.15rem 1.3rem;">' +
+          '<h3 style="margin:0 0 .85rem;font-size:1rem;color:#2c3e50;">&#128196;&nbsp;Cascade Audit Report</h3>' +
+
+          '<table style="width:100%;font-size:.87rem;border-collapse:collapse;margin-bottom:.85rem;">' +
+            '<tr style="border-bottom:1px solid #eee;">' +
+              '<td style="padding:.35rem .5rem;color:#666;width:38%;vertical-align:top;">Patient ID</td>' +
+              '<td style="padding:.35rem .5rem;font-weight:600;">' + pid + '</td>' +
+            '</tr>' +
+            '<tr style="border-bottom:1px solid #eee;">' +
+              '<td style="padding:.35rem .5rem;color:#666;">Generated</td>' +
+              '<td style="padding:.35rem .5rem;">' + escHtml(now) + '</td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="padding:.35rem .5rem;color:#666;">KB version</td>' +
+              '<td style="padding:.35rem .5rem;">' + escHtml(getKBVersion()) + ' (' + escHtml(state.kbMode) + ')</td>' +
+            '</tr>' +
+          '</table>' +
+
+          '<strong style="font-size:.88rem;">Drugs Detected (' + drugs.length + ')</strong>' +
+          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + drugsCell + '</p>' +
+
+          '<strong style="font-size:.88rem;">Drug Classes (' + classes.length + ')</strong>' +
+          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + classesCell + '</p>' +
+
+          '<strong style="font-size:.88rem;">Cascade Signals (' + detected.length + ')</strong>' +
+          '<div style="margin:.35rem 0 .75rem;">' + cascadeRows + '</div>' +
+
+          '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
+            '&#9888;&nbsp;Decision support only. Not a medical device. ' +
+            'Do not use with real patient identifiers outside a pseudonymised research context.' +
+          '</div>' +
         '</div>'
       );
     }
