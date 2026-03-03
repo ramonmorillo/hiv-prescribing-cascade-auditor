@@ -205,6 +205,89 @@ function exportKBBundle() {
 }
 
 /* ============================================================
+   Cascade Detection Engine
+   ============================================================ */
+
+/**
+ * Returns true when `drug` (or any slash-separated component) appears
+ * as a whole word inside `noteText` (case-insensitive).
+ */
+function drugFoundInNote(noteText, drug) {
+  var parts = drug.split('/');
+  return parts.some(function (part) {
+    part = part.trim();
+    if (!part) return false;
+    try {
+      var escaped = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp('\\b' + escaped + '\\b', 'i').test(noteText);
+    } catch (e) {
+      return noteText.toLowerCase().indexOf(part.toLowerCase()) !== -1;
+    }
+  });
+}
+
+/**
+ * Scan `noteText` against every loaded cascade entry.
+ * A signal fires when at least one index drug AND at least one cascade drug
+ * are both found in the note.
+ *
+ * @param {string} noteText  Raw clinical note from state.clinicalNote
+ * @returns {Array<{cascade_id, cascade_name, index_drug, cascade_drug, confidence, risk_focus, clinical_hint}>}
+ */
+function detectCascades(noteText) {
+  if (!noteText || !noteText.trim()) return [];
+  var detected = [];
+
+  /* --- Core cascades (kb_core_cascades.json) --- */
+  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
+  coreCascades.forEach(function (cascade) {
+    var indexExamples   = cascade.index_drug_examples   || [];
+    var cascadeExamples = cascade.cascade_drug_examples || [];
+
+    var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
+    var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
+
+    if (foundIndex && foundCascade) {
+      detected.push({
+        cascade_id:    cascade.id,
+        cascade_name:  cascade.name_en || cascade.id,
+        index_drug:    foundIndex,
+        cascade_drug:  foundCascade,
+        confidence:    cascade.confidence || 'unknown',
+        risk_focus:    cascade.risk_focus || [],
+        clinical_hint: cascade.recommended_first_action_en || ''
+      });
+    }
+  });
+
+  /* --- HIV modifier cascades (kb_vih_modifiers.json) --- */
+  var vihCascades = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
+  vihCascades.forEach(function (cascade) {
+    var indexExamples   = cascade.index_drugs_examples   || [];
+    var cascadeExamples = cascade.cascade_drugs_examples || [];
+
+    var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
+    var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
+
+    if (foundIndex && foundCascade) {
+      var hint = cascade.clinical_note_en || '';
+      if (cascade.ddi_warning_en) hint = cascade.ddi_warning_en + (hint ? ' ' + hint : '');
+      detected.push({
+        cascade_id:    cascade.id,
+        cascade_name:  cascade.name_en || cascade.id,
+        index_drug:    foundIndex,
+        cascade_drug:  foundCascade,
+        confidence:    cascade.plausibility || 'unknown',
+        risk_focus:    [],
+        clinical_hint: hint
+      });
+    }
+  });
+
+  return detected;
+}
+
+/* ============================================================
    Step content — each step renders a minimal placeholder so
    the wizard is navigable from day one; richer logic can be
    layered in later without touching this file's structure.
@@ -266,19 +349,88 @@ const STEP_CONTENT = {
           '</div>'
         );
       }
+
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        return (
+          '<div class="callout callout-warning">' +
+            '<strong>&#9888; No clinical note found.</strong> ' +
+            'Please enter a clinical note in Step 1 before running detection.' +
+          '</div>'
+        );
+      }
+
       var cCount = (state.kb.coreCascades.cascades || []).length;
       var vCount = (state.kb.vihModifiers.art_related_cascades || []).length;
       var dCount = (state.kb.ddiWatchlist.interactions || []).length;
-      return (
+
+      var kbInfo = (
         '<div class="callout callout-info">' +
           '<strong>KB ready.</strong> ' +
           cCount + ' core cascades &mdash; ' +
           vCount + ' VIH modifiers &mdash; ' +
           dCount + ' DDI entries loaded.' +
+        '</div>'
+      );
+
+      var detected = detectCascades(state.clinicalNote);
+
+      if (detected.length === 0) {
+        return (
+          kbInfo +
+          '<div class="callout callout-success" style="margin-top:.75rem;">' +
+            '<strong>&#10003; No cascade signals detected.</strong> ' +
+            'No prescribing cascade patterns were identified in the clinical note.' +
+          '</div>'
+        );
+      }
+
+      var confidenceBadge = function (conf) {
+        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#f39c12' : '#7f8c8d';
+        return (
+          '<span style="font-size:.72rem;font-weight:700;color:#fff;background:' + color + ';' +
+            'padding:.1rem .42rem;border-radius:3px;vertical-align:middle;margin-left:.45rem;">' +
+            escHtml(conf) +
+          '</span>'
+        );
+      };
+
+      var rows = detected.map(function (c) {
+        var riskTags = c.risk_focus.length
+          ? '<div style="margin-top:.35rem;font-size:.76rem;color:#666;">Risk: ' + escHtml(c.risk_focus.join(', ')) + '</div>'
+          : '';
+        var hint = c.clinical_hint
+          ? '<div style="margin-top:.5rem;font-size:.84rem;color:#34495e;' +
+              'border-left:3px solid #2980b9;padding:.3rem .65rem;background:#eaf4fb;">' +
+              escHtml(c.clinical_hint) +
+            '</div>'
+          : '';
+        return (
+          '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
+            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;">' +
+              '<span style="font-size:.93rem;font-weight:600;">' + escHtml(c.cascade_name) + confidenceBadge(c.confidence) + '</span>' +
+              '<code style="font-size:.78rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
+            '</div>' +
+            '<div style="margin:.55rem 0 0;font-size:.9rem;">' +
+              '&#128138;&nbsp;<strong>' + escHtml(c.index_drug) + '</strong>' +
+              '&nbsp;&rarr;&nbsp;<strong>' + escHtml(c.cascade_drug) + '</strong>' +
+            '</div>' +
+            riskTags + hint +
+          '</div>'
+        );
+      });
+
+      return (
+        kbInfo +
+        '<div style="margin-top:1rem;">' +
+          '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
+            '&#128204;&nbsp;' + detected.length +
+            (detected.length === 1 ? ' cascade signal detected' : ' cascade signals detected') +
+          '</h3>' +
+          rows.join('') +
         '</div>' +
-        '<div class="callout callout-warning" style="margin-top:.75rem;">' +
-          '<strong>Detection engine coming soon.</strong> ' +
-          'Complete Steps 2 &amp; 3 first.' +
+        '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
+          '&#9888;&nbsp;For clinician review only. Does not recommend medication changes.' +
         '</div>'
       );
     }
