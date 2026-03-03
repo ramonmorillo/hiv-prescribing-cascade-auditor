@@ -39,7 +39,7 @@
         "doxazosin"
       ],
       "confidence": "high",
-      "age_sensitivity": "medium",
+      "age_sensitivity": "high",
       "risk_focus": [
         "cardiovascular",
         "renal"
@@ -51,7 +51,7 @@
         "Obesity-related hypertension independent of NSAID",
         "Renal parenchymal disease causing secondary hypertension"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 7,
       "time_window_days_max": 90,
       "recommended_first_action_es": "Considerar si los AINEs son realmente necesarios. En PVVIH, preferir paracetamol cuando sea posible.",
@@ -89,7 +89,7 @@
         "rabeprazole"
       ],
       "confidence": "high",
-      "age_sensitivity": "medium",
+      "age_sensitivity": "high",
       "risk_focus": [
         "GI"
       ],
@@ -137,7 +137,7 @@
         "guaifenesin"
       ],
       "confidence": "high",
-      "age_sensitivity": "low",
+      "age_sensitivity": "medium",
       "risk_focus": [
         "respiratory"
       ],
@@ -183,7 +183,7 @@
         "torasemide"
       ],
       "confidence": "high",
-      "age_sensitivity": "medium",
+      "age_sensitivity": "high",
       "risk_focus": [
         "cardiovascular"
       ],
@@ -232,7 +232,7 @@
         "insulin aspart"
       ],
       "confidence": "high",
-      "age_sensitivity": "medium",
+      "age_sensitivity": "high",
       "risk_focus": [
         "endocrine",
         "metabolic"
@@ -324,7 +324,7 @@
         "prednisolone"
       ],
       "confidence": "high",
-      "age_sensitivity": "medium",
+      "age_sensitivity": "high",
       "risk_focus": [
         "musculoskeletal",
         "renal"
@@ -564,7 +564,7 @@
         "mebeverine"
       ],
       "confidence": "medium",
-      "age_sensitivity": "low",
+      "age_sensitivity": "high",
       "risk_focus": [
         "GI",
         "metabolic"
