@@ -311,7 +311,69 @@ function detectCascades(noteText) {
     });
   });
 
-  return detected;
+  return detected.concat(detectSymptomCascades(noteText));
+}
+
+/**
+ * Symptom-bridge cascade detection.
+ * Fires when ALL THREE of these are present in `noteText`:
+ *   1. A drug listed in a symptom's caused_by_drug_examples
+ *   2. The symptom itself (detected via state.symptomsDetected)
+ *   3. A drug listed in the same symptom's treated_by_drug_examples
+ *
+ * Uses state.symptomsDetected if already populated (e.g. by Step 2);
+ * otherwise runs extractSymptoms() so Step 4 works independently.
+ *
+ * @param {string} noteText
+ * @returns {Array} Same signal shape as detectCascades()
+ */
+function detectSymptomCascades(noteText) {
+  if (!noteText || !noteText.trim()) return [];
+
+  var symEntries = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
+  if (!symEntries.length) return [];
+
+  /* Use cached results from Step 2, or run fresh if not yet populated */
+  var detectedSymptoms = state.symptomsDetected.length
+    ? state.symptomsDetected
+    : extractSymptoms(noteText);
+
+  if (!detectedSymptoms.length) return [];
+
+  var signals = [];
+
+  detectedSymptoms.forEach(function (ds) {
+    var entry = symEntries.find(function (s) { return s.id === ds.id; });
+    if (!entry) return;
+
+    var causedBy  = entry.caused_by_drug_examples  || [];
+    var treatedBy = entry.treated_by_drug_examples || [];
+    if (!causedBy.length || !treatedBy.length) return;
+
+    var foundCause     = causedBy.find(function (d) { return drugFoundInNote(noteText, d); });
+    var foundTreatment = treatedBy.find(function (d) { return drugFoundInNote(noteText, d); });
+
+    if (!foundCause || !foundTreatment) return;
+
+    /* Capitalise first letter of symptom term for display */
+    var symLabel = ds.term.charAt(0).toUpperCase() + ds.term.slice(1);
+
+    signals.push({
+      cascade_id:      ds.id + ':' + foundCause + ':' + foundTreatment,
+      cascade_name:    foundCause + ' \u2192 ' + symLabel + ' \u2192 ' + foundTreatment,
+      index_drug:      foundCause,
+      cascade_drug:    foundTreatment,
+      signal_type:     'symptom_bridge',
+      confidence:      'medium',
+      risk_focus:      [ds.category],
+      ade_en:          ds.term,
+      appropriateness: '',
+      ddi_warning:     '',
+      clinical_hint:   entry.cascade_relevance || ''
+    });
+  });
+
+  return signals;
 }
 
 /**
@@ -571,6 +633,11 @@ const STEP_CONTENT = {
       var symptoms    = extractSymptoms(state.clinicalNote);
       saveState();   /* persist state.symptomsDetected */
 
+      /* Always-visible "Symptoms detected (N)" heading */
+      var symCountLabel = !state.kb.symptomDictionary
+        ? 'Symptoms detected — <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>'
+        : 'Symptoms detected (' + symptoms.length + ')';
+
       var symptomSection;
       if (!state.kb.symptomDictionary) {
         symptomSection = (
@@ -582,7 +649,7 @@ const STEP_CONTENT = {
       } else if (symptoms.length === 0) {
         symptomSection = (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; No symptom terms detected</strong> in the clinical note.' +
+            '&#10003;&nbsp;No symptom terms detected in the clinical note.' +
           '</div>'
         );
       } else {
@@ -597,7 +664,6 @@ const STEP_CONTENT = {
         };
         var symTags = symptoms.map(function (s) {
           var bg  = catColor[s.category] || '#555';
-          /* Show matched synonym in parentheses when it differs from canonical term */
           var label = escHtml(s.term);
           if (s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
             label += ' <span style="font-size:.72rem;opacity:.8;">(' + escHtml(s.matched_term) + ')</span>';
@@ -615,10 +681,6 @@ const STEP_CONTENT = {
           );
         }).join('');
         symptomSection = (
-          '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
-            '<strong>' + symptoms.length + ' symptom term' + (symptoms.length === 1 ? '' : 's') +
-            ' detected</strong> from the clinical note (hover for cascade relevance).' +
-          '</div>' +
           '<div style="padding:.2rem 0 .65rem;">' + symTags + '</div>'
         );
       }
@@ -631,7 +693,7 @@ const STEP_CONTENT = {
         drugSection +
         divider +
         '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
-          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Symptoms</div>' +
+          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + symCountLabel + '</div>' +
         symptomSection +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
           '&#9888;&nbsp;Extraction is keyword-based. Trade names, abbreviations, and terms not in the KB will be missed.' +

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Adverse drug effect symptom dictionary for prescribing cascade detection",
   "last_updated": "2026-03-04",
   "disclaimer": "For decision support only. Symptom matching is keyword-based and does not replace clinical assessment.",
@@ -9,70 +9,161 @@
       "term": "constipation",
       "synonyms": ["constipated", "hard stools", "difficulty defecating", "bowel obstruction"],
       "category": "gastrointestinal",
-      "cascade_relevance": "Opioid-induced, CCB-induced, anticholinergic burden — may trigger laxative prescribing"
+      "cascade_relevance": "Opioid-induced, CCB-induced, anticholinergic burden — may trigger laxative prescribing",
+      "caused_by_drug_examples": [
+        "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
+        "morphine", "oxycodone", "codeine", "fentanyl", "tramadol", "buprenorphine",
+        "amlodipine", "verapamil", "diltiazem",
+        "amitriptyline", "nortriptyline", "biperiden", "trihexyphenidyl"
+      ],
+      "treated_by_drug_examples": [
+        "lactulose", "macrogol", "bisacodyl", "senna", "sodium docusate",
+        "naloxegol", "methylnaltrexone"
+      ]
     },
     {
       "id": "SYM002",
       "term": "dry mouth",
       "synonyms": ["xerostomia", "mouth dryness", "oral dryness", "dry lips"],
       "category": "anticholinergic",
-      "cascade_relevance": "Anticholinergic burden — may trigger prescribing of saliva substitutes or mouth-care agents"
+      "cascade_relevance": "Anticholinergic burden — may trigger prescribing of saliva substitutes or mouth-care agents",
+      "caused_by_drug_examples": [
+        "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
+        "amitriptyline", "nortriptyline", "promethazine",
+        "haloperidol", "chlorpromazine", "biperiden", "trihexyphenidyl"
+      ],
+      "treated_by_drug_examples": [
+        "pilocarpine", "cevimeline", "bethanechol"
+      ]
     },
     {
       "id": "SYM003",
       "term": "dizziness",
       "synonyms": ["dizzy", "lightheadedness", "light-headed", "vertigo", "presyncope", "pre-syncope"],
       "category": "neurological",
-      "cascade_relevance": "Antihypertensive over-treatment, orthostatic hypotension, vestibular ADEs, CCB over-dose"
+      "cascade_relevance": "Antihypertensive over-treatment, orthostatic hypotension, vestibular ADEs, CCB over-dose",
+      "caused_by_drug_examples": [
+        "amlodipine", "nifedipine", "felodipine", "lercanidipine",
+        "enalapril", "lisinopril", "ramipril", "losartan", "valsartan",
+        "furosemide", "hydrochlorothiazide", "indapamide",
+        "zolpidem", "lorazepam", "diazepam", "alprazolam",
+        "oxybutynin", "tolterodine"
+      ],
+      "treated_by_drug_examples": [
+        "meclizine", "betahistine", "cinnarizine", "dimenhydrinate", "ondansetron"
+      ]
     },
     {
       "id": "SYM004",
       "term": "falls",
       "synonyms": ["fall", "falling", "fell", "tripped", "unsteady gait", "balance problems"],
       "category": "safety",
-      "cascade_relevance": "Sedation, orthostatic hypotension, anticholinergic burden, muscle relaxants"
+      "cascade_relevance": "Sedation, orthostatic hypotension, anticholinergic burden, muscle relaxants",
+      "caused_by_drug_examples": [
+        "zolpidem", "lorazepam", "diazepam", "alprazolam", "clonazepam",
+        "morphine", "oxycodone", "codeine", "tramadol",
+        "oxybutynin", "tolterodine", "solifenacin",
+        "haloperidol", "quetiapine", "olanzapine",
+        "amlodipine", "furosemide", "hydrochlorothiazide", "enalapril"
+      ],
+      "treated_by_drug_examples": [
+        "calcium carbonate", "cholecalciferol", "alendronate", "risedronate", "zoledronic acid"
+      ]
     },
     {
       "id": "SYM005",
       "term": "sedation",
       "synonyms": ["sedated", "drowsy", "drowsiness", "somnolence", "somnolent", "lethargy", "lethargic"],
       "category": "neurological",
-      "cascade_relevance": "CNS depressants, opioids, benzodiazepines, first-generation antihistamines"
+      "cascade_relevance": "CNS depressants, opioids, benzodiazepines, first-generation antihistamines",
+      "caused_by_drug_examples": [
+        "zolpidem", "lorazepam", "diazepam", "alprazolam", "clonazepam",
+        "morphine", "oxycodone", "fentanyl", "tramadol", "codeine",
+        "promethazine", "haloperidol", "quetiapine", "olanzapine",
+        "amitriptyline", "mirtazapine"
+      ],
+      "treated_by_drug_examples": [
+        "modafinil", "methylphenidate", "amantadine", "flumazenil", "naloxone"
+      ]
     },
     {
       "id": "SYM006",
       "term": "urinary retention",
       "synonyms": ["unable to urinate", "difficulty urinating", "urinary hesitancy", "urinary difficulty"],
       "category": "urological",
-      "cascade_relevance": "Anticholinergic drugs, opioid-induced — may trigger prescribing of alpha-blockers or catheters"
+      "cascade_relevance": "Anticholinergic drugs, opioid-induced — may trigger prescribing of alpha-blockers or catheters",
+      "caused_by_drug_examples": [
+        "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
+        "amitriptyline", "nortriptyline", "promethazine",
+        "haloperidol", "chlorpromazine", "biperiden",
+        "morphine", "oxycodone", "codeine"
+      ],
+      "treated_by_drug_examples": [
+        "tamsulosin", "alfuzosin", "terazosin", "doxazosin", "bethanechol"
+      ]
     },
     {
       "id": "SYM007",
       "term": "nausea",
       "synonyms": ["nauseous", "nauseated", "sick to stomach", "queasiness"],
       "category": "gastrointestinal",
-      "cascade_relevance": "NSAID-induced, opioid-induced, ARV-induced — may trigger antiemetic prescribing"
+      "cascade_relevance": "NSAID-induced, opioid-induced, ARV-induced — may trigger antiemetic prescribing",
+      "caused_by_drug_examples": [
+        "metformin", "morphine", "oxycodone", "codeine", "tramadol",
+        "ibuprofen", "naproxen", "diclofenac",
+        "lopinavir/ritonavir", "darunavir/ritonavir", "darunavir/cobicistat",
+        "zidovudine", "efavirenz", "dolutegravir"
+      ],
+      "treated_by_drug_examples": [
+        "ondansetron", "metoclopramide", "domperidone", "prochlorperazine", "promethazine"
+      ]
     },
     {
       "id": "SYM008",
       "term": "oedema",
       "synonyms": ["edema", "ankle swelling", "ankle oedema", "peripheral oedema", "peripheral edema", "swollen ankles", "leg swelling"],
       "category": "cardiovascular",
-      "cascade_relevance": "CCB-induced oedema — may trigger diuretic prescribing (cascade CC004)"
+      "cascade_relevance": "CCB-induced oedema — may trigger diuretic prescribing (cascade CC004)",
+      "caused_by_drug_examples": [
+        "amlodipine", "nifedipine", "felodipine", "lercanidipine",
+        "gabapentin", "pregabalin"
+      ],
+      "treated_by_drug_examples": [
+        "furosemide", "hydrochlorothiazide", "indapamide", "spironolactone", "torasemide"
+      ]
     },
     {
       "id": "SYM009",
       "term": "confusion",
       "synonyms": ["confused", "disorientation", "disoriented", "delirium", "delirious", "cognitive impairment"],
       "category": "neurological",
-      "cascade_relevance": "Anticholinergic burden, opioids, benzodiazepines — may trigger antipsychotic prescribing"
+      "cascade_relevance": "Anticholinergic burden, opioids, benzodiazepines — may trigger antipsychotic prescribing",
+      "caused_by_drug_examples": [
+        "oxybutynin", "tolterodine", "solifenacin", "biperiden", "trihexyphenidyl",
+        "amitriptyline", "nortriptyline", "promethazine",
+        "zolpidem", "lorazepam", "diazepam",
+        "morphine", "oxycodone", "codeine", "tramadol",
+        "prednisolone", "dexamethasone"
+      ],
+      "treated_by_drug_examples": [
+        "haloperidol", "quetiapine", "risperidone", "olanzapine"
+      ]
     },
     {
       "id": "SYM010",
       "term": "insomnia",
       "synonyms": ["sleeplessness", "difficulty sleeping", "cannot sleep", "poor sleep", "sleep disturbance"],
       "category": "neurological",
-      "cascade_relevance": "Efavirenz CNS effects (VIH004), stimulant drugs — may trigger hypnotic prescribing"
+      "cascade_relevance": "Efavirenz CNS effects (VIH004), stimulant drugs — may trigger hypnotic prescribing",
+      "caused_by_drug_examples": [
+        "fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram",
+        "efavirenz", "methylphenidate", "modafinil",
+        "prednisolone", "dexamethasone", "methylprednisolone"
+      ],
+      "treated_by_drug_examples": [
+        "zolpidem", "lorazepam", "alprazolam", "clonazepam",
+        "mirtazapine", "trazodone", "melatonin"
+      ]
     }
   ]
 }
