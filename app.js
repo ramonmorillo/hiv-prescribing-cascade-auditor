@@ -17,7 +17,10 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null }
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null },
+  /* Step 5 clinician classifications, keyed by cascade_id.
+     Values: 'confirmed' | 'possible' | 'not_cascade' */
+  cascadeClassifications: {}
 };
 
 /* ============================================================
@@ -28,7 +31,8 @@ function saveState() {
     const payload = {
       step: state.step,
       patientId: state.patientId,
-      clinicalNote: state.clinicalNote
+      clinicalNote: state.clinicalNote,
+      cascadeClassifications: state.cascadeClassifications
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   } catch (err) {
@@ -41,9 +45,10 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    if (saved.patientId)    state.patientId    = saved.patientId;
-    if (saved.clinicalNote) state.clinicalNote = saved.clinicalNote;
-    if (saved.step)         state.step         = saved.step;
+    if (saved.patientId)               state.patientId               = saved.patientId;
+    if (saved.clinicalNote)            state.clinicalNote            = saved.clinicalNote;
+    if (saved.step)                    state.step                    = saved.step;
+    if (saved.cascadeClassifications)  state.cascadeClassifications  = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
   }
@@ -55,6 +60,7 @@ function clearState() {
     state.step = 1;
     state.patientId = '';
     state.clinicalNote = '';
+    state.cascadeClassifications = {};
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
   }
@@ -410,6 +416,22 @@ function findCascadeEntry(cascadeId) {
   }
   return null;
 }
+
+/* ============================================================
+   Step 5 — clinician classification handler
+   Called via inline onclick: classifyCascade(id, value)
+   value: 'confirmed' | 'possible' | 'not_cascade'
+   ============================================================ */
+window.classifyCascade = function (cascadeId, value) {
+  if (state.cascadeClassifications[cascadeId] === value) {
+    /* clicking the active button again clears it */
+    delete state.cascadeClassifications[cascadeId];
+  } else {
+    state.cascadeClassifications[cascadeId] = value;
+  }
+  saveState();
+  renderStepContent(5);
+};
 
 /* ============================================================
    Step content — each step renders a minimal placeholder so
@@ -783,42 +805,150 @@ const STEP_CONTENT = {
         );
       }
 
+      /* ── Classification tally banner ── */
+      var cls = state.cascadeClassifications;
+      var nConfirmed  = detected.filter(function (c) { return cls[c.cascade_id] === 'confirmed';   }).length;
+      var nPossible   = detected.filter(function (c) { return cls[c.cascade_id] === 'possible';    }).length;
+      var nNot        = detected.filter(function (c) { return cls[c.cascade_id] === 'not_cascade'; }).length;
+      var nUnreviewed = detected.length - nConfirmed - nPossible - nNot;
+
+      var tallyHtml = (
+        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;' +
+          'padding:.65rem .9rem;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;' +
+          'font-size:.83rem;align-items:center;">' +
+          '<span style="color:#555;font-weight:600;margin-right:.2rem;">Review progress:</span>' +
+          '<span style="background:#1e8449;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nConfirmed + ' confirmed</span>' +
+          '<span style="background:#e67e22;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nPossible + ' possible</span>' +
+          '<span style="background:#7f8c8d;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nNot + ' not a cascade</span>' +
+          (nUnreviewed > 0
+            ? '<span style="color:#888;margin-left:.15rem;">' + nUnreviewed + ' unreviewed</span>'
+            : '<span style="color:#1e8449;margin-left:.15rem;">&#10003; All reviewed</span>') +
+        '</div>'
+      );
+
+      /* ── Per-cascade detail cards ── */
       var rows = detected.map(function (c) {
-        var entry      = findCascadeEntry(c.cascade_id);
-        var clinNote   = entry ? (entry.clinical_note_en   || '') : '';
-        var ddiWarning = entry ? (entry.ddi_warning_en     || '') : '';
+        var entry       = findCascadeEntry(c.cascade_id);
+        var recAction   = entry ? (entry.recommended_first_action_en || '') : '';
+        var clinNote    = entry ? (entry.clinical_note_en            || '') : '';
+        var ddiWarning  = entry ? (entry.ddi_warning_en              || '') : '';
+        var diffHints   = (entry && Array.isArray(entry.differential_hints) && entry.differential_hints.length)
+                          ? entry.differential_hints : [];
 
+        /* Use the richer field; for core it's recAction, for VIH it's clinNote */
+        var actionText  = recAction || clinNote;
+
+        /* Confidence badge */
+        var confColor   = c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d';
+        var confBadge   = (
+          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + confColor + ';' +
+            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
+            'text-transform:uppercase;">' + escHtml(c.confidence) + '</span>'
+        );
+
+        /* Cascade chain pill row */
+        var chain = (
+          '<div style="margin:.6rem 0;display:flex;align-items:center;flex-wrap:wrap;gap:.25rem;">' +
+            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
+              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.index_drug) + '</span>' +
+            '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>' +
+            (c.ade_en
+              ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
+                  'padding:.2rem .6rem;font-size:.82rem;color:#7d6608;">' +
+                  escHtml(c.ade_en) + '</span>' +
+                '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>'
+              : '') +
+            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
+              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.cascade_drug) + '</span>' +
+          '</div>'
+        );
+
+        /* DDI warning */
         var ddiHtml = ddiWarning
-          ? '<div style="background:#fadbd8;border-left:3px solid #c0392b;padding:.45rem .75rem;' +
-              'margin-top:.55rem;font-size:.83rem;color:#922b21;border-radius:0 3px 3px 0;">' +
-              '&#9888;&nbsp;' + escHtml(ddiWarning) +
+          ? '<div style="background:#fdedec;border-left:3px solid #e74c3c;padding:.4rem .7rem;' +
+              'margin-top:.45rem;font-size:.82rem;color:#922b21;border-radius:0 3px 3px 0;">' +
+              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(ddiWarning) +
             '</div>'
           : '';
 
-        var noteHtml = clinNote
-          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.45rem .75rem;' +
-              'margin-top:.55rem;font-size:.83rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
-              '&#128203;&nbsp;<strong>Recommended first action:</strong> ' + escHtml(clinNote) +
+        /* Recommended action */
+        var actionHtml = actionText
+          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.4rem .7rem;' +
+              'margin-top:.45rem;font-size:.82rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
+              '<strong>&#128203; Recommended action:</strong>&nbsp;' + escHtml(actionText) +
             '</div>'
           : '';
+
+        /* Differential hints */
+        var diffHtml = diffHints.length
+          ? '<div style="margin-top:.45rem;font-size:.81rem;color:#555;">' +
+              '<strong>&#128270; Also consider:</strong>&nbsp;' +
+              escHtml(diffHints.join(' &bull; ')) +
+            '</div>'
+          : '';
+
+        /* Classification buttons */
+        var current = cls[c.cascade_id] || '';
+        var id      = escHtml(c.cascade_id);   /* safe for HTML attr; IDs are alphanumeric */
+
+        function classBtn(value, label, activeColor, activeText) {
+          var isActive = current === value;
+          return (
+            '<button onclick="classifyCascade(\'' + id + '\',\'' + value + '\')" ' +
+              'style="font-size:.78rem;padding:.28rem .75rem;border-radius:4px;cursor:pointer;' +
+                'font-weight:' + (isActive ? '700' : '500') + ';' +
+                'background:' + (isActive ? activeColor : '#f0f0f0') + ';' +
+                'color:'      + (isActive ? activeText  : '#444')    + ';' +
+                'border:1px solid ' + (isActive ? activeColor : '#ccc') + ';' +
+                'transition:background .15s;">' +
+              label +
+            '</button>'
+          );
+        }
+
+        var classButtons = (
+          '<div style="display:flex;gap:.45rem;margin-top:.7rem;flex-wrap:wrap;align-items:center;">' +
+            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">Classify:</span>' +
+            classBtn('confirmed',   '&#10003;&nbsp;Confirmed cascade', '#1e8449', '#fff') +
+            classBtn('possible',    '&#63;&nbsp;Possible cascade',     '#e67e22', '#fff') +
+            classBtn('not_cascade', '&#10005;&nbsp;Not a cascade',     '#7f8c8d', '#fff') +
+          '</div>'
+        );
+
+        /* Card border colour based on classification */
+        var borderColor = current === 'confirmed'  ? '#1e8449'
+                        : current === 'possible'   ? '#e67e22'
+                        : current === 'not_cascade'? '#bdc3c7'
+                        : '#d0d7de';
 
         return (
-          '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
-            '<div style="font-weight:600;font-size:.93rem;">' + escHtml(c.cascade_name) + '</div>' +
-            '<div style="font-size:.87rem;color:#555;margin-top:.3rem;">' +
-              '&#128138;&nbsp;Index drug: <strong>' + escHtml(c.index_drug) + '</strong>' +
-              '&nbsp;&rarr;&nbsp;Cascade drug: <strong>' + escHtml(c.cascade_drug) + '</strong>' +
+          '<div style="border:2px solid ' + borderColor + ';border-radius:6px;padding:.9rem 1rem;' +
+            'margin-bottom:.85rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
+
+            /* Header */
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+              'flex-wrap:wrap;gap:.35rem;">' +
+              '<span style="font-size:.93rem;font-weight:700;">' +
+                escHtml(c.cascade_name) + confBadge +
+              '</span>' +
+              '<code style="font-size:.75rem;color:#aaa;">' + escHtml(c.cascade_id) + '</code>' +
             '</div>' +
-            ddiHtml + noteHtml +
+
+            chain + ddiHtml + actionHtml + diffHtml + classButtons +
           '</div>'
         );
       });
 
       return (
-        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.85rem;">' +
-          '&#9888;&nbsp;Review each signal below. These are clinician-facing decision-support prompts only.' +
+        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.84rem;">' +
+          '&#9888;&nbsp;Review each signal and classify it. For clinician use only.' +
         '</div>' +
+        tallyHtml +
         rows.join('')
       );
     }
