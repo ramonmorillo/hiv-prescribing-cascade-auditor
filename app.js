@@ -143,13 +143,41 @@ function updateKBStatus(loaded, failed) {
    KB validation banner
    ============================================================ */
 function runKBValidation() {
-  /* validateKB is loaded by kb/dev/kb_validator.js script tag */
-  if (typeof validateKB !== 'function') return;
+  /* Both validators are loaded by kb/dev/kb_validator.js script tag */
+  if (typeof validateKBOperational !== 'function') return;
 
   var kbData = state.kb.coreCascades;
   if (!kbData) return;
 
-  var result = validateKB(kbData);
+  /* Operational result drives the red-banner gate (ok:false = blocking error).
+   * Source KB is never mutated — operational clones internally.             */
+  var opResult = validateKBOperational(kbData);
+
+  /* Strict result surfaces missing-_es issues as non-blocking editorial notes.
+   * Aggregate by field name to avoid flooding the UI with per-cascade lines. */
+  var editorialWarnings = [];
+  if (typeof validateKBStrict === 'function') {
+    var strictResult = validateKBStrict(kbData);
+    var esMissing = {};
+    strictResult.errors.forEach(function (e) {
+      var m = e.match(/^\[([^\]]+)\] Missing required field: "(name_es|ade_es|ade_mechanism_es|recommended_first_action_es)"\.$/);
+      if (m) { (esMissing[m[2]] = esMissing[m[2]] || []).push(m[1]); }
+    });
+    Object.keys(esMissing).sort().forEach(function (field) {
+      var ids = esMissing[field];
+      var sample = ids.length <= 6 ? ids.join(', ') : ids.slice(0, 6).join(', ') + '\u2026 +' + (ids.length - 6) + ' more';
+      editorialWarnings.push('Editorial: ' + ids.length + ' cascade(s) missing "' + field +
+        '" — add translations or leave for EN fallback. (' + sample + ')');
+    });
+  }
+
+  /* Fallback summary: one line if any cascades are using EN→ES auto-fill */
+  if (opResult.fallbackCount > 0) {
+    editorialWarnings.push('i18n: ' + opResult.fallbackCount + ' cascade(s) using EN\u2192ES fallback' +
+      ' — translations not yet provided in KB source files.');
+  }
+
+  var allWarnings = opResult.warnings.concat(editorialWarnings);
 
   var banner = document.getElementById('kb-validation-banner');
   if (!banner) {
@@ -163,26 +191,26 @@ function runKBValidation() {
     main.insertBefore(banner, main.firstChild);
   }
 
-  if (!result.ok && result.errors.length > 0) {
+  if (!opResult.ok && opResult.errors.length > 0) {
     /* Blocking error panel */
     banner.innerHTML =
       '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
-        '<strong>&#9888; KB load error &mdash; ' + result.errors.length + ' schema error(s) detected. Some features may be unavailable.</strong>' +
+        '<strong>&#9888; KB load error &mdash; ' + opResult.errors.length + ' schema error(s) detected. Some features may be unavailable.</strong>' +
         '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">View errors</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fadbd8;color:#922b21;padding:.6rem 1rem;border-bottom:2px solid #c0392b;">' +
         '<strong>Errors:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
-          result.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
+          opResult.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
         '</ul>' +
-        (result.warnings.length ? '<strong>Warnings:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
-          result.warnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') + '</ul>' : '') +
+        (allWarnings.length ? '<strong>Warnings:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+          allWarnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') + '</ul>' : '') +
       '</div>';
-  } else if (result.warnings.length > 0) {
-    /* Non-blocking warning banner */
+  } else if (allWarnings.length > 0) {
+    /* Non-blocking warning banner (includes editorial + i18n notes) */
     banner.innerHTML =
       '<div style="background:#f39c12;color:#fff;padding:.4rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
-        '<span>&#9888; KB warnings (' + result.warnings.length + ')</span>' +
+        '<span>&#9888; KB warnings (' + allWarnings.length + ')</span>' +
         '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">click to view</button>' +
         '<button onclick="this.parentElement.parentElement.style.display=\'none\'" ' +
@@ -190,7 +218,7 @@ function runKBValidation() {
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fef9e7;color:#7d6608;padding:.5rem 1rem;border-bottom:2px solid #f39c12;">' +
         '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' +
-          result.warnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') +
+          allWarnings.map(function(w){ return '<li>' + escHtml(w) + '</li>'; }).join('') +
         '</ul>' +
       '</div>';
   } else {
@@ -2038,32 +2066,77 @@ window.runNlpSelfTest = function () {
 
   console.groupEnd();
 
-  /* ── Group F: bilingual normalization fallback ─────────────────────── */
-  console.group('F — Bilingual normalization fallback');
+  /* ── Group F: strict/operational validator split + non-mutation ──────── */
+  console.group('F — Bilingual strict/operational split');
   (function () {
-    var minimal = {
-      id: 'CC_TEST_NORM',
-      name_en: 'Test Drug → Test ADE → Test Treatment',
-      index_drug_classes: ['TestClass'],
-      index_drug_examples: ['testdrug'],
-      ade_en: 'Test adverse drug effect',
-      cascade_drug_examples: ['testtreatment'],
-      confidence: 'medium',
-      age_sensitivity: 'low',
-      risk_focus: ['metabolic'],
-      differential_hints: ['Hint one', 'Hint two', 'Hint three'],
-      appropriateness: 'context_dependent'
-    };
-    var testKb = { version: '0.0.1-test', cascades: [minimal] };
-    var vResult = typeof validateKB === 'function' ? validateKB(testKb) : null;
-    if (vResult) {
-      assert('F1: validation passes for cascade without name_es/ade_es', vResult.ok, true);
-      assert('F2: name_es filled from name_en', testKb.cascades[0].name_es, minimal.name_en);
-      assert('F3: ade_es filled from ade_en', testKb.cascades[0].ade_es, minimal.ade_en);
-      assert('F4: __i18n.es_fallback marker set', !!(testKb.cascades[0].__i18n && testKb.cascades[0].__i18n.es_fallback), true);
-      assert('F5: __i18n.fields includes name_es', !!(testKb.cascades[0].__i18n && testKb.cascades[0].__i18n.fields.indexOf('name_es') !== -1), true);
+    /* Shared minimal cascade — intentionally omits name_es and ade_es */
+    function makeMinimalKB() {
+      return {
+        version: '0.0.1-test',
+        cascades: [{
+          id: 'CC_TEST_NORM',
+          name_en: 'Test Drug \u2192 Test ADE \u2192 Test Treatment',
+          index_drug_classes: ['TestClass'],
+          index_drug_examples: ['testdrug'],
+          ade_en: 'Test adverse drug effect',
+          cascade_drug_examples: ['testtreatment'],
+          confidence: 'medium',
+          age_sensitivity: 'low',
+          risk_focus: ['metabolic'],
+          differential_hints: ['Hint one', 'Hint two', 'Hint three'],
+          appropriateness: 'context_dependent'
+        }]
+      };
+    }
+
+    if (typeof validateKBStrict !== 'function' || typeof validateKBOperational !== 'function') {
+      assert('F0: validateKBStrict + validateKBOperational available', false, true);
     } else {
-      assert('F1: validateKB available', false, true);
+      /* F1 — strict fails when *_es missing */
+      var strictKb = makeMinimalKB();
+      var strictR = validateKBStrict(strictKb);
+      assert('F1: strict fails when name_es/ade_es missing', strictR.ok, false);
+      var strictHasEsError = strictR.errors.some(function (e) {
+        return e.indexOf('name_es') !== -1 || e.indexOf('ade_es') !== -1;
+      });
+      assert('F1: strict errors reference missing _es fields', strictHasEsError, true);
+
+      /* F2 — operational passes when *_en exists and *_es missing */
+      var opKb = makeMinimalKB();
+      var opR = validateKBOperational(opKb);
+      assert('F2: operational passes when only *_en provided', opR.ok, true);
+      assert('F2: operational.fallbackCount reflects filled cascades', opR.fallbackCount, 1);
+
+      /* F3 — non-mutating: source object unchanged after operational */
+      var srcKb = makeMinimalKB();
+      var srcEntry = srcKb.cascades[0];
+      var nameBefore = srcEntry.name_es;   /* undefined */
+      validateKBOperational(srcKb);
+      assert('F3: source name_es not mutated after operational', srcEntry.name_es, nameBefore);
+      assert('F3: source __i18n not set after operational', srcEntry.__i18n, undefined);
+
+      /* F4 — idempotent: two operational calls give same result */
+      var idKb = makeMinimalKB();
+      var r4a = validateKBOperational(idKb);
+      var r4b = validateKBOperational(idKb);
+      assert('F4: operational idempotent — ok same', r4a.ok, r4b.ok);
+      assert('F4: operational idempotent — fallbackCount same', r4a.fallbackCount, r4b.fallbackCount);
+      assert('F4: operational idempotent — source still clean', idKb.cascades[0].__i18n, undefined);
+
+      /* F5 — export behavior: source KB has no __i18n (never mutated) */
+      var expKb = makeMinimalKB();
+      validateKBOperational(expKb);   /* simulate what runKBValidation does */
+      assert('F5: source KB has no __i18n after operational (safe to export as-is)',
+             expKb.cascades[0].__i18n, undefined);
+
+      /* F6 — strict errors appear in editorial aggregation, not blocking errors */
+      /* (this mirrors the runKBValidation logic: strict errors → warning strings) */
+      var strictFull = validateKBStrict(makeMinimalKB());
+      var esErrorCount = strictFull.errors.filter(function (e) {
+        return /name_es|ade_es/.test(e);
+      }).length;
+      assert('F6: strict ES errors are present and countable for editorial summary',
+             esErrorCount > 0, true);
     }
   })();
   console.groupEnd();

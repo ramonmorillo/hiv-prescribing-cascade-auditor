@@ -1,21 +1,39 @@
 /* kb_validator.js — DEV KB schema validator
- * Exported as window.validateKB (browser) or module.exports.validateKB (Node).
- * Usage: var result = validateKB(kbJson);  // { ok, errors, warnings }
- * Also exposes window.normalizeBilingualCascades for use in app.js (export strip).
+ *
+ * Separates editorial quality control from operational robustness:
+ *   validateKBStrict(kbSource)      — no normalization; missing *_es → errors
+ *   validateKBOperational(kbSource) — deep-clones source, normalises clone,
+ *                                     validates clone; source NEVER mutated
+ *
+ * Browser globals (always):  window.validateKBStrict, window.validateKBOperational
+ * Browser global (DEV only): window.normalizeBilingualCascades
+ *                             (set window.__KB_DEV_MODE = true before script load)
+ * Node: module.exports = { validateKBStrict, validateKBOperational,
+ *                           normalizeBilingualFields }
+ *
+ * Export convention (see exportKBBundle in app.js):
+ *   Exports contain the SOURCE KB — never the normalised clone.
+ *   Translations must be added directly to the JSON files for them to persist.
  */
 (function (root, factory) {
   'use strict';
-  var exports = factory();
+  var api = factory();
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = exports;
+    module.exports = api;
   } else {
-    root.validateKB = exports.validateKB;
-    root.normalizeBilingualCascades = exports.normalizeBilingualFields;
+    root.validateKBStrict      = api.validateKBStrict;
+    root.validateKBOperational = api.validateKBOperational;
+    /* DEV-only utility — hidden in production to avoid misuse */
+    if (root.__KB_DEV_MODE === true) {
+      root.normalizeBilingualCascades = api.normalizeBilingualFields;
+    }
   }
 }(typeof window !== 'undefined' ? window : this, function () {
   'use strict';
 
-  /* ── Canonical schema definition ─────────────────────────────────────── */
+  /* ── Schema constants ─────────────────────────────────────────────────── */
+
+  /* All fields that must be present and non-empty in a fully translated entry */
   var REQUIRED_FIELDS = [
     'id', 'name_es', 'name_en',
     'index_drug_classes', 'index_drug_examples',
@@ -33,12 +51,11 @@
 
   var OPTIONAL_ARRAY_FIELDS = ['references'];
 
-  var VALID_CONFIDENCE    = ['high', 'medium', 'low'];
-  var VALID_AGE_SENS      = ['high', 'medium', 'low'];
+  var VALID_CONFIDENCE     = ['high', 'medium', 'low'];
+  var VALID_AGE_SENS       = ['high', 'medium', 'low'];
   var VALID_APPROPRIATENESS = ['often_appropriate', 'context_dependent', 'often_inappropriate'];
 
-  /* Bilingual fill pairs — _es is auto-populated from _en if absent.
-   * Order matters: name/ade first, then optional mechanism/action fields. */
+  /* Bilingual fill pairs — order: required fields first, optional last */
   var BILINGUAL_FILL_PAIRS = [
     ['name_es',                     'name_en'],
     ['ade_es',                      'ade_en'],
@@ -46,10 +63,15 @@
     ['recommended_first_action_es', 'recommended_first_action_en']
   ];
 
+  /* ── Deep clone ───────────────────────────────────────────────────────── */
+  /* JSON round-trip is intentional: KB data is plain JSON-serialisable.    */
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
   /* ── Bilingual normaliser ─────────────────────────────────────────────── */
-  /* Fills missing _es fields from their _en counterparts in-place.
-   * Attaches a __i18n provenance marker so callers know which fields were
-   * auto-filled.  The marker must be stripped before JSON export.        */
+  /* Fills missing _es fields from _en counterparts IN-PLACE.
+   * MUST only be called on a deep clone — never on the source KB object.   */
   function normalizeBilingualFields(kbJson) {
     var allEntries = [];
     if (Array.isArray(kbJson.cascades)) {
@@ -62,8 +84,7 @@
       if (!entry || typeof entry !== 'object') return;
       var filled = [];
       BILINGUAL_FILL_PAIRS.forEach(function (pair) {
-        var esField = pair[0];
-        var enField = pair[1];
+        var esField = pair[0], enField = pair[1];
         if (entry[enField] && (!entry[esField] || entry[esField] === '')) {
           entry[esField] = entry[enField];
           filled.push(esField);
@@ -75,20 +96,17 @@
     });
   }
 
-  /* ── Main validator ───────────────────────────────────────────────────── */
-  function validateKB(kbJson) {
-    var errors   = [];
-    var warnings = [];
+  /* ── Shared validation core ───────────────────────────────────────────── */
+  /* Runs all structural checks against kbJson (which may or may not have
+   * been normalised beforehand).  Never modifies kbJson.                   */
+  function runValidation(kbJson) {
+    var errors = [], warnings = [];
 
     if (!kbJson || typeof kbJson !== 'object') {
       errors.push('KB root is not a valid object.');
       return { ok: false, errors: errors, warnings: warnings };
     }
 
-    /* Fill missing _es fields from _en before running required-field checks */
-    normalizeBilingualFields(kbJson);
-
-    /* Top-level structure */
     if (!kbJson.version) {
       warnings.push('KB missing top-level "version" field.');
     }
@@ -100,48 +118,38 @@
       warnings.push('KB "cascades" array is empty.');
     }
 
-    /* Optional non_cascade_iatrogenic array */
     if (kbJson.non_cascade_iatrogenic !== undefined) {
       if (!Array.isArray(kbJson.non_cascade_iatrogenic)) {
         errors.push('"non_cascade_iatrogenic" must be an array if present.');
       } else {
         kbJson.non_cascade_iatrogenic.forEach(function (entry, idx) {
-          validateEntry(entry, 'non_cascade_iatrogenic[' + idx + ']', errors, warnings, true);
+          validateEntry(entry, 'non_cascade_iatrogenic[' + idx + ']', errors, warnings);
         });
       }
     }
 
-    /* Validate each cascade entry */
     var seenIds = {};
     kbJson.cascades.forEach(function (entry, idx) {
       var label = entry && entry.id ? entry.id : 'cascades[' + idx + ']';
-
-      /* Duplicate ID check */
       if (entry && entry.id) {
         if (seenIds[entry.id]) {
           errors.push('[' + label + '] Duplicate id "' + entry.id + '".');
         }
         seenIds[entry.id] = true;
       }
-
-      validateEntry(entry, label, errors, warnings, false);
+      validateEntry(entry, label, errors, warnings);
     });
 
-    return {
-      ok: errors.length === 0,
-      errors: errors,
-      warnings: warnings
-    };
+    return { ok: errors.length === 0, errors: errors, warnings: warnings };
   }
 
   /* ── Per-entry validator ──────────────────────────────────────────────── */
-  function validateEntry(entry, label, errors, warnings, isIatrogenic) {
+  function validateEntry(entry, label, errors, warnings) {
     if (!entry || typeof entry !== 'object') {
       errors.push('[' + label + '] Entry is not a valid object.');
       return;
     }
 
-    /* Required fields */
     REQUIRED_FIELDS.forEach(function (field) {
       if (!(field in entry) || entry[field] === null || entry[field] === undefined) {
         errors.push('[' + label + '] Missing required field: "' + field + '".');
@@ -150,7 +158,6 @@
       }
     });
 
-    /* Array fields must be non-empty arrays of strings */
     ARRAY_FIELDS.forEach(function (field) {
       if (field in entry) {
         if (!Array.isArray(entry[field])) {
@@ -168,14 +175,12 @@
       }
     });
 
-    /* Optional array fields type check */
     OPTIONAL_ARRAY_FIELDS.forEach(function (field) {
       if (field in entry && !Array.isArray(entry[field])) {
         errors.push('[' + label + '] Optional field "' + field + '" must be an array if present.');
       }
     });
 
-    /* Enum checks */
     if (entry.confidence !== undefined && VALID_CONFIDENCE.indexOf(entry.confidence) === -1) {
       errors.push('[' + label + '] "confidence" must be one of: ' + VALID_CONFIDENCE.join(', ') + '. Got: "' + entry.confidence + '".');
     }
@@ -190,19 +195,16 @@
       warnings.push('[' + label + '] Missing "appropriateness" field.');
     }
 
-    /* Numeric field types */
     ['time_window_days_min', 'time_window_days_max'].forEach(function (f) {
       if (f in entry && typeof entry[f] !== 'number') {
         errors.push('[' + label + '] "' + f + '" must be a number if present.');
       }
     });
 
-    /* differential_hints length warning */
     if (Array.isArray(entry.differential_hints) && entry.differential_hints.length < 3) {
       warnings.push('[' + label + '] "differential_hints" has only ' + entry.differential_hints.length + ' item(s); recommended minimum is 3.');
     }
 
-    /* String type checks for required string fields */
     ['id', 'name_es', 'name_en', 'ade_es', 'ade_en', 'confidence', 'age_sensitivity', 'appropriateness'].forEach(function (f) {
       if (f in entry && entry[f] !== null && typeof entry[f] !== 'string') {
         errors.push('[' + label + '] Field "' + f + '" must be a string.');
@@ -210,5 +212,56 @@
     });
   }
 
-  return { validateKB: validateKB, normalizeBilingualFields: normalizeBilingualFields };
+  /* ── Public API ───────────────────────────────────────────────────────── */
+
+  /**
+   * validateKBStrict(kbSource)
+   *
+   * Editorial quality check — no normalization performed.
+   * Missing *_es fields produce errors, making this suitable for CI lint and
+   * authoring workflows where translations must be explicitly provided.
+   *
+   * Returns: { ok, errors, warnings }
+   */
+  function validateKBStrict(kbSource) {
+    return runValidation(kbSource);
+  }
+
+  /**
+   * validateKBOperational(kbSource)
+   *
+   * Operational robustness check:
+   *   1. Deep-clones kbSource (source is NEVER mutated).
+   *   2. Normalises clone — fills missing *_es fields from *_en counterparts,
+   *      attaches __i18n provenance marker on each affected cascade.
+   *   3. Validates the normalised clone.
+   *
+   * ok:false only when English fields are missing or structurally broken.
+   * Missing *_es alone never causes ok:false here.
+   *
+   * Returns: { ok, errors, warnings, fallbackCount }
+   *   fallbackCount — number of cascades where ES fallback was applied.
+   */
+  function validateKBOperational(kbSource) {
+    if (!kbSource || typeof kbSource !== 'object') {
+      return { ok: false, errors: ['KB root is not a valid object.'], warnings: [], fallbackCount: 0 };
+    }
+    var clone = deepClone(kbSource);
+    normalizeBilingualFields(clone);
+
+    var result = runValidation(clone);
+
+    var fallbackCount = 0;
+    if (Array.isArray(clone.cascades)) {
+      clone.cascades.forEach(function (c) { if (c && c.__i18n) fallbackCount++; });
+    }
+    result.fallbackCount = fallbackCount;
+    return result;
+  }
+
+  return {
+    validateKBStrict:        validateKBStrict,
+    validateKBOperational:   validateKBOperational,
+    normalizeBilingualFields: normalizeBilingualFields
+  };
 }));
