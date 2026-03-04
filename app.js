@@ -86,9 +86,13 @@ async function loadKB(track) {
     symptomDictionary: folder + '/kb_symptoms.json'
   };
 
+  /* cache:'no-cache' sends a conditional GET on each load — the browser still
+   * uses ETag / Last-Modified for efficiency but will not serve a stale copy.
+   * This ensures that KB updates (e.g. new Spanish synonyms) are picked up
+   * without requiring a hard browser-reload or cache-clear by the user. */
   const results = await Promise.allSettled(
     Object.entries(files).map(async ([key, url]) => {
-      const resp = await fetch(url);
+      const resp = await fetch(url, { cache: 'no-cache' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
       state.kb[key] = await resp.json();
       return key;
@@ -253,17 +257,24 @@ function drugFoundInNote(noteText, drug) {
  * Handles slash-separated compound names (lopinavir/ritonavir).
  */
 function findTermInNote(noteText, term) {
+  /* Normalise both strings to NFC so that decomposed Unicode characters
+   * (NFD form — e.g. n + combining-tilde instead of ñ U+00F1, or
+   * i + combining-acute instead of í U+00ED) still match their composed
+   * equivalents stored in the KB.  macOS clipboard and some browsers can
+   * produce NFD text; the KB JSON is always stored as NFC. */
+  var normNote = (noteText && noteText.normalize) ? noteText.normalize('NFC') : (noteText || '');
   var parts = term.split('/');
   for (var p = 0; p < parts.length; p++) {
     var part = parts[p].trim();
     if (!part) continue;
+    var normPart = part.normalize ? part.normalize('NFC') : part;
     try {
-      var escaped = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      var m = new RegExp('\\b' + escaped + '\\b', 'i').exec(noteText);
+      var escaped = normPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var m = new RegExp('\\b' + escaped + '\\b', 'i').exec(normNote);
       if (m) return { index: m.index, length: m[0].length };
     } catch (e) {
-      var idx = noteText.toLowerCase().indexOf(part.toLowerCase());
-      if (idx !== -1) return { index: idx, length: part.length };
+      var idx = normNote.toLowerCase().indexOf(normPart.toLowerCase());
+      if (idx !== -1) return { index: idx, length: normPart.length };
     }
   }
   return null;
@@ -656,6 +667,10 @@ function extractSymptoms(noteText) {
   }
 
   var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
+  /* DEBUG — remove after confirming Spanish detection works */
+  console.debug('[extractSymptoms] KB version:', state.kb.symptomDictionary && state.kb.symptomDictionary.version,
+    '| entry count:', symptoms.length,
+    '| note NFC?', noteText === noteText.normalize('NFC'));
   var detected = [];
 
   symptoms.forEach(function (sym) {
