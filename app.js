@@ -241,8 +241,8 @@ function detectCascades(noteText) {
   /* --- Core cascades (kb_core_cascades.json) --- */
   var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
   coreCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
+    var indexExamples   = cascade.index_drug_examples    || cascade.index_drugs_examples   || [];
+    var cascadeExamples = cascade.cascade_drug_examples  || cascade.cascade_drugs_examples || [];
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
@@ -263,8 +263,8 @@ function detectCascades(noteText) {
   /* --- HIV modifier cascades (kb_vih_modifiers.json) --- */
   var vihCascades = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
   vihCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
+    var indexExamples   = cascade.index_drug_examples    || cascade.index_drugs_examples   || [];
+    var cascadeExamples = cascade.cascade_drug_examples  || cascade.cascade_drugs_examples || [];
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
@@ -307,8 +307,8 @@ function extractDrugs(noteText) {
 
   allCascades.forEach(function (cascade) {
     var examples = [].concat(
-      cascade.index_drugs_examples   || [],
-      cascade.cascade_drugs_examples || []
+      cascade.index_drug_examples    || cascade.index_drugs_examples   || [],
+      cascade.cascade_drug_examples  || cascade.cascade_drugs_examples || []
     );
     examples.forEach(function (drug) {
       var key = drug.toLowerCase();
@@ -344,13 +344,13 @@ function normalizeDrugs(drugs) {
     var idxClass = cascade.index_drug_class   || '';
     var casClass = cascade.cascade_drug_class || '';
 
-    (cascade.index_drugs_examples || []).forEach(function (drug) {
+    (cascade.index_drug_examples || cascade.index_drugs_examples || []).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClasses[key]) drugToClasses[key] = {};
       if (idxClass) drugToClasses[key][idxClass] = true;
     });
 
-    (cascade.cascade_drugs_examples || []).forEach(function (drug) {
+    (cascade.cascade_drug_examples || cascade.cascade_drugs_examples || []).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClasses[key]) drugToClasses[key] = {};
       if (casClass) drugToClasses[key][casClass] = true;
