@@ -1954,6 +1954,57 @@ window.runNlpSelfTest = function () {
 
   console.groupEnd();
 
+  /* ── Spanish assertions ── */
+  console.group('D. Spanish — negation / historical');
+
+  var es1 = probeSymptoms('Niega estreñimiento. No caídas.');
+  var es1con = es1.find(function (s) { return s.term === 'constipation'; });
+  var es1fal = es1.find(function (s) { return s.term === 'falls'; });
+  assert('ES1: "Niega estreñimiento" → constipation active=false',
+         es1con ? es1con.active : null, false);
+  assert('ES1: "No caídas" → falls active=false',
+         es1fal ? es1fal.active : null, false);
+
+  var es2 = probeSymptoms('Estreñimiento desde hace 2 semanas.');
+  var es2c = es2.find(function (s) { return s.term === 'constipation'; });
+  assert('ES2: "Estreñimiento desde hace 2 semanas" → active=true',
+         es2c ? es2c.active : null, true);
+
+  var es3 = probeSymptoms('Estreñimiento resuelto tras el alta.');
+  var es3c = es3.find(function (s) { return s.term === 'constipation'; });
+  assert('ES3: "Estreñimiento resuelto" → active=false',
+         es3c ? es3c.active : null, false);
+
+  var es4 = probeSymptoms('Antecedentes de estreñimiento en infancia.');
+  var es4c = es4.find(function (s) { return s.term === 'constipation'; });
+  assert('ES4: "Antecedentes de estreñimiento" → active=false',
+         es4c ? es4c.active : null, false);
+
+  console.groupEnd();
+
+  console.group('E. Spanish — cascade detection with temporality');
+
+  var es5 = probeCascades(
+    'Tras iniciar oxibutinina el paciente presenta estreñimiento. Se pauta lactulosa.'
+  );
+  var es5s = es5.sigs.find(function (s) { return s.ade_en === 'constipation'; });
+  assert('ES5: oxibutinina→estreñimiento→lactulosa fires', !!es5s, true);
+  assert('ES5: confidence is high or medium (supportive temporality)',
+         es5s ? (es5s.confidence === 'high' || es5s.confidence === 'medium') : null, true);
+
+  var es6 = probeCascades(
+    'Estreñimiento crónico con lactulosa desde hace años. Inicia oxibutinina para incontinencia.'
+  );
+  var es6s = es6.sigs.find(function (s) { return s.ade_en === 'constipation'; });
+  if (!es6s) {
+    assert('ES6: chronic ES estreñimiento+lactulosa → no cascade (suppressed)', true, true);
+  } else {
+    assert('ES6: chronic ES estreñimiento+lactulosa → low confidence',
+           es6s.confidence, 'low');
+  }
+
+  console.groupEnd();
+
   console.log('─────────────────────────────────────');
   console.log('Results: ' + PASS + ' passed, ' + FAIL + ' failed out of ' + (PASS + FAIL));
   console.groupEnd();
