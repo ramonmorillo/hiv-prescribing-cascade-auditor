@@ -227,6 +227,24 @@ function drugFoundInNote(noteText, drug) {
 }
 
 /**
+ * Return the index drug examples for a cascade entry, handling both the
+ * singular field name used in kb_core_cascades.json ("index_drug_examples")
+ * and the plural form used in kb_vih_modifiers.json ("index_drugs_examples").
+ */
+function getIndexExamples(cascade) {
+  return cascade.index_drug_examples || cascade.index_drugs_examples || [];
+}
+
+/**
+ * Return the cascade drug examples for a cascade entry, handling both the
+ * singular field name used in kb_core_cascades.json ("cascade_drug_examples")
+ * and the plural form used in kb_vih_modifiers.json ("cascade_drugs_examples").
+ */
+function getCascadeExamples(cascade) {
+  return cascade.cascade_drug_examples || cascade.cascade_drugs_examples || [];
+}
+
+/**
  * Scan `noteText` against every loaded cascade entry.
  * A signal fires when at least one index drug AND at least one cascade drug
  * are both found in the note.
@@ -241,8 +259,8 @@ function detectCascades(noteText) {
   /* --- Core cascades (kb_core_cascades.json) --- */
   var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
   coreCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
+    var indexExamples   = getIndexExamples(cascade);
+    var cascadeExamples = getCascadeExamples(cascade);
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
@@ -253,9 +271,9 @@ function detectCascades(noteText) {
         cascade_name:  cascade.name_en || cascade.id,
         index_drug:    foundIndex,
         cascade_drug:  foundCascade,
-        confidence:    cascade.plausibility || 'unknown',
+        confidence:    cascade.plausibility || cascade.confidence || 'unknown',
         risk_focus:    cascade.risk_focus || [],
-        clinical_hint: cascade.clinical_note_en || ''
+        clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
       });
     }
   });
@@ -263,8 +281,8 @@ function detectCascades(noteText) {
   /* --- HIV modifier cascades (kb_vih_modifiers.json) --- */
   var vihCascades = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
   vihCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
+    var indexExamples   = getIndexExamples(cascade);
+    var cascadeExamples = getCascadeExamples(cascade);
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
@@ -307,8 +325,8 @@ function extractDrugs(noteText) {
 
   allCascades.forEach(function (cascade) {
     var examples = [].concat(
-      cascade.index_drugs_examples   || [],
-      cascade.cascade_drugs_examples || []
+      getIndexExamples(cascade),
+      getCascadeExamples(cascade)
     );
     examples.forEach(function (drug) {
       var key = drug.toLowerCase();
@@ -344,13 +362,13 @@ function normalizeDrugs(drugs) {
     var idxClass = cascade.index_drug_class   || '';
     var casClass = cascade.cascade_drug_class || '';
 
-    (cascade.index_drugs_examples || []).forEach(function (drug) {
+    getIndexExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClasses[key]) drugToClasses[key] = {};
       if (idxClass) drugToClasses[key][idxClass] = true;
     });
 
-    (cascade.cascade_drugs_examples || []).forEach(function (drug) {
+    getCascadeExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClasses[key]) drugToClasses[key] = {};
       if (casClass) drugToClasses[key][casClass] = true;
@@ -444,11 +462,33 @@ const STEP_CONTENT = {
         );
       }
 
+      /* Build a drug → class label map from the KB for display purposes */
+      var drugClassMap = {};
+      var allCascadesForDisplay = [].concat(
+        (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+        (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+      );
+      allCascadesForDisplay.forEach(function (cascade) {
+        var idxClass = cascade.index_drug_class || '';
+        var casClass = cascade.cascade_drug_class || '';
+        getIndexExamples(cascade).forEach(function (d) {
+          if (!drugClassMap[d.toLowerCase()]) drugClassMap[d.toLowerCase()] = idxClass;
+        });
+        getCascadeExamples(cascade).forEach(function (d) {
+          if (!drugClassMap[d.toLowerCase()]) drugClassMap[d.toLowerCase()] = casClass;
+        });
+      });
+
       var tags = drugs.map(function (d) {
+        var cls = drugClassMap[d.toLowerCase()] || '';
+        var clsLabel = cls
+          ? '<span style="display:block;font-size:.68rem;opacity:.82;margin-top:.1rem;font-weight:400;">' + escHtml(cls) + '</span>'
+          : '';
         return (
-          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:3px;' +
-            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
-            escHtml(d) +
+          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:4px;' +
+            'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
+            'vertical-align:top;line-height:1.3;">' +
+            escHtml(d) + clsLabel +
           '</span>'
         );
       }).join('');
@@ -456,7 +496,7 @@ const STEP_CONTENT = {
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
           '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-          ' extracted</strong> from the clinical note.' +
+          ' extracted</strong> from the clinical note (matched against all KB entries).' +
         '</div>' +
         '<div style="padding:.35rem 0 .6rem;">' + tags + '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
