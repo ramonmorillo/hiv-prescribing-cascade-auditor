@@ -296,9 +296,13 @@ function isNegatedSymptom(noteText, matchIndex, matchLength) {
 
   /* ---- negation cues appearing BEFORE the term ---- */
   var negBefore = [
+    /* English */
     /\bno\b/, /\bnot\b/, /\bdenies\b/, /\bdenied\b/, /\bwithout\b/,
     /\bnegative\s+for\b/, /\bfree\s+of\b/, /\brule\s*out\b/, /\br\/o\b/,
-    /\bunlikely\b/, /\?/
+    /\bunlikely\b/, /\?/,
+    /* Spanish */
+    /\bniega\b/, /\bsin\b/, /\bdescarta\b/, /\bnegativo\s+para\b/, /\bnegativa\s+para\b/,
+    /\bausencia\s+de\b/, /\bno\s+presenta\b/, /\bno\s+refiere\b/, /\bno\s+hay\b/
   ];
   for (var i = 0; i < negBefore.length; i++) {
     if (negBefore[i].test(preStr)) {
@@ -308,9 +312,13 @@ function isNegatedSymptom(noteText, matchIndex, matchLength) {
 
   /* ---- resolved / historical cues appearing BEFORE the term ---- */
   var histBefore = [
+    /* English */
     /\bresolved\b/, /\bimproved\b/, /\bprevious\b/, /\bhistory\s+of\b/,
     /\bhx\s+of\b/, /\bh\/o\b/, /\bprior\b/, /\bpast\b/, /\bused\s+to\b/,
-    /\bformer(?:ly)?\b/, /\bold\b/
+    /\bformer(?:ly)?\b/, /\bold\b/,
+    /* Spanish */
+    /\bantecedentes\s+de\b/, /\bhistoria\s+de\b/, /\bap\s+de\b/,
+    /\bprevio\b/, /\bprevia\b/, /\bpreviamente\b/, /\ben\s+el\s+pasado\b/
   ];
   for (var j = 0; j < histBefore.length; j++) {
     if (histBefore[j].test(preStr)) {
@@ -320,7 +328,11 @@ function isNegatedSymptom(noteText, matchIndex, matchLength) {
 
   /* ---- resolved / past cues appearing AFTER the term ---- */
   var resolvedAfter = [
-    /\bresolved\b/, /\bimproved\b/, /\bcleared\b/, /\bgone\b/, /\babated\b/
+    /* English */
+    /\bresolved\b/, /\bimproved\b/, /\bcleared\b/, /\bgone\b/, /\babated\b/,
+    /* Spanish */
+    /\bresuelto\b/, /\bresuelta\b/, /\bmejor[ií]a\b/, /\bmejorado\b/, /\bmejorada\b/,
+    /\bcontrolado\b/, /\bcontrolada\b/, /\bcede\b/, /\bdesaparece\b/
   ];
   for (var k = 0; k < resolvedAfter.length; k++) {
     if (resolvedAfter[k].test(postStr)) {
