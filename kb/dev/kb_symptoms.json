@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "description": "Adverse drug effect symptom dictionary for prescribing cascade detection",
+  "last_updated": "2026-03-04",
+  "disclaimer": "For decision support only. Symptom matching is keyword-based and does not replace clinical assessment.",
+  "symptoms": [
+    {
+      "id": "SYM001",
+      "term": "constipation",
+      "synonyms": ["constipated", "hard stools", "difficulty defecating", "bowel obstruction"],
+      "category": "gastrointestinal",
+      "cascade_relevance": "Opioid-induced, CCB-induced, anticholinergic burden — may trigger laxative prescribing"
+    },
+    {
+      "id": "SYM002",
+      "term": "dry mouth",
+      "synonyms": ["xerostomia", "mouth dryness", "oral dryness", "dry lips"],
+      "category": "anticholinergic",
+      "cascade_relevance": "Anticholinergic burden — may trigger prescribing of saliva substitutes or mouth-care agents"
+    },
+    {
+      "id": "SYM003",
+      "term": "dizziness",
+      "synonyms": ["dizzy", "lightheadedness", "light-headed", "vertigo", "presyncope", "pre-syncope"],
+      "category": "neurological",
+      "cascade_relevance": "Antihypertensive over-treatment, orthostatic hypotension, vestibular ADEs, CCB over-dose"
+    },
+    {
+      "id": "SYM004",
+      "term": "falls",
+      "synonyms": ["fall", "falling", "fell", "tripped", "unsteady gait", "balance problems"],
+      "category": "safety",
+      "cascade_relevance": "Sedation, orthostatic hypotension, anticholinergic burden, muscle relaxants"
+    },
+    {
+      "id": "SYM005",
+      "term": "sedation",
+      "synonyms": ["sedated", "drowsy", "drowsiness", "somnolence", "somnolent", "lethargy", "lethargic"],
+      "category": "neurological",
+      "cascade_relevance": "CNS depressants, opioids, benzodiazepines, first-generation antihistamines"
+    },
+    {
+      "id": "SYM006",
+      "term": "urinary retention",
+      "synonyms": ["unable to urinate", "difficulty urinating", "urinary hesitancy", "urinary difficulty"],
+      "category": "urological",
+      "cascade_relevance": "Anticholinergic drugs, opioid-induced — may trigger prescribing of alpha-blockers or catheters"
+    },
+    {
+      "id": "SYM007",
+      "term": "nausea",
+      "synonyms": ["nauseous", "nauseated", "sick to stomach", "queasiness"],
+      "category": "gastrointestinal",
+      "cascade_relevance": "NSAID-induced, opioid-induced, ARV-induced — may trigger antiemetic prescribing"
+    },
+    {
+      "id": "SYM008",
+      "term": "oedema",
+      "synonyms": ["edema", "ankle swelling", "ankle oedema", "peripheral oedema", "peripheral edema", "swollen ankles", "leg swelling"],
+      "category": "cardiovascular",
+      "cascade_relevance": "CCB-induced oedema — may trigger diuretic prescribing (cascade CC004)"
+    },
+    {
+      "id": "SYM009",
+      "term": "confusion",
+      "synonyms": ["confused", "disorientation", "disoriented", "delirium", "delirious", "cognitive impairment"],
+      "category": "neurological",
+      "cascade_relevance": "Anticholinergic burden, opioids, benzodiazepines — may trigger antipsychotic prescribing"
+    },
+    {
+      "id": "SYM010",
+      "term": "insomnia",
+      "synonyms": ["sleeplessness", "difficulty sleeping", "cannot sleep", "poor sleep", "sleep disturbance"],
+      "category": "neurological",
+      "cascade_relevance": "Efavirenz CNS effects (VIH004), stimulant drugs — may trigger hypnotic prescribing"
+    }
+  ]
+}
