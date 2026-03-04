@@ -245,61 +245,58 @@ function getCascadeExamples(cascade) {
 }
 
 /**
- * Scan `noteText` against every loaded cascade entry.
- * A signal fires when at least one index drug AND at least one cascade drug
- * are both found in the note.
+ * Scan `noteText` against every loaded cascade entry (core + HIV modifiers).
+ * A signal fires when at least one index_drug_example AND at least one
+ * cascade_drug_example are both found in the note (case-insensitive whole-word
+ * match via drugFoundInNote).
  *
- * @param {string} noteText  Raw clinical note from state.clinicalNote
- * @returns {Array<{cascade_id, cascade_name, index_drug, cascade_drug, confidence, risk_focus, clinical_hint}>}
+ * Handles both KB field-name variants via getIndexExamples / getCascadeExamples.
+ * Handles both confidence-field names: "confidence" (core) / "plausibility" (VIH).
+ *
+ * @param {string} noteText
+ * @returns {Array<{
+ *   cascade_id, cascade_name,
+ *   index_drug, cascade_drug,
+ *   confidence, risk_focus,
+ *   ade_en, appropriateness,
+ *   ddi_warning, clinical_hint
+ * }>}
  */
 function detectCascades(noteText) {
   if (!noteText || !noteText.trim()) return [];
+
+  var allCascades = [].concat(
+    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+  );
+
   var detected = [];
 
-  /* --- Core cascades (kb_core_cascades.json) --- */
-  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
-  coreCascades.forEach(function (cascade) {
+  allCascades.forEach(function (cascade) {
     var indexExamples   = getIndexExamples(cascade);
     var cascadeExamples = getCascadeExamples(cascade);
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
 
-    if (foundIndex && foundCascade) {
-      detected.push({
-        cascade_id:    cascade.id,
-        cascade_name:  cascade.name_en || cascade.id,
-        index_drug:    foundIndex,
-        cascade_drug:  foundCascade,
-        confidence:    cascade.plausibility || cascade.confidence || 'unknown',
-        risk_focus:    cascade.risk_focus || [],
-        clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
-      });
-    }
-  });
+    if (!foundIndex || !foundCascade) return;
 
-  /* --- HIV modifier cascades (kb_vih_modifiers.json) --- */
-  var vihCascades = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
-  vihCascades.forEach(function (cascade) {
-    var indexExamples   = getIndexExamples(cascade);
-    var cascadeExamples = getCascadeExamples(cascade);
-
-    var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
-    var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
-
-    if (foundIndex && foundCascade) {
-      var hint = cascade.clinical_note_en || '';
-      if (cascade.ddi_warning_en) hint = cascade.ddi_warning_en + (hint ? ' ' + hint : '');
-      detected.push({
-        cascade_id:    cascade.id,
-        cascade_name:  cascade.name_en || cascade.id,
-        index_drug:    foundIndex,
-        cascade_drug:  foundCascade,
-        confidence:    cascade.plausibility || 'unknown',
-        risk_focus:    [],
-        clinical_hint: hint
-      });
-    }
+    detected.push({
+      cascade_id:    cascade.id,
+      cascade_name:  cascade.name_en || cascade.id,
+      index_drug:    foundIndex,
+      cascade_drug:  foundCascade,
+      /* confidence: core uses "confidence", VIH uses "plausibility" */
+      confidence:    cascade.confidence || cascade.plausibility || 'unknown',
+      risk_focus:    cascade.risk_focus || [],
+      /* ade_en: the intermediate adverse effect that links the two drugs */
+      ade_en:        cascade.ade_en || '',
+      /* appropriateness: "often_inappropriate" | "often_appropriate" | "context_dependent" */
+      appropriateness: cascade.appropriateness || '',
+      /* ddi_warning kept separate so the UI can render it as a red alert */
+      ddi_warning:   cascade.ddi_warning_en || '',
+      clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
+    });
   });
 
   return detected;
@@ -632,38 +629,109 @@ const STEP_CONTENT = {
         );
       }
 
+      /* --- Badge helpers ------------------------------------------ */
       var confidenceBadge = function (conf) {
-        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#f39c12' : '#7f8c8d';
+        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
         return (
-          '<span style="font-size:.72rem;font-weight:700;color:#fff;background:' + color + ';' +
-            'padding:.1rem .42rem;border-radius:3px;vertical-align:middle;margin-left:.45rem;">' +
+          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
+            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
+            'text-transform:uppercase;letter-spacing:.03em;">' +
             escHtml(conf) +
           '</span>'
         );
       };
 
+      var appropriatenessBadge = function (val) {
+        if (!val) return '';
+        var label = val === 'often_inappropriate' ? 'often inappropriate'
+                  : val === 'often_appropriate'   ? 'often appropriate'
+                  : 'context-dependent';
+        var color = val === 'often_inappropriate' ? '#c0392b'
+                  : val === 'often_appropriate'   ? '#1e8449'
+                  : '#7f8c8d';
+        return (
+          '<span style="font-size:.68rem;font-weight:600;color:' + color + ';' +
+            'border:1px solid ' + color + ';border-radius:3px;padding:.08rem .38rem;' +
+            'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
+            escHtml(label) +
+          '</span>'
+        );
+      };
+
+      /* --- Signal cards ------------------------------------------- */
       var rows = detected.map(function (c) {
+        /* Cascade chain: index drug → [ADE] → cascade drug */
+        var adeLabel = c.ade_en
+          ? '&nbsp;<span style="font-size:.78rem;color:#7f8c8d;font-style:italic;">' +
+              '[' + escHtml(c.ade_en) + ']</span>&nbsp;'
+          : '&nbsp;&rarr;&nbsp;';
+        var chain = (
+          '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
+            'flex-wrap:wrap;gap:.2rem;">' +
+            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
+              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.index_drug) +
+            '</span>' +
+            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+            '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
+              'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' +
+              escHtml(c.ade_en || 'ADE') +
+            '</span>' +
+            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
+              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.cascade_drug) +
+            '</span>' +
+          '</div>'
+        );
+
+        /* Risk focus chips */
         var riskTags = c.risk_focus.length
-          ? '<div style="margin-top:.35rem;font-size:.76rem;color:#666;">Risk: ' + escHtml(c.risk_focus.join(', ')) + '</div>'
-          : '';
-        var hint = c.clinical_hint
-          ? '<div style="margin-top:.5rem;font-size:.84rem;color:#34495e;' +
-              'border-left:3px solid #2980b9;padding:.3rem .65rem;background:#eaf4fb;">' +
-              escHtml(c.clinical_hint) +
+          ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;">' +
+              '<span style="font-size:.72rem;color:#888;">Risk:</span>' +
+              c.risk_focus.map(function (r) {
+                return '<span style="font-size:.72rem;background:#f0f0f0;border-radius:3px;' +
+                  'padding:.08rem .38rem;color:#555;">' + escHtml(r) + '</span>';
+              }).join('') +
             '</div>'
           : '';
+
+        /* DDI warning — red alert box */
+        var ddiBox = c.ddi_warning
+          ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
+              'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
+              'border-radius:0 3px 3px 0;">' +
+              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(c.ddi_warning) +
+            '</div>'
+          : '';
+
+        /* Clinical hint — blue note box */
+        var hintBox = c.clinical_hint
+          ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
+              'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
+              'border-radius:0 3px 3px 0;">' +
+              '<strong>&#128203; Action:</strong>&nbsp;' + escHtml(c.clinical_hint) +
+            '</div>'
+          : '';
+
         return (
           '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;">' +
-              '<span style="font-size:.93rem;font-weight:600;">' + escHtml(c.cascade_name) + confidenceBadge(c.confidence) + '</span>' +
-              '<code style="font-size:.78rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
+            'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
+
+            /* Header row: name + badges + ID */
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+              'flex-wrap:wrap;gap:.4rem;">' +
+              '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
+                escHtml(c.cascade_name) +
+                confidenceBadge(c.confidence) +
+                appropriatenessBadge(c.appropriateness) +
+              '</span>' +
+              '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
+                escHtml(c.cascade_id) +
+              '</code>' +
             '</div>' +
-            '<div style="margin:.55rem 0 0;font-size:.9rem;">' +
-              '&#128138;&nbsp;<strong>' + escHtml(c.index_drug) + '</strong>' +
-              '&nbsp;&rarr;&nbsp;<strong>' + escHtml(c.cascade_drug) + '</strong>' +
-            '</div>' +
-            riskTags + hint +
+
+            chain + riskTags + ddiBox + hintBox +
           '</div>'
         );
       });
