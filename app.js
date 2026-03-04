@@ -22,7 +22,9 @@ const state = {
   symptomsDetected: [],
   /* Step 5 clinician classifications, keyed by cascade_id.
      Values: 'confirmed' | 'possible' | 'not_cascade' */
-  cascadeClassifications: {}
+  cascadeClassifications: {},
+  /* Cache for detectCascades() — invalidated when note or KB changes */
+  detectedCascades: null
 };
 
 /* ============================================================
@@ -66,6 +68,7 @@ function clearState() {
     state.clinicalNote = '';
     state.symptomsDetected = [];
     state.cascadeClassifications = {};
+    state.detectedCascades = null;
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
   }
@@ -296,6 +299,7 @@ function detectCascades(noteText) {
     detected.push({
       cascade_id:    cascade.id,
       cascade_name:  cascade.name_en || cascade.id,
+      signal_type:   'drug_drug',
       index_drug:    foundIndex,
       cascade_drug:  foundCascade,
       /* confidence: core uses "confidence", VIH uses "plausibility" */
@@ -377,6 +381,23 @@ function detectSymptomCascades(noteText) {
 }
 
 /**
+ * Cached wrapper around detectCascades().
+ * Returns the cached result if the note hasn't changed; otherwise calls
+ * detectCascades() and stores the result in state.detectedCascades.
+ * Call invalidateDetectedCascades() to force a re-run.
+ */
+function getDetectedCascades(noteText) {
+  if (!state.detectedCascades) {
+    state.detectedCascades = detectCascades(noteText);
+  }
+  return state.detectedCascades;
+}
+
+function invalidateDetectedCascades() {
+  state.detectedCascades = null;
+}
+
+/**
  * Scan `noteText` for any drug name present in the KB (both index and cascade
  * drug examples across all loaded cascade entries).
  *
@@ -446,6 +467,7 @@ function extractSymptoms(noteText) {
   });
 
   state.symptomsDetected = detected;
+  invalidateDetectedCascades();
   return detected;
 }
 
@@ -564,6 +586,7 @@ const STEP_CONTENT = {
       if (ta) {
         ta.addEventListener('input', function () {
           state.clinicalNote = ta.value;
+          invalidateDetectedCascades();
           saveState();
         });
       }
@@ -629,17 +652,13 @@ const STEP_CONTENT = {
       }
 
       /* ── Symptom extraction — uses extractSymptoms() which also caches in state ── */
-      console.log('[Step2] state.kb.symptomDictionary before extractSymptoms:', state.kb.symptomDictionary);
       var symptoms    = extractSymptoms(state.clinicalNote);
       saveState();   /* persist state.symptomsDetected */
 
-      /* Always-visible "Symptoms detected (N)" heading */
-      var symCountLabel = !state.kb.symptomDictionary
-        ? 'Symptoms detected — <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>'
-        : 'Symptoms detected (' + symptoms.length + ')';
-
+      var symCountLabel;
       var symptomSection;
       if (!state.kb.symptomDictionary) {
+        symCountLabel = 'Symptoms detected — <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>';
         symptomSection = (
           '<div class="callout callout-warning" style="font-size:.84rem;">' +
             '&#9888;&nbsp;<strong>Symptom dictionary not loaded.</strong> ' +
@@ -647,12 +666,14 @@ const STEP_CONTENT = {
           '</div>'
         );
       } else if (symptoms.length === 0) {
+        symCountLabel = 'Symptoms detected (0)';
         symptomSection = (
           '<div class="callout callout-success">' +
             '&#10003;&nbsp;No symptom terms detected in the clinical note.' +
           '</div>'
         );
       } else {
+        symCountLabel = 'Symptoms detected (' + symptoms.length + ')';
         /* Category → colour mapping */
         var catColor = {
           gastrointestinal: '#7d6608',
@@ -814,7 +835,7 @@ const STEP_CONTENT = {
         '</div>'
       );
 
-      var detected = detectCascades(state.clinicalNote);
+      var detected = getDetectedCascades(state.clinicalNote);
 
       if (detected.length === 0) {
         return (
@@ -922,6 +943,11 @@ const STEP_CONTENT = {
                 escHtml(c.cascade_name) +
                 confidenceBadge(c.confidence) +
                 appropriatenessBadge(c.appropriateness) +
+                (c.signal_type === 'symptom_bridge'
+                  ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;' +
+                      'border:1px solid #a569bd;border-radius:3px;padding:.08rem .38rem;' +
+                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">symptom bridge</span>'
+                  : '') +
               '</span>' +
               '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
                 escHtml(c.cascade_id) +
@@ -969,7 +995,7 @@ const STEP_CONTENT = {
         );
       }
 
-      var detected = detectCascades(state.clinicalNote);
+      var detected = getDetectedCascades(state.clinicalNote);
 
       if (detected.length === 0) {
         return (
@@ -1400,7 +1426,7 @@ function exportJSON() {
 function buildReport() {
   var drugs      = extractDrugs(state.clinicalNote);
   var normalized = normalizeDrugs(drugs);
-  var detected   = detectCascades(state.clinicalNote);
+  var detected   = getDetectedCascades(state.clinicalNote);
 
   /* Unique drug classes, preserving first-seen order */
   var uniqueClasses = [];
@@ -1643,6 +1669,7 @@ function wireEvents() {
         state.kb.coreCascades = null;
         state.kb.vihModifiers = null;
         state.kb.ddiWatchlist = null;
+        invalidateDetectedCascades();
         var statusEl = document.getElementById('kb-status');
         if (statusEl) statusEl.innerHTML = '<span class="kb-chip">Loading ' + newMode + '&hellip;</span>';
         var ok = await loadKB(newMode);
