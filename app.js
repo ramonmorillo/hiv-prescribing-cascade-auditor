@@ -342,46 +342,60 @@ function extractDrugs(noteText) {
 
 /**
  * Map an array of drug names to their canonical drug classes using the KB.
- * A drug can appear as an index drug (→ index_drug_class) or a cascade drug
- * (→ cascade_drug_class); both classes are included.
+ *
+ * Two-pass priority: index-drug roles are resolved first (a drug acting as a
+ * cascade trigger is labelled with its index class), then cascade-drug roles
+ * fill in any drug not yet mapped.  This ensures, e.g., that amlodipine is
+ * labelled "Calcium channel blocker" (its index role in CC004) rather than
+ * the less specific "Antihypertensive" it receives as a cascade drug in CC001.
+ *
+ * Handles both KB field-name variants:
+ *   index_drug_classes  (array)  — kb_core_cascades.json
+ *   index_drug_class    (string) — kb_vih_modifiers.json
  *
  * @param {string[]} drugs  Output of extractDrugs()
- * @returns {string[]} Unique drug class names
+ * @returns {Array<{drug: string, class: string}>} One entry per input drug
  */
 function normalizeDrugs(drugs) {
   if (!drugs || !drugs.length) return [];
 
-  var drugToClasses = {};
+  var drugToClass = {};   // key: drug.toLowerCase() → first canonical class string
 
   var allCascades = [].concat(
     (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
     (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
   );
 
+  /* Pass 1 — index drugs get priority (causal / trigger role) */
   allCascades.forEach(function (cascade) {
-    var idxClass = cascade.index_drug_class   || '';
-    var casClass = cascade.cascade_drug_class || '';
+    /* index_drug_classes is an array in core cascades;
+       index_drug_class   is a string  in VIH modifiers  */
+    var idxArr = cascade.index_drug_classes ||
+                 (cascade.index_drug_class ? [cascade.index_drug_class] : []);
+    var idxClass = idxArr.length ? idxArr[0] : '';
 
     getIndexExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
-      if (!drugToClasses[key]) drugToClasses[key] = {};
-      if (idxClass) drugToClasses[key][idxClass] = true;
+      if (!drugToClass[key] && idxClass) drugToClass[key] = idxClass;
     });
+  });
+
+  /* Pass 2 — cascade drugs fill in anything not yet mapped */
+  allCascades.forEach(function (cascade) {
+    var casClass = cascade.cascade_drug_class || '';
 
     getCascadeExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
-      if (!drugToClasses[key]) drugToClasses[key] = {};
-      if (casClass) drugToClasses[key][casClass] = true;
+      if (!drugToClass[key] && casClass) drugToClass[key] = casClass;
     });
   });
 
-  var classSet = {};
-  drugs.forEach(function (drug) {
-    var classes = drugToClasses[drug.toLowerCase()] || {};
-    Object.keys(classes).forEach(function (cls) { classSet[cls] = true; });
+  return drugs.map(function (drug) {
+    return {
+      drug:  drug,
+      class: drugToClass[drug.toLowerCase()] || ''
+    };
   });
-
-  return Object.keys(classSet);
 }
 
 /**
@@ -462,25 +476,13 @@ const STEP_CONTENT = {
         );
       }
 
-      /* Build a drug → class label map from the KB for display purposes */
-      var drugClassMap = {};
-      var allCascadesForDisplay = [].concat(
-        (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
-        (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
-      );
-      allCascadesForDisplay.forEach(function (cascade) {
-        var idxClass = cascade.index_drug_class || '';
-        var casClass = cascade.cascade_drug_class || '';
-        getIndexExamples(cascade).forEach(function (d) {
-          if (!drugClassMap[d.toLowerCase()]) drugClassMap[d.toLowerCase()] = idxClass;
-        });
-        getCascadeExamples(cascade).forEach(function (d) {
-          if (!drugClassMap[d.toLowerCase()]) drugClassMap[d.toLowerCase()] = casClass;
-        });
-      });
+      /* Reuse normalizeDrugs() so class labels are consistent with Step 3 */
+      var normalized = normalizeDrugs(drugs);
+      var classLookup = {};
+      normalized.forEach(function (n) { classLookup[n.drug.toLowerCase()] = n.class; });
 
       var tags = drugs.map(function (d) {
-        var cls = drugClassMap[d.toLowerCase()] || '';
+        var cls = classLookup[d.toLowerCase()] || '';
         var clsLabel = cls
           ? '<span style="display:block;font-size:.68rem;opacity:.82;margin-top:.1rem;font-weight:400;">' + escHtml(cls) + '</span>'
           : '';
@@ -526,8 +528,8 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs   = extractDrugs(state.clinicalNote);
-      var classes = normalizeDrugs(drugs);
+      var drugs      = extractDrugs(state.clinicalNote);
+      var normalized = normalizeDrugs(drugs);
 
       if (drugs.length === 0) {
         return (
@@ -538,30 +540,48 @@ const STEP_CONTENT = {
         );
       }
 
-      if (classes.length === 0) {
-        return (
-          '<div class="callout callout-warning">' +
-            '<strong>&#9888; No drug classes mapped.</strong> ' +
-            'Extracted drugs could not be mapped to any KB drug class.' +
-          '</div>'
-        );
-      }
+      var mappedCount   = normalized.filter(function (n) { return n.class; }).length;
+      var unmappedCount = normalized.length - mappedCount;
 
-      var classTags = classes.map(function (cls) {
+      var rows = normalized.map(function (n) {
+        var classCell = n.class
+          ? '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
+              'padding:.18rem .55rem;font-size:.82rem;font-weight:600;">' + escHtml(n.class) + '</span>'
+          : '<span style="color:#999;font-size:.82rem;font-style:italic;">unmapped</span>';
         return (
-          '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
-            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
-            escHtml(cls) +
-          '</span>'
+          '<tr style="border-bottom:1px solid #eef1f4;">' +
+            '<td style="padding:.45rem .6rem;font-size:.88rem;font-weight:600;white-space:nowrap;">' +
+              escHtml(n.drug) +
+            '</td>' +
+            '<td style="padding:.45rem .4rem;color:#666;font-size:.82rem;text-align:center;">' +
+              '&rarr;' +
+            '</td>' +
+            '<td style="padding:.45rem .6rem;">' + classCell + '</td>' +
+          '</tr>'
         );
       }).join('');
 
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-          ' mapped to ' + classes.length + ' drug class' + (classes.length === 1 ? '' : 'es') + '.</strong>' +
+          '<strong>' + drugs.length + ' drug' + (drugs.length === 1 ? '' : 's') +
+          ' normalized &mdash; ' + mappedCount + ' class' + (mappedCount === 1 ? '' : 'es') + ' mapped' +
+          (unmappedCount ? ', ' + unmappedCount + ' unmapped' : '') + '.</strong>' +
         '</div>' +
-        '<div style="padding:.35rem 0 .6rem;">' + classTags + '</div>'
+        '<div style="overflow-x:auto;">' +
+          '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
+            'border:1px solid #d0d7de;border-radius:5px;background:#fff;">' +
+            '<thead>' +
+              '<tr style="background:#f6f8fa;border-bottom:2px solid #d0d7de;">' +
+                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Drug name</th>' +
+                '<th style="padding:.45rem .4rem;width:2rem;"></th>' +
+                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Canonical class</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>'
       );
     }
   },
@@ -756,25 +776,31 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs    = extractDrugs(state.clinicalNote);
-      var classes  = normalizeDrugs(drugs);
-      var detected = detectCascades(state.clinicalNote);
-      var pid      = state.patientId || '&mdash;';
-      var now      = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+      var drugs      = extractDrugs(state.clinicalNote);
+      var normalized = normalizeDrugs(drugs);
+      var detected   = detectCascades(state.clinicalNote);
+      var pid        = state.patientId || '&mdash;';
+      var now        = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
 
       var drugsCell = drugs.length
         ? escHtml(drugs.join(', '))
         : '<em style="color:#888;">None detected</em>';
 
-      var classesCell = classes.length
-        ? escHtml(classes.join(', '))
+      /* Derive unique class names from the [{drug,class}] pairs */
+      var uniqueClasses = [];
+      var _seenCls = {};
+      normalized.forEach(function (n) {
+        if (n.class && !_seenCls[n.class]) { _seenCls[n.class] = true; uniqueClasses.push(n.class); }
+      });
+      var classesCell = uniqueClasses.length
+        ? escHtml(uniqueClasses.join(', '))
         : '<em style="color:#888;">None</em>';
 
       var cascadeRows = detected.length === 0
         ? '<p style="color:#1e8449;margin:.4rem 0;">&#10003; No prescribing cascade signals detected.</p>'
         : detected.map(function (c) {
             var entry = findCascadeEntry(c.cascade_id);
-            var rec   = entry ? (entry.clinical_note_en || '') : '';
+            var rec   = entry ? (entry.clinical_note_en || entry.recommended_first_action_en || '') : '';
             return (
               '<div style="margin:.45rem 0;padding:.6rem .85rem;border:1px solid #d0d7de;' +
                 'border-radius:5px;background:#fafafa;">' +
@@ -812,7 +838,7 @@ const STEP_CONTENT = {
           '<strong style="font-size:.88rem;">Drugs Detected (' + drugs.length + ')</strong>' +
           '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + drugsCell + '</p>' +
 
-          '<strong style="font-size:.88rem;">Drug Classes (' + classes.length + ')</strong>' +
+          '<strong style="font-size:.88rem;">Drug Classes (' + uniqueClasses.length + ')</strong>' +
           '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + classesCell + '</p>' +
 
           '<strong style="font-size:.88rem;">Cascade Signals (' + detected.length + ')</strong>' +
