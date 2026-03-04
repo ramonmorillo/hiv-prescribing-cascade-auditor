@@ -567,6 +567,7 @@ const STEP_CONTENT = {
       }
 
       /* ── Symptom extraction — uses extractSymptoms() which also caches in state ── */
+      console.log('[Step2] state.kb.symptomDictionary before extractSymptoms:', state.kb.symptomDictionary);
       var symptoms    = extractSymptoms(state.clinicalNote);
       saveState();   /* persist state.symptomsDetected */
 
