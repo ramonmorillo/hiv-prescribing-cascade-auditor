@@ -974,78 +974,170 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs      = extractDrugs(state.clinicalNote);
-      var normalized = normalizeDrugs(drugs);
-      var detected   = detectCascades(state.clinicalNote);
-      var pid        = state.patientId || '&mdash;';
-      var now        = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+      var r   = buildReport();
+      var now = r.generated_at.replace('T', ' ').split('.')[0] + ' UTC';
 
-      var drugsCell = drugs.length
-        ? escHtml(drugs.join(', '))
-        : '<em style="color:#888;">None detected</em>';
+      /* ── Section helper ── */
+      function section(title, content) {
+        return (
+          '<div style="margin-bottom:1.1rem;">' +
+            '<div style="font-size:.78rem;font-weight:700;text-transform:uppercase;' +
+              'letter-spacing:.06em;color:#888;border-bottom:1px solid #eee;' +
+              'padding-bottom:.3rem;margin-bottom:.55rem;">' + title + '</div>' +
+            content +
+          '</div>'
+        );
+      }
 
-      /* Derive unique class names from the [{drug,class}] pairs */
-      var uniqueClasses = [];
-      var _seenCls = {};
-      normalized.forEach(function (n) {
-        if (n.class && !_seenCls[n.class]) { _seenCls[n.class] = true; uniqueClasses.push(n.class); }
-      });
-      var classesCell = uniqueClasses.length
-        ? escHtml(uniqueClasses.join(', '))
-        : '<em style="color:#888;">None</em>';
+      /* ── Drug chips ── */
+      function chips(arr, bg, border, color) {
+        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">None detected</em>';
+        return arr.map(function (d) {
+          return (
+            '<span style="display:inline-block;background:' + bg + ';border:1px solid ' + border + ';' +
+              'border-radius:4px;padding:.18rem .55rem;font-size:.82rem;color:' + color + ';' +
+              'margin:.18rem .2rem .18rem 0;">' + escHtml(d) + '</span>'
+          );
+        }).join('');
+      }
 
-      var cascadeRows = detected.length === 0
-        ? '<p style="color:#1e8449;margin:.4rem 0;">&#10003; No prescribing cascade signals detected.</p>'
-        : detected.map(function (c) {
-            var entry = findCascadeEntry(c.cascade_id);
-            var rec   = entry ? (entry.clinical_note_en || entry.recommended_first_action_en || '') : '';
-            return (
-              '<div style="margin:.45rem 0;padding:.6rem .85rem;border:1px solid #d0d7de;' +
-                'border-radius:5px;background:#fafafa;">' +
+      /* ── Verification status badge ── */
+      function verBadge(status) {
+        var map = {
+          confirmed:   { bg: '#1e8449', fg: '#fff', label: 'Confirmed'     },
+          possible:    { bg: '#e67e22', fg: '#fff', label: 'Possible'      },
+          not_cascade: { bg: '#bdc3c7', fg: '#555', label: 'Not a cascade' },
+          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: 'Unreviewed'    }
+        };
+        var s = map[status] || map.unreviewed;
+        return (
+          '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';' +
+            'border-radius:3px;padding:.1rem .42rem;white-space:nowrap;">' +
+            escHtml(s.label) + '</span>'
+        );
+      }
+
+      /* ── Cascade table ── */
+      var cascadeContent;
+      if (r.cascades.length === 0) {
+        cascadeContent = (
+          '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' +
+            '&#10003;&nbsp;No prescribing cascade signals detected.' +
+          '</p>'
+        );
+      } else {
+        var TH = 'style="padding:.4rem .55rem;text-align:left;font-size:.75rem;' +
+          'font-weight:700;color:#666;border-bottom:2px solid #ddd;white-space:nowrap;"';
+        var TD = 'style="padding:.45rem .55rem;font-size:.83rem;vertical-align:top;' +
+          'border-bottom:1px solid #f0f0f0;"';
+        var tableRows = r.cascades.map(function (c) {
+          return (
+            '<tr>' +
+              '<td ' + TD + '>' +
                 '<strong>' + escHtml(c.cascade_name) + '</strong>' +
-                '&nbsp;<code style="font-size:.74rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
-                '<br><span style="font-size:.84rem;">&#128138;&nbsp;' +
-                  escHtml(c.index_drug) + ' &rarr; ' + escHtml(c.cascade_drug) +
-                '</span>' +
-                (rec
-                  ? '<br><span style="font-size:.81rem;color:#1a5276;">&#128203;&nbsp;' + escHtml(rec) + '</span>'
+                '<br><code style="font-size:.72rem;color:#bbb;">' + escHtml(c.cascade_id) + '</code>' +
+              '</td>' +
+              '<td ' + TD + '>' +
+                '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:3px;' +
+                  'padding:.1rem .4rem;font-size:.8rem;font-weight:700;">' +
+                  escHtml(c.index_drug) + '</span>' +
+                '<span style="color:#bbb;margin:0 .25rem;">&rarr;</span>' +
+                (c.ade_en
+                  ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:3px;' +
+                      'padding:.1rem .4rem;font-size:.78rem;color:#7d6608;">' +
+                      escHtml(c.ade_en) + '</span>' +
+                    '<span style="color:#bbb;margin:0 .25rem;">&rarr;</span>'
                   : '') +
-              '</div>'
-            );
-          }).join('');
+                '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:3px;' +
+                  'padding:.1rem .4rem;font-size:.8rem;font-weight:700;">' +
+                  escHtml(c.cascade_drug) + '</span>' +
+              '</td>' +
+              '<td ' + TD + '>' +
+                '<span style="font-size:.78rem;font-weight:700;color:#fff;border-radius:3px;' +
+                  'padding:.1rem .4rem;background:' +
+                  (c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d') +
+                  ';">' + escHtml(c.confidence) + '</span>' +
+              '</td>' +
+              '<td ' + TD + '>' + verBadge(c.verification_status) + '</td>' +
+              '<td ' + TD + ' style="padding:.45rem .55rem;font-size:.8rem;color:#1a5276;' +
+                'vertical-align:top;border-bottom:1px solid #f0f0f0;max-width:240px;">' +
+                (c.clinical_recommendation ? escHtml(c.clinical_recommendation) : '<em style="color:#bbb;">—</em>') +
+              '</td>' +
+            '</tr>'
+          );
+        }).join('');
+
+        cascadeContent = (
+          '<div style="overflow-x:auto;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
+              '<thead><tr>' +
+                '<th ' + TH + '>Cascade</th>' +
+                '<th ' + TH + '>Drug chain</th>' +
+                '<th ' + TH + '>Confidence</th>' +
+                '<th ' + TH + '>Verification</th>' +
+                '<th ' + TH + '>Clinical recommendation</th>' +
+              '</tr></thead>' +
+              '<tbody>' + tableRows + '</tbody>' +
+            '</table>' +
+          '</div>'
+        );
+      }
+
+      /* ── Export buttons ── */
+      var exportRow = (
+        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
+          '<button onclick="exportReport(\'json\')" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
+            '&#8681;&nbsp;Export JSON' +
+          '</button>' +
+          '<button onclick="exportReport(\'csv\')" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
+            '&#8681;&nbsp;Export CSV' +
+          '</button>' +
+        '</div>'
+      );
 
       return (
-        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;padding:1.15rem 1.3rem;">' +
-          '<h3 style="margin:0 0 .85rem;font-size:1rem;color:#2c3e50;">&#128196;&nbsp;Cascade Audit Report</h3>' +
+        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;' +
+          'padding:1.15rem 1.3rem;">' +
 
-          '<table style="width:100%;font-size:.87rem;border-collapse:collapse;margin-bottom:.85rem;">' +
-            '<tr style="border-bottom:1px solid #eee;">' +
-              '<td style="padding:.35rem .5rem;color:#666;width:38%;vertical-align:top;">Patient ID</td>' +
-              '<td style="padding:.35rem .5rem;font-weight:600;">' + pid + '</td>' +
-            '</tr>' +
-            '<tr style="border-bottom:1px solid #eee;">' +
-              '<td style="padding:.35rem .5rem;color:#666;">Generated</td>' +
-              '<td style="padding:.35rem .5rem;">' + escHtml(now) + '</td>' +
-            '</tr>' +
-            '<tr>' +
-              '<td style="padding:.35rem .5rem;color:#666;">KB version</td>' +
-              '<td style="padding:.35rem .5rem;">' + escHtml(getKBVersion()) + ' (' + escHtml(state.kbMode) + ')</td>' +
-            '</tr>' +
-          '</table>' +
+          '<h3 style="margin:0 0 1rem;font-size:1rem;color:#2c3e50;">' +
+            '&#128196;&nbsp;Cascade Audit Report' +
+          '</h3>' +
 
-          '<strong style="font-size:.88rem;">Drugs Detected (' + drugs.length + ')</strong>' +
-          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + drugsCell + '</p>' +
+          section('Patient &amp; Audit Metadata',
+            '<table style="font-size:.87rem;border-collapse:collapse;width:auto;">' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Patient ID</td>' +
+                  '<td style="padding:.28rem 0;font-weight:700;">' +
+                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">Not set</em>') +
+                  '</td></tr>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Generated</td>' +
+                  '<td style="padding:.28rem 0;">' + escHtml(now) + '</td></tr>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">KB version</td>' +
+                  '<td style="padding:.28rem 0;">' +
+                    escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
+                  '</td></tr>' +
+            '</table>'
+          ) +
 
-          '<strong style="font-size:.88rem;">Drug Classes (' + uniqueClasses.length + ')</strong>' +
-          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + classesCell + '</p>' +
+          section('Drugs Detected (' + r.drugs_detected.length + ')',
+            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276')
+          ) +
 
-          '<strong style="font-size:.88rem;">Cascade Signals (' + detected.length + ')</strong>' +
-          '<div style="margin:.35rem 0 .75rem;">' + cascadeRows + '</div>' +
+          section('Drug Classes (' + r.drug_classes.length + ')',
+            chips(r.drug_classes, '#f4ecf7', '#d2b4de', '#6c3483')
+          ) +
+
+          section('Detected Cascades (' + r.cascade_count + ')', cascadeContent) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
             '&#9888;&nbsp;Decision support only. Not a medical device. ' +
             'Do not use with real patient identifiers outside a pseudonymised research context.' +
           '</div>' +
+
+          exportRow +
         '</div>'
       );
     }
@@ -1111,7 +1203,8 @@ function exportJSON() {
     exportedAt: new Date().toISOString(),
     patientId: state.patientId,
     clinicalNote: state.clinicalNote,
-    step: state.step
+    step: state.step,
+    cascadeClassifications: state.cascadeClassifications
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   var url  = URL.createObjectURL(blob);
@@ -1123,6 +1216,118 @@ function exportJSON() {
   document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
+
+/* ── buildReport ──────────────────────────────────────────────────────────
+   Assembles the full structured report object.
+   Used by the Step 6 display, JSON export, and CSV export so that all
+   three surfaces always show identical data.
+   ──────────────────────────────────────────────────────────────────────── */
+function buildReport() {
+  var drugs      = extractDrugs(state.clinicalNote);
+  var normalized = normalizeDrugs(drugs);
+  var detected   = detectCascades(state.clinicalNote);
+
+  /* Unique drug classes, preserving first-seen order */
+  var uniqueClasses = [];
+  var _seenCls = {};
+  normalized.forEach(function (n) {
+    if (n.class && !_seenCls[n.class]) { _seenCls[n.class] = true; uniqueClasses.push(n.class); }
+  });
+
+  var cascades = detected.map(function (c) {
+    var entry = findCascadeEntry(c.cascade_id);
+    var rec   = entry
+      ? (entry.recommended_first_action_en || entry.clinical_note_en || '')
+      : (c.clinical_hint || '');
+    return {
+      cascade_id:              c.cascade_id,
+      cascade_name:            c.cascade_name,
+      index_drug:              c.index_drug,
+      cascade_drug:            c.cascade_drug,
+      confidence:              c.confidence,
+      ade_en:                  c.ade_en  || '',
+      clinical_recommendation: rec,
+      verification_status:     state.cascadeClassifications[c.cascade_id] || 'unreviewed'
+    };
+  });
+
+  return {
+    patient_id:     state.patientId || '',
+    generated_at:   new Date().toISOString(),
+    kb_version:     getKBVersion(),
+    kb_mode:        state.kbMode,
+    drugs_detected: drugs,
+    drug_classes:   uniqueClasses,
+    cascade_count:  detected.length,
+    cascades:       cascades
+  };
+}
+
+/* ── exportReport ─────────────────────────────────────────────────────────
+   Inline export buttons in Step 6 call: exportReport('json') / ('csv')
+   ──────────────────────────────────────────────────────────────────────── */
+window.exportReport = function (format) {
+  var report   = buildReport();
+  var filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  var blob, mime;
+
+  if (format === 'csv') {
+    /* One row per cascade; header + data rows */
+    var csvCols = [
+      'patient_id', 'generated_at', 'kb_version',
+      'cascade_id', 'cascade_name',
+      'index_drug', 'cascade_drug', 'confidence', 'ade_en',
+      'clinical_recommendation', 'verification_status'
+    ];
+    /* RFC 4180 cell quoting: wrap in " and double any inner " */
+    function csvCell(v) {
+      var s = v === null || v === undefined ? '' : String(v);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    var rows = [csvCols.join(',')];
+    if (report.cascades.length === 0) {
+      /* Single data row indicating no cascades */
+      rows.push([
+        csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
+        csvCell(''), csvCell('No cascades detected'),
+        csvCell(''), csvCell(''), csvCell(''), csvCell(''),
+        csvCell(''), csvCell('')
+      ].join(','));
+    } else {
+      report.cascades.forEach(function (c) {
+        rows.push([
+          csvCell(report.patient_id),
+          csvCell(report.generated_at),
+          csvCell(report.kb_version),
+          csvCell(c.cascade_id),
+          csvCell(c.cascade_name),
+          csvCell(c.index_drug),
+          csvCell(c.cascade_drug),
+          csvCell(c.confidence),
+          csvCell(c.ade_en),
+          csvCell(c.clinical_recommendation),
+          csvCell(c.verification_status)
+        ].join(','));
+      });
+    }
+    blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    mime = 'text/csv';
+    filename += '.csv';
+  } else {
+    blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    mime = 'application/json';
+    filename += '.json';
+  }
+
+  var url = URL.createObjectURL(blob);
+  var a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+};
 
 /* Import Case — reads a previously exported JSON and restores state */
 function importCase(file) {
