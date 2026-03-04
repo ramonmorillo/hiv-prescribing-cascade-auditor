@@ -1564,6 +1564,7 @@ const STEP_CONTENT = {
       }
 
       var r   = buildReport();
+      r = reconcileEntitiesWithCascades(r);
       var now = r.generated_at.replace('T', ' ').split('.')[0] + ' UTC';
 
       /* ── Section helper ── */
@@ -1712,7 +1713,12 @@ const STEP_CONTENT = {
           ) +
 
           section('Drugs Detected (' + r.drugs_detected.length + ')',
-            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276')
+            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276') +
+            (r._inferred_drug_count
+              ? '<p style="margin:.4rem 0 0;font-size:.75rem;color:#7f8c8d;">' +
+                  '&#9432;&nbsp;' + r._inferred_drug_count + ' drug(s) inferred from cascade matches.' +
+                '</p>'
+              : '')
           ) +
 
           section('Drug Classes (' + r.drug_classes.length + ')',
@@ -1853,6 +1859,48 @@ function buildReport() {
     cascade_count:      detected.length,
     cascades:           cascades
   };
+}
+
+/* ── reconcileEntitiesWithCascades ─────────────────────────────────────────
+ * Guarantees that any drug appearing in a detected cascade also appears in
+ * drugs_detected.  Called once per report render, before any HTML is built.
+ *
+ * Why it is needed: extractDrugs() scans the note against KB drug-example
+ * lists; it can miss drugs that the cascade engine matched by a different
+ * path (e.g. symptom-bridge, Spanish INN variant, partial match).  Without
+ * reconciliation the report can show "Drugs Detected (0)" while the cascade
+ * table lists real drugs — an internally inconsistent state.
+ *
+ * Contract:
+ *   - r.drugs_detected is mutated in-place (safe: it is a fresh array from
+ *     buildReport(), never shared with state).
+ *   - Only string values are pushed, keeping chips() rendering unchanged.
+ *   - r._inferred_drug_count is set when ≥1 drug was back-filled.
+ *   - Case-insensitive deduplication so "Furosemide" and "furosemide" are
+ *     treated as the same drug.
+ * ──────────────────────────────────────────────────────────────────────── */
+function reconcileEntitiesWithCascades(r) {
+  /* Index existing drugs for O(1) lookup */
+  var seen = {};
+  r.drugs_detected.forEach(function (d) { seen[d.toLowerCase()] = true; });
+
+  var inferredCount = 0;
+  (r.cascades || []).forEach(function (c) {
+    [c.index_drug, c.cascade_drug].forEach(function (drug) {
+      if (!drug) return;
+      var key = drug.toLowerCase();
+      if (!seen[key]) {
+        r.drugs_detected.push(drug);
+        seen[key] = true;
+        inferredCount++;
+      }
+    });
+  });
+
+  if (inferredCount > 0) {
+    r._inferred_drug_count = inferredCount;
+  }
+  return r;
 }
 
 /* ── exportReport ─────────────────────────────────────────────────────────
