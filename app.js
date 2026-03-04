@@ -366,11 +366,27 @@ function detectTimeCues(noteText, matchIndex) {
   var ctx   = noteText.slice(start, end).toLowerCase();
 
   return {
-    drugStartHint:      /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx),
-    symptomNewHint:     /\b(since|after|worsened|new|recent|developed|onset|appearing|presenting\s+with|new[- ]onset)\b/.test(ctx),
-    treatmentAddedHint: /\b(added|given|prescribed|initiated|started|commenced|prn\s+started|increased)\b/.test(ctx),
-    chronicHint:        /\b(chronic|long[- ]term|longstanding|long\s+standing|baseline|ongoing|persistent|established|years|months|pre[- ]existing)\b/.test(ctx),
-    details:            ctx.trim().slice(0, 80)
+    /* EN: started/initiated/… | ES: inicia/se inicia/se empezó/tras iniciar/… */
+    drugStartHint: (
+      /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx) ||
+      /\b(inicia|se\s+inicia|se\s+empez[oó]|tras\s+iniciar|al\s+iniciar|comienza|se\s+pauta)\b/.test(ctx)
+    ),
+    /* EN: since/after/worsened/new/… | ES: nuevo/reciente/empeora/presenta/aparece/desde hace */
+    symptomNewHint: (
+      /\b(since|after|worsened|new|recent|developed|onset|appearing|presenting\s+with|new[- ]onset)\b/.test(ctx) ||
+      /\b(nuevo|nueva|reciente|recientemente|empeora|presenta|aparece|desde\s+hace|de\s+nueva\s+aparici[oó]n)\b/.test(ctx)
+    ),
+    /* EN: added/given/prescribed/… | ES: se añade/se pauta/se prescribe/se inicia/a demanda/prn */
+    treatmentAddedHint: (
+      /\b(added|given|prescribed|initiated|started|commenced|prn\s+started|increased)\b/.test(ctx) ||
+      /\b(se\s+a[nñ]ade|se\s+pauta|se\s+prescribe|se\s+inicia|a\s+demanda|prn)\b/.test(ctx)
+    ),
+    /* EN: chronic/long-term/… | ES: crónico/de base/habitual/desde hace años/largo tiempo */
+    chronicHint: (
+      /\b(chronic|long[- ]term|longstanding|long\s+standing|baseline|ongoing|persistent|established|years|months|pre[- ]existing)\b/.test(ctx) ||
+      /\b(cr[oó]nic[oa]|de\s+base|habitual|desde\s+hace\s+a[nñ]os|de\s+a[nñ]os|largo\s+tiempo|de\s+larga\s+evoluci[oó]n)\b/.test(ctx)
+    ),
+    details: ctx.trim().slice(0, 80)
   };
 }
 
