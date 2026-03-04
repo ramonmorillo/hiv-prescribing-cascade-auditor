@@ -1,28 +1,49 @@
 /* kb_validator.js — DEV KB schema validator
  *
  * Separates editorial quality control from operational robustness:
- *   validateKBStrict(kbSource)      — no normalization; missing *_es → errors
- *   validateKBOperational(kbSource) — deep-clones source, normalises clone,
- *                                     validates clone; source NEVER mutated
+ *   validateKBStrict(kbSource)            — no normalization; missing *_es → errors
+ *   validateKBOperational(kbSource, opts) — deep-clones source, normalises clone,
+ *                                           validates clone; source NEVER mutated
+ *   buildOperationalKB(kbSource)          — returns normalised KB + report for export
  *
- * Browser globals (always):  window.validateKBStrict, window.validateKBOperational
+ * Browser globals (always):  window.validateKBStrict, window.validateKBOperational,
+ *                             window.buildOperationalKB
  * Browser global (DEV only): window.normalizeBilingualCascades
  *                             (set window.__KB_DEV_MODE = true before script load)
  * Node: module.exports = { validateKBStrict, validateKBOperational,
- *                           normalizeBilingualFields }
+ *                           buildOperationalKB, normalizeBilingualFields }
  *
- * Export convention (see exportKBBundle in app.js):
- *   Exports contain the SOURCE KB — never the normalised clone.
- *   Translations must be added directly to the JSON files for them to persist.
+ * Missing-value semantics for bilingual fields
+ * ─────────────────────────────────────────────
+ * A field value is considered MISSING (and eligible for EN→ES fallback) when it is:
+ *   - absent (undefined / not in entry)
+ *   - null
+ *   - empty string ""
+ *   - whitespace-only string "  "
+ * Any non-blank string is considered PRESENT and will NOT be overwritten.
  *
- * validateKBOperational return shape:
- *   ok                  {boolean} — false only for structural / EN-field errors
- *   errors              {string[]}
- *   warnings            {string[]}
- *   fallbackCascadeCount {number} — cascades where ≥1 ES field was auto-filled
- *   fallbackFieldCount   {number} — total individual field fills across all cascades
- *   fallbackByField      {Object} — { fieldName: count }  e.g. { name_es: 40 }
- *   fallbackByFieldIds   {Object} — { fieldName: string[] } cascade IDs per field
+ * validateKBOperational options
+ * ─────────────────────────────
+ *   opts.requireTranslations {boolean} — default false
+ *     When true, any ES fallback fill causes ok:false with per-field errors.
+ *     Useful for pre-release lint, CI gates on translated KBs.
+ *     No second validation pass — errors are appended from the fill report.
+ *
+ * validateKBOperational return shape
+ * ────────────────────────────────────
+ *   ok                   {boolean} — false for structural/EN errors;
+ *                                    also false when requireTranslations and fills > 0
+ *   errors               {string[]}
+ *   warnings             {string[]}
+ *   fallbackCascadeCount {number}  — cascades where ≥1 ES field was auto-filled
+ *   fallbackFieldCount   {number}  — total individual field fills across all cascades
+ *   fallbackByField      {Object}  — { fieldName: count }  e.g. { name_es: 40 }
+ *   fallbackByFieldIds   {Object}  — { fieldName: string[] } sorted, unique cascade IDs
+ *
+ * buildOperationalKB return shape
+ * ────────────────────────────────
+ *   kbData {Object} — deep-cloned, normalised KB with __i18n markers stripped
+ *   report {Object} — same shape as fallback* fields above
  */
 (function (root, factory) {
   'use strict';
@@ -32,6 +53,7 @@
   } else {
     root.validateKBStrict      = api.validateKBStrict;
     root.validateKBOperational = api.validateKBOperational;
+    root.buildOperationalKB    = api.buildOperationalKB;
     /* DEV-only utility — hidden in production to avoid misuse */
     if (root.__KB_DEV_MODE === true) {
       root.normalizeBilingualCascades = api.normalizeBilingualFields;
@@ -42,7 +64,7 @@
 
   /* ── Schema constants ─────────────────────────────────────────────────── */
 
-  /* All fields that must be present and non-empty in a fully translated entry */
+  /* All fields that must be present and non-blank in a fully translated entry */
   var REQUIRED_FIELDS = [
     'id', 'name_es', 'name_en',
     'index_drug_classes', 'index_drug_examples',
@@ -72,6 +94,13 @@
     ['recommended_first_action_es', 'recommended_first_action_en']
   ];
 
+  /* ── Missing-value predicate ──────────────────────────────────────────── */
+  /* Returns true for undefined, null, "", or any whitespace-only string.
+   * Used by the normaliser and by validateEntry for required-field checks.  */
+  function isMissing(v) {
+    return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+  }
+
   /* ── Deep clone ───────────────────────────────────────────────────────── */
   /* Prefer structuredClone (native, faster, handles more types) with a
    * JSON round-trip fallback for older environments.  KB data is plain
@@ -84,11 +113,13 @@
   /* Fills missing _es fields from _en counterparts IN-PLACE and returns a
    * fill report.  MUST only be called on a deep clone of the source KB.
    *
+   * A field is "missing" per isMissing() — undefined, null, "", or whitespace.
+   *
    * Returns: { cascadeCount, fieldCount, byField, byFieldIds }
    *   cascadeCount — entries where ≥1 field was filled
    *   fieldCount   — total individual fills
-   *   byField      — { fieldName: number } count of entries filled per field
-   *   byFieldIds   — { fieldName: string[] } cascade IDs filled per field    */
+   *   byField      — { fieldName: number }   count of entries filled per field
+   *   byFieldIds   — { fieldName: string[] } sorted, unique cascade IDs per field */
   function normalizeBilingualFields(kbJson) {
     if (!kbJson || typeof kbJson !== 'object') {
       return { cascadeCount: 0, fieldCount: 0, byField: {}, byFieldIds: {} };
@@ -110,7 +141,7 @@
       var filled = [];
       BILINGUAL_FILL_PAIRS.forEach(function (pair) {
         var esField = pair[0], enField = pair[1];
-        if (entry[enField] && (!entry[esField] || entry[esField] === '')) {
+        if (!isMissing(entry[enField]) && isMissing(entry[esField])) {
           entry[esField] = entry[enField];
           filled.push(esField);
           byField[esField] = (byField[esField] || 0) + 1;
@@ -126,7 +157,27 @@
       }
     });
 
+    /* Guarantee deterministic order and uniqueness for byFieldIds arrays */
+    Object.keys(byFieldIds).forEach(function (field) {
+      var seen = {};
+      byFieldIds[field] = byFieldIds[field]
+        .filter(function (id) { return seen[id] ? false : (seen[id] = true); })
+        .sort();
+    });
+
     return { cascadeCount: cascadeCount, fieldCount: fieldCount, byField: byField, byFieldIds: byFieldIds };
+  }
+
+  /* ── Strip __i18n markers ─────────────────────────────────────────────── */
+  /* Removes __i18n provenance keys from all entries in a KB object.
+   * Mutates in-place — only call on an already-cloned object.             */
+  function stripI18nInPlace(kbJson) {
+    ['cascades', 'non_cascade_iatrogenic'].forEach(function (key) {
+      if (!Array.isArray(kbJson[key])) return;
+      kbJson[key].forEach(function (entry) {
+        if (entry && entry.__i18n) delete entry.__i18n;
+      });
+    });
   }
 
   /* ── Shared validation core ───────────────────────────────────────────── */
@@ -185,8 +236,9 @@
     REQUIRED_FIELDS.forEach(function (field) {
       if (!(field in entry) || entry[field] === null || entry[field] === undefined) {
         errors.push('[' + label + '] Missing required field: "' + field + '".');
-      } else if (entry[field] === '') {
-        errors.push('[' + label + '] Required field "' + field + '" must not be empty string.');
+      } else if (typeof entry[field] === 'string' && entry[field].trim() === '') {
+        /* Catches both "" and whitespace-only values */
+        errors.push('[' + label + '] Required field "' + field + '" must not be blank.');
       }
     });
 
@@ -252,6 +304,7 @@
    * Editorial quality check — no normalization performed.
    * Missing *_es fields produce errors, making this suitable for CI lint and
    * authoring workflows where translations must be explicitly provided.
+   * Whitespace-only fields are also reported as blank errors.
    *
    * Returns: { ok, errors, warnings }
    */
@@ -260,26 +313,41 @@
   }
 
   /**
-   * validateKBOperational(kbSource)
+   * validateKBOperational(kbSource [, opts])
    *
    * Operational robustness check:
    *   1. Deep-clones kbSource via structuredClone (or JSON fallback).
    *      Source is NEVER mutated.
-   *   2. Normalises clone — fills missing *_es fields from *_en counterparts,
+   *   2. Normalises clone — fills isMissing() *_es fields from *_en counterparts,
    *      attaches __i18n provenance marker on each affected entry.
    *   3. Validates the normalised clone via runValidation.
    *
-   * ok:false only when English fields are missing or structurally broken.
-   * Missing *_es alone never causes ok:false.
+   * opts.requireTranslations {boolean} — default false
+   *   When true, any ES fill causes ok:false with per-field errors appended
+   *   (no second validation pass — derived directly from the fill report).
    *
    * Returns: { ok, errors, warnings,
    *            fallbackCascadeCount, fallbackFieldCount,
    *            fallbackByField, fallbackByFieldIds }
    */
-  function validateKBOperational(kbSource) {
+  function validateKBOperational(kbSource, opts) {
+    var options = opts || {};
     var clone = deepClone(kbSource);
     var fillReport = normalizeBilingualFields(clone);
     var result = runValidation(clone);
+
+    /* requireTranslations: inject per-field errors without re-running runValidation */
+    if (options.requireTranslations && fillReport.fieldCount > 0) {
+      Object.keys(fillReport.byField).sort().forEach(function (field) {
+        var count = fillReport.byField[field];
+        var ids   = (fillReport.byFieldIds[field] || []).join(', ');
+        result.errors.push(
+          'requireTranslations: ' + count + ' cascade(s) missing "' + field + '": ' + ids
+        );
+      });
+      result.ok = false;
+    }
+
     result.fallbackCascadeCount = fillReport.cascadeCount;
     result.fallbackFieldCount   = fillReport.fieldCount;
     result.fallbackByField      = fillReport.byField;
@@ -287,9 +355,35 @@
     return result;
   }
 
+  /**
+   * buildOperationalKB(kbSource)
+   *
+   * Produces a ready-to-export operational KB:
+   *   1. Deep-clones kbSource (source NEVER mutated).
+   *   2. Normalises clone (fills isMissing *_es fields from *_en).
+   *   3. Strips all __i18n provenance markers from the clone.
+   *
+   * Returns: { kbData, report }
+   *   kbData {Object} — normalised KB, clean of any __i18n keys
+   *   report {Object} — { cascadeCount, fieldCount, byField, byFieldIds }
+   *
+   * Callers should embed `report` in a top-level `normalization` block of
+   * the exported bundle so consumers know which fields were auto-filled.
+   */
+  function buildOperationalKB(kbSource) {
+    if (!kbSource || typeof kbSource !== 'object') {
+      return { kbData: null, report: { cascadeCount: 0, fieldCount: 0, byField: {}, byFieldIds: {} } };
+    }
+    var clone = deepClone(kbSource);
+    var report = normalizeBilingualFields(clone);
+    stripI18nInPlace(clone);
+    return { kbData: clone, report: report };
+  }
+
   return {
     validateKBStrict:         validateKBStrict,
     validateKBOperational:    validateKBOperational,
+    buildOperationalKB:       buildOperationalKB,
     normalizeBilingualFields: normalizeBilingualFields
   };
 }));
