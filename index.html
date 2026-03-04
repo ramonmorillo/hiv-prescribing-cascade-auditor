@@ -21,8 +21,11 @@
         <option value="PROD">PROD</option>
         <option value="DEV">DEV</option>
       </select>
-      <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Download currently loaded KB as a single JSON bundle">
-        &#128190; Export KB bundle
+      <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Download source KB as-is (no normalization applied)">
+        &#128190; Export KB (source)
+      </button>
+      <button id="btn-export-kb-operational" class="btn btn-secondary btn-sm" title="Download normalized KB with EN→ES fallback applied and normalization metadata">
+        &#128190; Export KB (operational)
       </button>
       <button id="btn-import" class="btn btn-secondary btn-sm" title="Import saved case JSON">
         &#8593; Import Case
