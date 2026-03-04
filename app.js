@@ -241,6 +241,127 @@ function drugFoundInNote(noteText, drug) {
   });
 }
 
+/* ============================================================
+   NLP RELIABILITY LAYER — negation, temporality, context
+   ============================================================ */
+
+/**
+ * Return the first match position for `term` in `noteText` using the same
+ * word-boundary logic as drugFoundInNote(), but yielding {index, length}.
+ * Returns null if not found.
+ *
+ * Handles slash-separated compound names (lopinavir/ritonavir).
+ */
+function findTermInNote(noteText, term) {
+  var parts = term.split('/');
+  for (var p = 0; p < parts.length; p++) {
+    var part = parts[p].trim();
+    if (!part) continue;
+    try {
+      var escaped = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var m = new RegExp('\\b' + escaped + '\\b', 'i').exec(noteText);
+      if (m) return { index: m.index, length: m[0].length };
+    } catch (e) {
+      var idx = noteText.toLowerCase().indexOf(part.toLowerCase());
+      if (idx !== -1) return { index: idx, length: part.length };
+    }
+  }
+  return null;
+}
+
+/**
+ * Determine whether a symptom mention at `matchIndex`…`matchIndex+matchLength`
+ * is negated, historical, or resolved — and should therefore NOT be counted
+ * as an active symptom.
+ *
+ * Strategy: extract a token window of ≤6 tokens before and ≤3 tokens after
+ * the match and pattern-match against curated negation/resolution lists.
+ *
+ * @param {string} noteText
+ * @param {number} matchIndex  character offset of match start
+ * @param {number} matchLength character length of matched term
+ * @returns {{ negated: boolean, reason: string }}
+ */
+function isNegatedSymptom(noteText, matchIndex, matchLength) {
+  /* ---- pre-window: up to 80 chars / 6 tokens before match ---- */
+  var preRaw  = noteText.slice(Math.max(0, matchIndex - 80), matchIndex);
+  var preTokens = preRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(-6);
+  var preStr  = preTokens.join(' ').toLowerCase();
+
+  /* ---- post-window: up to 60 chars / 3 tokens after match ---- */
+  var postRaw = noteText.slice(matchIndex + matchLength,
+                               Math.min(noteText.length, matchIndex + matchLength + 60));
+  var postTokens = postRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(0, 3);
+  var postStr = postTokens.join(' ').toLowerCase();
+
+  /* ---- negation cues appearing BEFORE the term ---- */
+  var negBefore = [
+    /\bno\b/, /\bnot\b/, /\bdenies\b/, /\bdenied\b/, /\bwithout\b/,
+    /\bnegative\s+for\b/, /\bfree\s+of\b/, /\brule\s*out\b/, /\br\/o\b/,
+    /\bunlikely\b/, /\?/
+  ];
+  for (var i = 0; i < negBefore.length; i++) {
+    if (negBefore[i].test(preStr)) {
+      return { negated: true, reason: 'negated before: "' + preTokens.slice(-3).join(' ') + '"' };
+    }
+  }
+
+  /* ---- resolved / historical cues appearing BEFORE the term ---- */
+  var histBefore = [
+    /\bresolved\b/, /\bimproved\b/, /\bprevious\b/, /\bhistory\s+of\b/,
+    /\bhx\s+of\b/, /\bh\/o\b/, /\bprior\b/, /\bpast\b/, /\bused\s+to\b/,
+    /\bformer(?:ly)?\b/, /\bold\b/
+  ];
+  for (var j = 0; j < histBefore.length; j++) {
+    if (histBefore[j].test(preStr)) {
+      return { negated: true, reason: 'historical before: "' + preTokens.slice(-3).join(' ') + '"' };
+    }
+  }
+
+  /* ---- resolved / past cues appearing AFTER the term ---- */
+  var resolvedAfter = [
+    /\bresolved\b/, /\bimproved\b/, /\bcleared\b/, /\bgone\b/, /\babated\b/
+  ];
+  for (var k = 0; k < resolvedAfter.length; k++) {
+    if (resolvedAfter[k].test(postStr)) {
+      return { negated: true,
+               reason: 'resolved after: "' + noteText.slice(matchIndex, matchIndex + matchLength) +
+                       ' ' + postTokens.slice(0, 2).join(' ') + '"' };
+    }
+  }
+
+  return { negated: false, reason: '' };
+}
+
+/**
+ * Scan ±40 characters (≈ ±8 tokens) around `matchIndex` for temporal cues
+ * that hint at whether a drug was recently started, a symptom is new, or a
+ * treatment was recently added.  Also flags "chronic/long-term" patterns that
+ * suggest the finding is pre-existing.
+ *
+ * Returns a plain object — never throws.
+ *
+ * @param {string} noteText
+ * @param {number} matchIndex character offset of the term being evaluated
+ * @returns {{ drugStartHint: boolean, symptomNewHint: boolean,
+ *             treatmentAddedHint: boolean, chronicHint: boolean,
+ *             details: string }}
+ */
+function detectTimeCues(noteText, matchIndex) {
+  var R = 40; /* radius in characters */
+  var start = Math.max(0, matchIndex - R);
+  var end   = Math.min(noteText.length, matchIndex + R);
+  var ctx   = noteText.slice(start, end).toLowerCase();
+
+  return {
+    drugStartHint:      /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx),
+    symptomNewHint:     /\b(since|after|worsened|new|recent|developed|onset|appearing|presenting\s+with|new[- ]onset)\b/.test(ctx),
+    treatmentAddedHint: /\b(added|given|prescribed|initiated|started|commenced|prn\s+started|increased)\b/.test(ctx),
+    chronicHint:        /\b(chronic|long[- ]term|longstanding|long\s+standing|baseline|ongoing|persistent|established|years|months|pre[- ]existing)\b/.test(ctx),
+    details:            ctx.trim().slice(0, 80)
+  };
+}
+
 /**
  * Return the index drug examples for a cascade entry, handling both the
  * singular field name used in kb_core_cascades.json ("index_drug_examples")
@@ -337,16 +458,24 @@ function detectSymptomCascades(noteText) {
   var symEntries = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
   if (!symEntries.length) return [];
 
-  /* Use cached results from Step 2, or run fresh if not yet populated */
+  /* Use cached results from Step 2, or run fresh if not yet populated.
+     Backward-compat: if saved state has old string-array format, re-extract. */
   var detectedSymptoms = state.symptomsDetected.length
     ? state.symptomsDetected
     : extractSymptoms(noteText);
+  /* Migrate legacy format: array of strings → skip, just re-extract */
+  if (detectedSymptoms.length && typeof detectedSymptoms[0] === 'string') {
+    detectedSymptoms = extractSymptoms(noteText);
+  }
 
   if (!detectedSymptoms.length) return [];
 
   var signals = [];
 
   detectedSymptoms.forEach(function (ds) {
+    /* ── Gate 1: symptom must be contextually active ── */
+    if (ds.active === false) return;
+
     var entry = symEntries.find(function (s) { return s.id === ds.id; });
     if (!entry) return;
 
@@ -354,10 +483,48 @@ function detectSymptomCascades(noteText) {
     var treatedBy = entry.treated_by_drug_examples || [];
     if (!causedBy.length || !treatedBy.length) return;
 
-    var foundCause     = causedBy.find(function (d) { return drugFoundInNote(noteText, d); });
-    var foundTreatment = treatedBy.find(function (d) { return drugFoundInNote(noteText, d); });
-
+    /* Find cause and treatment drugs and their positions */
+    var foundCause = null; var causePos = null;
+    for (var ci = 0; ci < causedBy.length; ci++) {
+      var cp = findTermInNote(noteText, causedBy[ci]);
+      if (cp) { foundCause = causedBy[ci]; causePos = cp; break; }
+    }
+    var foundTreatment = null; var treatPos = null;
+    for (var ti = 0; ti < treatedBy.length; ti++) {
+      var tp = findTermInNote(noteText, treatedBy[ti]);
+      if (tp) { foundTreatment = treatedBy[ti]; treatPos = tp; break; }
+    }
     if (!foundCause || !foundTreatment) return;
+
+    /* ── Gate 2: temporality heuristics ── */
+    var symIdx   = typeof ds.startIndex === 'number' ? ds.startIndex : 0;
+    var timeSym   = detectTimeCues(noteText, symIdx);
+    var timeCause = detectTimeCues(noteText, causePos.index);
+    var timeTreat = detectTimeCues(noteText, treatPos.index);
+
+    /* Determine confidence adjustment */
+    var confidence = 'medium';
+    var rationaleLines = [];
+
+    /* Positive signals → upgrade */
+    var supportive = (timeCause.drugStartHint || timeCause.treatmentAddedHint) &&
+                     (timeSym.symptomNewHint  || timeTreat.treatmentAddedHint);
+    if (supportive) {
+      confidence = 'high';
+      rationaleLines.push('Supportive temporality: index drug started + new symptom/treatment noted.');
+    }
+
+    /* Chronic/pre-existing signal → downgrade */
+    var chronic = timeSym.chronicHint || timeTreat.chronicHint;
+    if (chronic) {
+      confidence = confidence === 'high' ? 'medium' : 'low';
+      rationaleLines.push('Possible pre-existing condition (chronic/long-term cue detected).');
+    }
+
+    /* Unknown temporality — leave as-is, note it */
+    if (!supportive && !chronic) {
+      rationaleLines.push('Temporality unknown; confidence not adjusted.');
+    }
 
     /* Capitalise first letter of symptom term for display */
     var symLabel = ds.term.charAt(0).toUpperCase() + ds.term.slice(1);
@@ -368,12 +535,23 @@ function detectSymptomCascades(noteText) {
       index_drug:      foundCause,
       cascade_drug:    foundTreatment,
       signal_type:     'symptom_bridge',
-      confidence:      'medium',
+      confidence:      confidence,
       risk_focus:      [ds.category],
       ade_en:          ds.term,
       appropriateness: '',
       ddi_warning:     '',
-      clinical_hint:   entry.cascade_relevance || ''
+      clinical_hint:   entry.cascade_relevance || '',
+      /* Rationale for clinician transparency */
+      rationale: {
+        symptomActive:   true,
+        negationReason:  ds.reason || '',
+        timeHints: {
+          symptom:   timeSym,
+          causeDrug: timeCause,
+          treatDrug: timeTreat
+        },
+        explanation: rationaleLines.join(' ')
+      }
     });
   });
 
@@ -454,16 +632,30 @@ function extractSymptoms(noteText) {
 
   symptoms.forEach(function (sym) {
     var allTerms = [sym.term].concat(sym.synonyms || []);
-    var matched  = allTerms.find(function (t) { return drugFoundInNote(noteText, t); });
-    if (matched) {
-      detected.push({
-        id:                sym.id,
-        term:              sym.term,
-        matched_term:      matched,
-        category:          sym.category          || '',
-        cascade_relevance: sym.cascade_relevance || ''
-      });
+
+    /* Find the first matching term AND its position in the note */
+    var matchResult = null;
+    var matchedTerm = null;
+    for (var ti = 0; ti < allTerms.length; ti++) {
+      var pos = findTermInNote(noteText, allTerms[ti]);
+      if (pos) { matchResult = pos; matchedTerm = allTerms[ti]; break; }
     }
+    if (!matchResult) return; /* term not in note at all */
+
+    /* Negation / historical context check */
+    var negCheck = isNegatedSymptom(noteText, matchResult.index, matchResult.length);
+
+    detected.push({
+      id:                sym.id,
+      term:              sym.term,
+      matched_term:      matchedTerm,
+      category:          sym.category          || '',
+      cascade_relevance: sym.cascade_relevance || '',
+      /* NEW reliability fields */
+      active:            !negCheck.negated,
+      reason:            negCheck.reason,
+      startIndex:        matchResult.index
+    });
   });
 
   state.symptomsDetected = detected;
@@ -673,7 +865,12 @@ const STEP_CONTENT = {
           '</div>'
         );
       } else {
-        symCountLabel = 'Symptoms detected (' + symptoms.length + ')';
+        /* Split into active vs non-active (negated / historical) */
+        var activeSyms   = symptoms.filter(function (s) { return s.active !== false; });
+        var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
+        symCountLabel = 'Symptoms detected (' + activeSyms.length + ' active' +
+          (inactiveSyms.length ? ', ' + inactiveSyms.length + ' non-active' : '') + ')';
+
         /* Category → colour mapping */
         var catColor = {
           gastrointestinal: '#7d6608',
@@ -683,26 +880,50 @@ const STEP_CONTENT = {
           cardiovascular:   '#1a5276',
           urological:       '#145a32'
         };
-        var symTags = symptoms.map(function (s) {
-          var bg  = catColor[s.category] || '#555';
+
+        var renderSymTag = function (s, inactive) {
+          var bg    = inactive ? '#bdc3c7' : (catColor[s.category] || '#555');
+          var color = inactive ? '#555'    : '#fff';
           var label = escHtml(s.term);
-          if (s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
+          if (s.matched_term && s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
             label += ' <span style="font-size:.72rem;opacity:.8;">(' + escHtml(s.matched_term) + ')</span>';
           }
           var catLabel = s.category
             ? '<span style="display:block;font-size:.67rem;opacity:.82;margin-top:.1rem;font-weight:400;">' +
                 escHtml(s.category) + '</span>'
             : '';
+          var negBadge = inactive
+            ? '<span style="display:block;font-size:.63rem;font-weight:400;margin-top:.08rem;' +
+                'color:#777;font-style:italic;">' +
+                escHtml(s.reason || 'non-active') + '</span>'
+            : '';
           return (
-            '<span style="display:inline-block;background:' + bg + ';color:#fff;border-radius:4px;' +
-              'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
-              'vertical-align:top;line-height:1.3;" title="' + escHtml(s.cascade_relevance) + '">' +
-              label + catLabel +
+            '<span style="display:inline-block;background:' + bg + ';color:' + color + ';' +
+              'border-radius:4px;padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;' +
+              'font-weight:600;vertical-align:top;line-height:1.3;' +
+              (inactive ? 'opacity:.7;' : '') +
+              '" title="' + escHtml(s.cascade_relevance || '') + '">' +
+              label + catLabel + negBadge +
             '</span>'
           );
-        }).join('');
+        };
+
+        var symTagsActive   = activeSyms.map(function (s) { return renderSymTag(s, false); }).join('');
+        var symTagsInactive = inactiveSyms.map(function (s) { return renderSymTag(s, true); }).join('');
+
+        var inactiveRow = inactiveSyms.length
+          ? '<div style="margin-top:.45rem;">' +
+              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">Non-active mentions ' +
+                '(negated / historical):</span>' +
+              symTagsInactive +
+            '</div>'
+          : '';
+
         symptomSection = (
-          '<div style="padding:.2rem 0 .65rem;">' + symTags + '</div>'
+          '<div style="padding:.2rem 0 .65rem;">' +
+            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">None</span>') +
+            inactiveRow +
+          '</div>'
         );
       }
 
@@ -932,6 +1153,19 @@ const STEP_CONTENT = {
             '</div>'
           : '';
 
+        /* Rationale box (symptom-bridge only) — grey/olive tint */
+        var rationaleBox = '';
+        if (c.rationale && c.rationale.explanation) {
+          rationaleBox = (
+            '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;' +
+              'border-left:3px solid #aab7b8;padding:.3rem .6rem;background:#f4f6f7;' +
+              'border-radius:0 3px 3px 0;">' +
+              '<strong>&#128269; Why it fired:</strong>&nbsp;' +
+              escHtml(c.rationale.explanation) +
+            '</div>'
+          );
+        }
+
         return (
           '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
             'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
@@ -954,7 +1188,7 @@ const STEP_CONTENT = {
               '</code>' +
             '</div>' +
 
-            chain + riskTags + ddiBox + hintBox +
+            chain + riskTags + ddiBox + hintBox + rationaleBox +
           '</div>'
         );
       });
@@ -1572,6 +1806,132 @@ function deleteAllData() {
   if (pidEl) pidEl.value = '';
   goTo(1);
 }
+
+/* ============================================================
+   NLP SELF-TESTS  (call runNlpSelfTest() from browser console)
+   ============================================================ */
+window.runNlpSelfTest = function () {
+  var PASS = 0; var FAIL = 0;
+
+  function assert(label, got, expected) {
+    var ok = got === expected;
+    console[ok ? 'log' : 'warn'](
+      (ok ? '  PASS' : '  FAIL') + ' | ' + label +
+      (ok ? '' : '  (got=' + JSON.stringify(got) + ' want=' + JSON.stringify(expected) + ')')
+    );
+    ok ? PASS++ : FAIL++;
+  }
+
+  /* Helper: run extractSymptoms on a scratch note without touching state */
+  function probeSymptoms(note) {
+    var savedNote   = state.clinicalNote;
+    var savedSym    = state.symptomsDetected;
+    var savedCache  = state.detectedCascades;
+    state.clinicalNote    = note;
+    state.symptomsDetected = [];
+    var result = extractSymptoms(note);
+    state.clinicalNote    = savedNote;
+    state.symptomsDetected = savedSym;
+    state.detectedCascades = savedCache;
+    return result;
+  }
+
+  /* Helper: run detectSymptomCascades on a scratch note */
+  function probeCascades(note) {
+    var savedNote  = state.clinicalNote;
+    var savedSym   = state.symptomsDetected;
+    var savedCache = state.detectedCascades;
+    state.clinicalNote     = note;
+    state.symptomsDetected = [];
+    state.detectedCascades = null;
+    var syms = extractSymptoms(note);
+    var sigs = detectSymptomCascades(note);
+    state.clinicalNote     = savedNote;
+    state.symptomsDetected = savedSym;
+    state.detectedCascades = savedCache;
+    return { syms: syms, sigs: sigs };
+  }
+
+  console.group('runNlpSelfTest — NLP reliability layer');
+
+  /* ── Negation tests ── */
+  console.group('A. Negation / historical');
+
+  var t1 = probeSymptoms('Patient denies constipation and diarrhoea.');
+  var t1c = t1.find(function (s) { return s.term === 'constipation'; });
+  assert('T1: "denies constipation" → active=false',
+         t1c ? t1c.active : null, false);
+
+  var t2 = probeSymptoms('Constipation resolved on prior admission.');
+  var t2c = t2.find(function (s) { return s.term === 'constipation'; });
+  assert('T2: "constipation resolved" → active=false',
+         t2c ? t2c.active : null, false);
+
+  var t3 = probeSymptoms('History of constipation. No current complaint.');
+  var t3c = t3.find(function (s) { return s.term === 'constipation'; });
+  assert('T3: "history of constipation" → active=false',
+         t3c ? t3c.active : null, false);
+
+  var t6 = probeSymptoms('No urinary retention noted today.');
+  var t6c = t6.find(function (s) { return s.term === 'urinary retention'; });
+  assert('T6: "no urinary retention" → active=false',
+         t6c ? t6c.active : null, false);
+
+  var t8 = probeSymptoms('No falls reported since last visit.');
+  var t8c = t8.find(function (s) { return s.term === 'falls'; });
+  assert('T8: "no falls" → active=false',
+         t8c ? t8c.active : null, false);
+
+  console.groupEnd();
+
+  /* ── Active detection tests ── */
+  console.group('B. Active symptom detection');
+
+  var t7 = probeSymptoms('Patient reports dry mouth and fatigue.');
+  var t7c = t7.find(function (s) { return s.term === 'dry mouth'; });
+  assert('T7: "dry mouth" → active=true',
+         t7c ? t7c.active : null, true);
+
+  console.groupEnd();
+
+  /* ── Cascade firing tests ── */
+  console.group('C. Cascade detection with temporality');
+
+  var t4 = probeCascades(
+    'After starting oxybutynin patient developed constipation. Lactulose was added.'
+  );
+  var t4s = t4.sigs.find(function (s) { return s.ade_en === 'constipation'; });
+  assert('T4: oxybutynin→constipation→lactulose fires', !!t4s, true);
+  assert('T4: confidence is high (supportive temporality)',
+         t4s ? t4s.confidence : null, 'high');
+
+  var t5 = probeCascades(
+    'Chronic constipation on long-term lactulose. Started oxybutynin for incontinence.'
+  );
+  var t5s = t5.sigs.find(function (s) { return s.ade_en === 'constipation'; });
+  /* Should either not fire OR fire with low confidence */
+  if (!t5s) {
+    assert('T5: chronic constipation+lactulose → no cascade (suppressed)', true, true);
+  } else {
+    assert('T5: chronic constipation+lactulose → low confidence',
+           t5s.confidence, 'low');
+  }
+
+  /* Additional: amlodipine oedema furosemide */
+  var tA = probeCascades(
+    'New onset oedema noted after amlodipine was started. Furosemide prescribed.'
+  );
+  var tAs = tA.sigs.find(function (s) { return s.ade_en === 'oedema' || s.ade_en === 'peripheral oedema'; });
+  assert('TA: amlodipine→oedema→furosemide fires', !!tAs, true);
+
+  console.groupEnd();
+
+  console.log('─────────────────────────────────────');
+  console.log('Results: ' + PASS + ' passed, ' + FAIL + ' failed out of ' + (PASS + FAIL));
+  console.groupEnd();
+
+  return { pass: PASS, fail: FAIL };
+};
 
 /* ============================================================
    Utility helpers
