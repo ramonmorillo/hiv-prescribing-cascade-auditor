@@ -17,7 +17,10 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null }
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null },
+  /* Step 5 clinician classifications, keyed by cascade_id.
+     Values: 'confirmed' | 'possible' | 'not_cascade' */
+  cascadeClassifications: {}
 };
 
 /* ============================================================
@@ -28,7 +31,8 @@ function saveState() {
     const payload = {
       step: state.step,
       patientId: state.patientId,
-      clinicalNote: state.clinicalNote
+      clinicalNote: state.clinicalNote,
+      cascadeClassifications: state.cascadeClassifications
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   } catch (err) {
@@ -41,9 +45,10 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    if (saved.patientId)    state.patientId    = saved.patientId;
-    if (saved.clinicalNote) state.clinicalNote = saved.clinicalNote;
-    if (saved.step)         state.step         = saved.step;
+    if (saved.patientId)               state.patientId               = saved.patientId;
+    if (saved.clinicalNote)            state.clinicalNote            = saved.clinicalNote;
+    if (saved.step)                    state.step                    = saved.step;
+    if (saved.cascadeClassifications)  state.cascadeClassifications  = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
   }
@@ -55,6 +60,7 @@ function clearState() {
     state.step = 1;
     state.patientId = '';
     state.clinicalNote = '';
+    state.cascadeClassifications = {};
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
   }
@@ -227,61 +233,76 @@ function drugFoundInNote(noteText, drug) {
 }
 
 /**
- * Scan `noteText` against every loaded cascade entry.
- * A signal fires when at least one index drug AND at least one cascade drug
- * are both found in the note.
+ * Return the index drug examples for a cascade entry, handling both the
+ * singular field name used in kb_core_cascades.json ("index_drug_examples")
+ * and the plural form used in kb_vih_modifiers.json ("index_drugs_examples").
+ */
+function getIndexExamples(cascade) {
+  return cascade.index_drug_examples || cascade.index_drugs_examples || [];
+}
+
+/**
+ * Return the cascade drug examples for a cascade entry, handling both the
+ * singular field name used in kb_core_cascades.json ("cascade_drug_examples")
+ * and the plural form used in kb_vih_modifiers.json ("cascade_drugs_examples").
+ */
+function getCascadeExamples(cascade) {
+  return cascade.cascade_drug_examples || cascade.cascade_drugs_examples || [];
+}
+
+/**
+ * Scan `noteText` against every loaded cascade entry (core + HIV modifiers).
+ * A signal fires when at least one index_drug_example AND at least one
+ * cascade_drug_example are both found in the note (case-insensitive whole-word
+ * match via drugFoundInNote).
  *
- * @param {string} noteText  Raw clinical note from state.clinicalNote
- * @returns {Array<{cascade_id, cascade_name, index_drug, cascade_drug, confidence, risk_focus, clinical_hint}>}
+ * Handles both KB field-name variants via getIndexExamples / getCascadeExamples.
+ * Handles both confidence-field names: "confidence" (core) / "plausibility" (VIH).
+ *
+ * @param {string} noteText
+ * @returns {Array<{
+ *   cascade_id, cascade_name,
+ *   index_drug, cascade_drug,
+ *   confidence, risk_focus,
+ *   ade_en, appropriateness,
+ *   ddi_warning, clinical_hint
+ * }>}
  */
 function detectCascades(noteText) {
   if (!noteText || !noteText.trim()) return [];
+
+  var allCascades = [].concat(
+    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+  );
+
   var detected = [];
 
-  /* --- Core cascades (kb_core_cascades.json) --- */
-  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
-  coreCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
+  allCascades.forEach(function (cascade) {
+    var indexExamples   = getIndexExamples(cascade);
+    var cascadeExamples = getCascadeExamples(cascade);
 
     var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
     var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
 
-    if (foundIndex && foundCascade) {
-      detected.push({
-        cascade_id:    cascade.id,
-        cascade_name:  cascade.name_en || cascade.id,
-        index_drug:    foundIndex,
-        cascade_drug:  foundCascade,
-        confidence:    cascade.plausibility || 'unknown',
-        risk_focus:    cascade.risk_focus || [],
-        clinical_hint: cascade.clinical_note_en || ''
-      });
-    }
-  });
+    if (!foundIndex || !foundCascade) return;
 
-  /* --- HIV modifier cascades (kb_vih_modifiers.json) --- */
-  var vihCascades = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
-  vihCascades.forEach(function (cascade) {
-    var indexExamples   = cascade.index_drugs_examples   || [];
-    var cascadeExamples = cascade.cascade_drugs_examples || [];
-
-    var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
-    var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
-
-    if (foundIndex && foundCascade) {
-      var hint = cascade.clinical_note_en || '';
-      if (cascade.ddi_warning_en) hint = cascade.ddi_warning_en + (hint ? ' ' + hint : '');
-      detected.push({
-        cascade_id:    cascade.id,
-        cascade_name:  cascade.name_en || cascade.id,
-        index_drug:    foundIndex,
-        cascade_drug:  foundCascade,
-        confidence:    cascade.plausibility || 'unknown',
-        risk_focus:    [],
-        clinical_hint: hint
-      });
-    }
+    detected.push({
+      cascade_id:    cascade.id,
+      cascade_name:  cascade.name_en || cascade.id,
+      index_drug:    foundIndex,
+      cascade_drug:  foundCascade,
+      /* confidence: core uses "confidence", VIH uses "plausibility" */
+      confidence:    cascade.confidence || cascade.plausibility || 'unknown',
+      risk_focus:    cascade.risk_focus || [],
+      /* ade_en: the intermediate adverse effect that links the two drugs */
+      ade_en:        cascade.ade_en || '',
+      /* appropriateness: "often_inappropriate" | "often_appropriate" | "context_dependent" */
+      appropriateness: cascade.appropriateness || '',
+      /* ddi_warning kept separate so the UI can render it as a red alert */
+      ddi_warning:   cascade.ddi_warning_en || '',
+      clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
+    });
   });
 
   return detected;
@@ -307,8 +328,8 @@ function extractDrugs(noteText) {
 
   allCascades.forEach(function (cascade) {
     var examples = [].concat(
-      cascade.index_drugs_examples   || [],
-      cascade.cascade_drugs_examples || []
+      getIndexExamples(cascade),
+      getCascadeExamples(cascade)
     );
     examples.forEach(function (drug) {
       var key = drug.toLowerCase();
@@ -324,46 +345,60 @@ function extractDrugs(noteText) {
 
 /**
  * Map an array of drug names to their canonical drug classes using the KB.
- * A drug can appear as an index drug (→ index_drug_class) or a cascade drug
- * (→ cascade_drug_class); both classes are included.
+ *
+ * Two-pass priority: index-drug roles are resolved first (a drug acting as a
+ * cascade trigger is labelled with its index class), then cascade-drug roles
+ * fill in any drug not yet mapped.  This ensures, e.g., that amlodipine is
+ * labelled "Calcium channel blocker" (its index role in CC004) rather than
+ * the less specific "Antihypertensive" it receives as a cascade drug in CC001.
+ *
+ * Handles both KB field-name variants:
+ *   index_drug_classes  (array)  — kb_core_cascades.json
+ *   index_drug_class    (string) — kb_vih_modifiers.json
  *
  * @param {string[]} drugs  Output of extractDrugs()
- * @returns {string[]} Unique drug class names
+ * @returns {Array<{drug: string, class: string}>} One entry per input drug
  */
 function normalizeDrugs(drugs) {
   if (!drugs || !drugs.length) return [];
 
-  var drugToClasses = {};
+  var drugToClass = {};   // key: drug.toLowerCase() → first canonical class string
 
   var allCascades = [].concat(
     (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
     (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
   );
 
+  /* Pass 1 — index drugs get priority (causal / trigger role) */
   allCascades.forEach(function (cascade) {
-    var idxClass = cascade.index_drug_class   || '';
+    /* index_drug_classes is an array in core cascades;
+       index_drug_class   is a string  in VIH modifiers  */
+    var idxArr = cascade.index_drug_classes ||
+                 (cascade.index_drug_class ? [cascade.index_drug_class] : []);
+    var idxClass = idxArr.length ? idxArr[0] : '';
+
+    getIndexExamples(cascade).forEach(function (drug) {
+      var key = drug.toLowerCase();
+      if (!drugToClass[key] && idxClass) drugToClass[key] = idxClass;
+    });
+  });
+
+  /* Pass 2 — cascade drugs fill in anything not yet mapped */
+  allCascades.forEach(function (cascade) {
     var casClass = cascade.cascade_drug_class || '';
 
-    (cascade.index_drugs_examples || []).forEach(function (drug) {
+    getCascadeExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
-      if (!drugToClasses[key]) drugToClasses[key] = {};
-      if (idxClass) drugToClasses[key][idxClass] = true;
-    });
-
-    (cascade.cascade_drugs_examples || []).forEach(function (drug) {
-      var key = drug.toLowerCase();
-      if (!drugToClasses[key]) drugToClasses[key] = {};
-      if (casClass) drugToClasses[key][casClass] = true;
+      if (!drugToClass[key] && casClass) drugToClass[key] = casClass;
     });
   });
 
-  var classSet = {};
-  drugs.forEach(function (drug) {
-    var classes = drugToClasses[drug.toLowerCase()] || {};
-    Object.keys(classes).forEach(function (cls) { classSet[cls] = true; });
+  return drugs.map(function (drug) {
+    return {
+      drug:  drug,
+      class: drugToClass[drug.toLowerCase()] || ''
+    };
   });
-
-  return Object.keys(classSet);
 }
 
 /**
@@ -381,6 +416,22 @@ function findCascadeEntry(cascadeId) {
   }
   return null;
 }
+
+/* ============================================================
+   Step 5 — clinician classification handler
+   Called via inline onclick: classifyCascade(id, value)
+   value: 'confirmed' | 'possible' | 'not_cascade'
+   ============================================================ */
+window.classifyCascade = function (cascadeId, value) {
+  if (state.cascadeClassifications[cascadeId] === value) {
+    /* clicking the active button again clears it */
+    delete state.cascadeClassifications[cascadeId];
+  } else {
+    state.cascadeClassifications[cascadeId] = value;
+  }
+  saveState();
+  renderStepContent(5);
+};
 
 /* ============================================================
    Step content — each step renders a minimal placeholder so
@@ -444,11 +495,21 @@ const STEP_CONTENT = {
         );
       }
 
+      /* Reuse normalizeDrugs() so class labels are consistent with Step 3 */
+      var normalized = normalizeDrugs(drugs);
+      var classLookup = {};
+      normalized.forEach(function (n) { classLookup[n.drug.toLowerCase()] = n.class; });
+
       var tags = drugs.map(function (d) {
+        var cls = classLookup[d.toLowerCase()] || '';
+        var clsLabel = cls
+          ? '<span style="display:block;font-size:.68rem;opacity:.82;margin-top:.1rem;font-weight:400;">' + escHtml(cls) + '</span>'
+          : '';
         return (
-          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:3px;' +
-            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
-            escHtml(d) +
+          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:4px;' +
+            'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
+            'vertical-align:top;line-height:1.3;">' +
+            escHtml(d) + clsLabel +
           '</span>'
         );
       }).join('');
@@ -456,7 +517,7 @@ const STEP_CONTENT = {
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
           '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-          ' extracted</strong> from the clinical note.' +
+          ' extracted</strong> from the clinical note (matched against all KB entries).' +
         '</div>' +
         '<div style="padding:.35rem 0 .6rem;">' + tags + '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
@@ -486,8 +547,8 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs   = extractDrugs(state.clinicalNote);
-      var classes = normalizeDrugs(drugs);
+      var drugs      = extractDrugs(state.clinicalNote);
+      var normalized = normalizeDrugs(drugs);
 
       if (drugs.length === 0) {
         return (
@@ -498,30 +559,48 @@ const STEP_CONTENT = {
         );
       }
 
-      if (classes.length === 0) {
-        return (
-          '<div class="callout callout-warning">' +
-            '<strong>&#9888; No drug classes mapped.</strong> ' +
-            'Extracted drugs could not be mapped to any KB drug class.' +
-          '</div>'
-        );
-      }
+      var mappedCount   = normalized.filter(function (n) { return n.class; }).length;
+      var unmappedCount = normalized.length - mappedCount;
 
-      var classTags = classes.map(function (cls) {
+      var rows = normalized.map(function (n) {
+        var classCell = n.class
+          ? '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
+              'padding:.18rem .55rem;font-size:.82rem;font-weight:600;">' + escHtml(n.class) + '</span>'
+          : '<span style="color:#999;font-size:.82rem;font-style:italic;">unmapped</span>';
         return (
-          '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
-            'padding:.22rem .6rem;margin:.2rem .15rem;font-size:.84rem;font-weight:500;">' +
-            escHtml(cls) +
-          '</span>'
+          '<tr style="border-bottom:1px solid #eef1f4;">' +
+            '<td style="padding:.45rem .6rem;font-size:.88rem;font-weight:600;white-space:nowrap;">' +
+              escHtml(n.drug) +
+            '</td>' +
+            '<td style="padding:.45rem .4rem;color:#666;font-size:.82rem;text-align:center;">' +
+              '&rarr;' +
+            '</td>' +
+            '<td style="padding:.45rem .6rem;">' + classCell + '</td>' +
+          '</tr>'
         );
       }).join('');
 
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-          ' mapped to ' + classes.length + ' drug class' + (classes.length === 1 ? '' : 'es') + '.</strong>' +
+          '<strong>' + drugs.length + ' drug' + (drugs.length === 1 ? '' : 's') +
+          ' normalized &mdash; ' + mappedCount + ' class' + (mappedCount === 1 ? '' : 'es') + ' mapped' +
+          (unmappedCount ? ', ' + unmappedCount + ' unmapped' : '') + '.</strong>' +
         '</div>' +
-        '<div style="padding:.35rem 0 .6rem;">' + classTags + '</div>'
+        '<div style="overflow-x:auto;">' +
+          '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
+            'border:1px solid #d0d7de;border-radius:5px;background:#fff;">' +
+            '<thead>' +
+              '<tr style="background:#f6f8fa;border-bottom:2px solid #d0d7de;">' +
+                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Drug name</th>' +
+                '<th style="padding:.45rem .4rem;width:2rem;"></th>' +
+                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Canonical class</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>'
       );
     }
   },
@@ -572,38 +651,109 @@ const STEP_CONTENT = {
         );
       }
 
+      /* --- Badge helpers ------------------------------------------ */
       var confidenceBadge = function (conf) {
-        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#f39c12' : '#7f8c8d';
+        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
         return (
-          '<span style="font-size:.72rem;font-weight:700;color:#fff;background:' + color + ';' +
-            'padding:.1rem .42rem;border-radius:3px;vertical-align:middle;margin-left:.45rem;">' +
+          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
+            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
+            'text-transform:uppercase;letter-spacing:.03em;">' +
             escHtml(conf) +
           '</span>'
         );
       };
 
+      var appropriatenessBadge = function (val) {
+        if (!val) return '';
+        var label = val === 'often_inappropriate' ? 'often inappropriate'
+                  : val === 'often_appropriate'   ? 'often appropriate'
+                  : 'context-dependent';
+        var color = val === 'often_inappropriate' ? '#c0392b'
+                  : val === 'often_appropriate'   ? '#1e8449'
+                  : '#7f8c8d';
+        return (
+          '<span style="font-size:.68rem;font-weight:600;color:' + color + ';' +
+            'border:1px solid ' + color + ';border-radius:3px;padding:.08rem .38rem;' +
+            'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
+            escHtml(label) +
+          '</span>'
+        );
+      };
+
+      /* --- Signal cards ------------------------------------------- */
       var rows = detected.map(function (c) {
+        /* Cascade chain: index drug → [ADE] → cascade drug */
+        var adeLabel = c.ade_en
+          ? '&nbsp;<span style="font-size:.78rem;color:#7f8c8d;font-style:italic;">' +
+              '[' + escHtml(c.ade_en) + ']</span>&nbsp;'
+          : '&nbsp;&rarr;&nbsp;';
+        var chain = (
+          '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
+            'flex-wrap:wrap;gap:.2rem;">' +
+            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
+              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.index_drug) +
+            '</span>' +
+            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+            '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
+              'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' +
+              escHtml(c.ade_en || 'ADE') +
+            '</span>' +
+            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
+              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.cascade_drug) +
+            '</span>' +
+          '</div>'
+        );
+
+        /* Risk focus chips */
         var riskTags = c.risk_focus.length
-          ? '<div style="margin-top:.35rem;font-size:.76rem;color:#666;">Risk: ' + escHtml(c.risk_focus.join(', ')) + '</div>'
-          : '';
-        var hint = c.clinical_hint
-          ? '<div style="margin-top:.5rem;font-size:.84rem;color:#34495e;' +
-              'border-left:3px solid #2980b9;padding:.3rem .65rem;background:#eaf4fb;">' +
-              escHtml(c.clinical_hint) +
+          ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;">' +
+              '<span style="font-size:.72rem;color:#888;">Risk:</span>' +
+              c.risk_focus.map(function (r) {
+                return '<span style="font-size:.72rem;background:#f0f0f0;border-radius:3px;' +
+                  'padding:.08rem .38rem;color:#555;">' + escHtml(r) + '</span>';
+              }).join('') +
             '</div>'
           : '';
+
+        /* DDI warning — red alert box */
+        var ddiBox = c.ddi_warning
+          ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
+              'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
+              'border-radius:0 3px 3px 0;">' +
+              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(c.ddi_warning) +
+            '</div>'
+          : '';
+
+        /* Clinical hint — blue note box */
+        var hintBox = c.clinical_hint
+          ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
+              'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
+              'border-radius:0 3px 3px 0;">' +
+              '<strong>&#128203; Action:</strong>&nbsp;' + escHtml(c.clinical_hint) +
+            '</div>'
+          : '';
+
         return (
           '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;">' +
-              '<span style="font-size:.93rem;font-weight:600;">' + escHtml(c.cascade_name) + confidenceBadge(c.confidence) + '</span>' +
-              '<code style="font-size:.78rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
+            'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
+
+            /* Header row: name + badges + ID */
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+              'flex-wrap:wrap;gap:.4rem;">' +
+              '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
+                escHtml(c.cascade_name) +
+                confidenceBadge(c.confidence) +
+                appropriatenessBadge(c.appropriateness) +
+              '</span>' +
+              '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
+                escHtml(c.cascade_id) +
+              '</code>' +
             '</div>' +
-            '<div style="margin:.55rem 0 0;font-size:.9rem;">' +
-              '&#128138;&nbsp;<strong>' + escHtml(c.index_drug) + '</strong>' +
-              '&nbsp;&rarr;&nbsp;<strong>' + escHtml(c.cascade_drug) + '</strong>' +
-            '</div>' +
-            riskTags + hint +
+
+            chain + riskTags + ddiBox + hintBox +
           '</div>'
         );
       });
@@ -655,42 +805,150 @@ const STEP_CONTENT = {
         );
       }
 
+      /* ── Classification tally banner ── */
+      var cls = state.cascadeClassifications;
+      var nConfirmed  = detected.filter(function (c) { return cls[c.cascade_id] === 'confirmed';   }).length;
+      var nPossible   = detected.filter(function (c) { return cls[c.cascade_id] === 'possible';    }).length;
+      var nNot        = detected.filter(function (c) { return cls[c.cascade_id] === 'not_cascade'; }).length;
+      var nUnreviewed = detected.length - nConfirmed - nPossible - nNot;
+
+      var tallyHtml = (
+        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;' +
+          'padding:.65rem .9rem;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;' +
+          'font-size:.83rem;align-items:center;">' +
+          '<span style="color:#555;font-weight:600;margin-right:.2rem;">Review progress:</span>' +
+          '<span style="background:#1e8449;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nConfirmed + ' confirmed</span>' +
+          '<span style="background:#e67e22;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nPossible + ' possible</span>' +
+          '<span style="background:#7f8c8d;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
+            nNot + ' not a cascade</span>' +
+          (nUnreviewed > 0
+            ? '<span style="color:#888;margin-left:.15rem;">' + nUnreviewed + ' unreviewed</span>'
+            : '<span style="color:#1e8449;margin-left:.15rem;">&#10003; All reviewed</span>') +
+        '</div>'
+      );
+
+      /* ── Per-cascade detail cards ── */
       var rows = detected.map(function (c) {
-        var entry      = findCascadeEntry(c.cascade_id);
-        var clinNote   = entry ? (entry.clinical_note_en   || '') : '';
-        var ddiWarning = entry ? (entry.ddi_warning_en     || '') : '';
+        var entry       = findCascadeEntry(c.cascade_id);
+        var recAction   = entry ? (entry.recommended_first_action_en || '') : '';
+        var clinNote    = entry ? (entry.clinical_note_en            || '') : '';
+        var ddiWarning  = entry ? (entry.ddi_warning_en              || '') : '';
+        var diffHints   = (entry && Array.isArray(entry.differential_hints) && entry.differential_hints.length)
+                          ? entry.differential_hints : [];
 
+        /* Use the richer field; for core it's recAction, for VIH it's clinNote */
+        var actionText  = recAction || clinNote;
+
+        /* Confidence badge */
+        var confColor   = c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d';
+        var confBadge   = (
+          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + confColor + ';' +
+            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
+            'text-transform:uppercase;">' + escHtml(c.confidence) + '</span>'
+        );
+
+        /* Cascade chain pill row */
+        var chain = (
+          '<div style="margin:.6rem 0;display:flex;align-items:center;flex-wrap:wrap;gap:.25rem;">' +
+            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
+              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.index_drug) + '</span>' +
+            '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>' +
+            (c.ade_en
+              ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
+                  'padding:.2rem .6rem;font-size:.82rem;color:#7d6608;">' +
+                  escHtml(c.ade_en) + '</span>' +
+                '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>'
+              : '') +
+            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
+              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
+              escHtml(c.cascade_drug) + '</span>' +
+          '</div>'
+        );
+
+        /* DDI warning */
         var ddiHtml = ddiWarning
-          ? '<div style="background:#fadbd8;border-left:3px solid #c0392b;padding:.45rem .75rem;' +
-              'margin-top:.55rem;font-size:.83rem;color:#922b21;border-radius:0 3px 3px 0;">' +
-              '&#9888;&nbsp;' + escHtml(ddiWarning) +
+          ? '<div style="background:#fdedec;border-left:3px solid #e74c3c;padding:.4rem .7rem;' +
+              'margin-top:.45rem;font-size:.82rem;color:#922b21;border-radius:0 3px 3px 0;">' +
+              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(ddiWarning) +
             '</div>'
           : '';
 
-        var noteHtml = clinNote
-          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.45rem .75rem;' +
-              'margin-top:.55rem;font-size:.83rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
-              '&#128203;&nbsp;<strong>Recommended first action:</strong> ' + escHtml(clinNote) +
+        /* Recommended action */
+        var actionHtml = actionText
+          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.4rem .7rem;' +
+              'margin-top:.45rem;font-size:.82rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
+              '<strong>&#128203; Recommended action:</strong>&nbsp;' + escHtml(actionText) +
             '</div>'
           : '';
+
+        /* Differential hints */
+        var diffHtml = diffHints.length
+          ? '<div style="margin-top:.45rem;font-size:.81rem;color:#555;">' +
+              '<strong>&#128270; Also consider:</strong>&nbsp;' +
+              escHtml(diffHints.join(' &bull; ')) +
+            '</div>'
+          : '';
+
+        /* Classification buttons */
+        var current = cls[c.cascade_id] || '';
+        var id      = escHtml(c.cascade_id);   /* safe for HTML attr; IDs are alphanumeric */
+
+        function classBtn(value, label, activeColor, activeText) {
+          var isActive = current === value;
+          return (
+            '<button onclick="classifyCascade(\'' + id + '\',\'' + value + '\')" ' +
+              'style="font-size:.78rem;padding:.28rem .75rem;border-radius:4px;cursor:pointer;' +
+                'font-weight:' + (isActive ? '700' : '500') + ';' +
+                'background:' + (isActive ? activeColor : '#f0f0f0') + ';' +
+                'color:'      + (isActive ? activeText  : '#444')    + ';' +
+                'border:1px solid ' + (isActive ? activeColor : '#ccc') + ';' +
+                'transition:background .15s;">' +
+              label +
+            '</button>'
+          );
+        }
+
+        var classButtons = (
+          '<div style="display:flex;gap:.45rem;margin-top:.7rem;flex-wrap:wrap;align-items:center;">' +
+            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">Classify:</span>' +
+            classBtn('confirmed',   '&#10003;&nbsp;Confirmed cascade', '#1e8449', '#fff') +
+            classBtn('possible',    '&#63;&nbsp;Possible cascade',     '#e67e22', '#fff') +
+            classBtn('not_cascade', '&#10005;&nbsp;Not a cascade',     '#7f8c8d', '#fff') +
+          '</div>'
+        );
+
+        /* Card border colour based on classification */
+        var borderColor = current === 'confirmed'  ? '#1e8449'
+                        : current === 'possible'   ? '#e67e22'
+                        : current === 'not_cascade'? '#bdc3c7'
+                        : '#d0d7de';
 
         return (
-          '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-            'margin-bottom:.75rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">' +
-            '<div style="font-weight:600;font-size:.93rem;">' + escHtml(c.cascade_name) + '</div>' +
-            '<div style="font-size:.87rem;color:#555;margin-top:.3rem;">' +
-              '&#128138;&nbsp;Index drug: <strong>' + escHtml(c.index_drug) + '</strong>' +
-              '&nbsp;&rarr;&nbsp;Cascade drug: <strong>' + escHtml(c.cascade_drug) + '</strong>' +
+          '<div style="border:2px solid ' + borderColor + ';border-radius:6px;padding:.9rem 1rem;' +
+            'margin-bottom:.85rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
+
+            /* Header */
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+              'flex-wrap:wrap;gap:.35rem;">' +
+              '<span style="font-size:.93rem;font-weight:700;">' +
+                escHtml(c.cascade_name) + confBadge +
+              '</span>' +
+              '<code style="font-size:.75rem;color:#aaa;">' + escHtml(c.cascade_id) + '</code>' +
             '</div>' +
-            ddiHtml + noteHtml +
+
+            chain + ddiHtml + actionHtml + diffHtml + classButtons +
           '</div>'
         );
       });
 
       return (
-        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.85rem;">' +
-          '&#9888;&nbsp;Review each signal below. These are clinician-facing decision-support prompts only.' +
+        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.84rem;">' +
+          '&#9888;&nbsp;Review each signal and classify it. For clinician use only.' +
         '</div>' +
+        tallyHtml +
         rows.join('')
       );
     }
@@ -716,72 +974,170 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs    = extractDrugs(state.clinicalNote);
-      var classes  = normalizeDrugs(drugs);
-      var detected = detectCascades(state.clinicalNote);
-      var pid      = state.patientId || '&mdash;';
-      var now      = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+      var r   = buildReport();
+      var now = r.generated_at.replace('T', ' ').split('.')[0] + ' UTC';
 
-      var drugsCell = drugs.length
-        ? escHtml(drugs.join(', '))
-        : '<em style="color:#888;">None detected</em>';
+      /* ── Section helper ── */
+      function section(title, content) {
+        return (
+          '<div style="margin-bottom:1.1rem;">' +
+            '<div style="font-size:.78rem;font-weight:700;text-transform:uppercase;' +
+              'letter-spacing:.06em;color:#888;border-bottom:1px solid #eee;' +
+              'padding-bottom:.3rem;margin-bottom:.55rem;">' + title + '</div>' +
+            content +
+          '</div>'
+        );
+      }
 
-      var classesCell = classes.length
-        ? escHtml(classes.join(', '))
-        : '<em style="color:#888;">None</em>';
+      /* ── Drug chips ── */
+      function chips(arr, bg, border, color) {
+        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">None detected</em>';
+        return arr.map(function (d) {
+          return (
+            '<span style="display:inline-block;background:' + bg + ';border:1px solid ' + border + ';' +
+              'border-radius:4px;padding:.18rem .55rem;font-size:.82rem;color:' + color + ';' +
+              'margin:.18rem .2rem .18rem 0;">' + escHtml(d) + '</span>'
+          );
+        }).join('');
+      }
 
-      var cascadeRows = detected.length === 0
-        ? '<p style="color:#1e8449;margin:.4rem 0;">&#10003; No prescribing cascade signals detected.</p>'
-        : detected.map(function (c) {
-            var entry = findCascadeEntry(c.cascade_id);
-            var rec   = entry ? (entry.clinical_note_en || '') : '';
-            return (
-              '<div style="margin:.45rem 0;padding:.6rem .85rem;border:1px solid #d0d7de;' +
-                'border-radius:5px;background:#fafafa;">' +
+      /* ── Verification status badge ── */
+      function verBadge(status) {
+        var map = {
+          confirmed:   { bg: '#1e8449', fg: '#fff', label: 'Confirmed'     },
+          possible:    { bg: '#e67e22', fg: '#fff', label: 'Possible'      },
+          not_cascade: { bg: '#bdc3c7', fg: '#555', label: 'Not a cascade' },
+          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: 'Unreviewed'    }
+        };
+        var s = map[status] || map.unreviewed;
+        return (
+          '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';' +
+            'border-radius:3px;padding:.1rem .42rem;white-space:nowrap;">' +
+            escHtml(s.label) + '</span>'
+        );
+      }
+
+      /* ── Cascade table ── */
+      var cascadeContent;
+      if (r.cascades.length === 0) {
+        cascadeContent = (
+          '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' +
+            '&#10003;&nbsp;No prescribing cascade signals detected.' +
+          '</p>'
+        );
+      } else {
+        var TH = 'style="padding:.4rem .55rem;text-align:left;font-size:.75rem;' +
+          'font-weight:700;color:#666;border-bottom:2px solid #ddd;white-space:nowrap;"';
+        var TD = 'style="padding:.45rem .55rem;font-size:.83rem;vertical-align:top;' +
+          'border-bottom:1px solid #f0f0f0;"';
+        var tableRows = r.cascades.map(function (c) {
+          return (
+            '<tr>' +
+              '<td ' + TD + '>' +
                 '<strong>' + escHtml(c.cascade_name) + '</strong>' +
-                '&nbsp;<code style="font-size:.74rem;color:#888;">' + escHtml(c.cascade_id) + '</code>' +
-                '<br><span style="font-size:.84rem;">&#128138;&nbsp;' +
-                  escHtml(c.index_drug) + ' &rarr; ' + escHtml(c.cascade_drug) +
-                '</span>' +
-                (rec
-                  ? '<br><span style="font-size:.81rem;color:#1a5276;">&#128203;&nbsp;' + escHtml(rec) + '</span>'
+                '<br><code style="font-size:.72rem;color:#bbb;">' + escHtml(c.cascade_id) + '</code>' +
+              '</td>' +
+              '<td ' + TD + '>' +
+                '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:3px;' +
+                  'padding:.1rem .4rem;font-size:.8rem;font-weight:700;">' +
+                  escHtml(c.index_drug) + '</span>' +
+                '<span style="color:#bbb;margin:0 .25rem;">&rarr;</span>' +
+                (c.ade_en
+                  ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:3px;' +
+                      'padding:.1rem .4rem;font-size:.78rem;color:#7d6608;">' +
+                      escHtml(c.ade_en) + '</span>' +
+                    '<span style="color:#bbb;margin:0 .25rem;">&rarr;</span>'
                   : '') +
-              '</div>'
-            );
-          }).join('');
+                '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:3px;' +
+                  'padding:.1rem .4rem;font-size:.8rem;font-weight:700;">' +
+                  escHtml(c.cascade_drug) + '</span>' +
+              '</td>' +
+              '<td ' + TD + '>' +
+                '<span style="font-size:.78rem;font-weight:700;color:#fff;border-radius:3px;' +
+                  'padding:.1rem .4rem;background:' +
+                  (c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d') +
+                  ';">' + escHtml(c.confidence) + '</span>' +
+              '</td>' +
+              '<td ' + TD + '>' + verBadge(c.verification_status) + '</td>' +
+              '<td ' + TD + ' style="padding:.45rem .55rem;font-size:.8rem;color:#1a5276;' +
+                'vertical-align:top;border-bottom:1px solid #f0f0f0;max-width:240px;">' +
+                (c.clinical_recommendation ? escHtml(c.clinical_recommendation) : '<em style="color:#bbb;">—</em>') +
+              '</td>' +
+            '</tr>'
+          );
+        }).join('');
+
+        cascadeContent = (
+          '<div style="overflow-x:auto;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
+              '<thead><tr>' +
+                '<th ' + TH + '>Cascade</th>' +
+                '<th ' + TH + '>Drug chain</th>' +
+                '<th ' + TH + '>Confidence</th>' +
+                '<th ' + TH + '>Verification</th>' +
+                '<th ' + TH + '>Clinical recommendation</th>' +
+              '</tr></thead>' +
+              '<tbody>' + tableRows + '</tbody>' +
+            '</table>' +
+          '</div>'
+        );
+      }
+
+      /* ── Export buttons ── */
+      var exportRow = (
+        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
+          '<button onclick="exportReport(\'json\')" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
+            '&#8681;&nbsp;Export JSON' +
+          '</button>' +
+          '<button onclick="exportReport(\'csv\')" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
+            '&#8681;&nbsp;Export CSV' +
+          '</button>' +
+        '</div>'
+      );
 
       return (
-        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;padding:1.15rem 1.3rem;">' +
-          '<h3 style="margin:0 0 .85rem;font-size:1rem;color:#2c3e50;">&#128196;&nbsp;Cascade Audit Report</h3>' +
+        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;' +
+          'padding:1.15rem 1.3rem;">' +
 
-          '<table style="width:100%;font-size:.87rem;border-collapse:collapse;margin-bottom:.85rem;">' +
-            '<tr style="border-bottom:1px solid #eee;">' +
-              '<td style="padding:.35rem .5rem;color:#666;width:38%;vertical-align:top;">Patient ID</td>' +
-              '<td style="padding:.35rem .5rem;font-weight:600;">' + pid + '</td>' +
-            '</tr>' +
-            '<tr style="border-bottom:1px solid #eee;">' +
-              '<td style="padding:.35rem .5rem;color:#666;">Generated</td>' +
-              '<td style="padding:.35rem .5rem;">' + escHtml(now) + '</td>' +
-            '</tr>' +
-            '<tr>' +
-              '<td style="padding:.35rem .5rem;color:#666;">KB version</td>' +
-              '<td style="padding:.35rem .5rem;">' + escHtml(getKBVersion()) + ' (' + escHtml(state.kbMode) + ')</td>' +
-            '</tr>' +
-          '</table>' +
+          '<h3 style="margin:0 0 1rem;font-size:1rem;color:#2c3e50;">' +
+            '&#128196;&nbsp;Cascade Audit Report' +
+          '</h3>' +
 
-          '<strong style="font-size:.88rem;">Drugs Detected (' + drugs.length + ')</strong>' +
-          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + drugsCell + '</p>' +
+          section('Patient &amp; Audit Metadata',
+            '<table style="font-size:.87rem;border-collapse:collapse;width:auto;">' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Patient ID</td>' +
+                  '<td style="padding:.28rem 0;font-weight:700;">' +
+                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">Not set</em>') +
+                  '</td></tr>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Generated</td>' +
+                  '<td style="padding:.28rem 0;">' + escHtml(now) + '</td></tr>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">KB version</td>' +
+                  '<td style="padding:.28rem 0;">' +
+                    escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
+                  '</td></tr>' +
+            '</table>'
+          ) +
 
-          '<strong style="font-size:.88rem;">Drug Classes (' + classes.length + ')</strong>' +
-          '<p style="margin:.35rem 0 .8rem;font-size:.86rem;">' + classesCell + '</p>' +
+          section('Drugs Detected (' + r.drugs_detected.length + ')',
+            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276')
+          ) +
 
-          '<strong style="font-size:.88rem;">Cascade Signals (' + detected.length + ')</strong>' +
-          '<div style="margin:.35rem 0 .75rem;">' + cascadeRows + '</div>' +
+          section('Drug Classes (' + r.drug_classes.length + ')',
+            chips(r.drug_classes, '#f4ecf7', '#d2b4de', '#6c3483')
+          ) +
+
+          section('Detected Cascades (' + r.cascade_count + ')', cascadeContent) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
             '&#9888;&nbsp;Decision support only. Not a medical device. ' +
             'Do not use with real patient identifiers outside a pseudonymised research context.' +
           '</div>' +
+
+          exportRow +
         '</div>'
       );
     }
@@ -847,7 +1203,8 @@ function exportJSON() {
     exportedAt: new Date().toISOString(),
     patientId: state.patientId,
     clinicalNote: state.clinicalNote,
-    step: state.step
+    step: state.step,
+    cascadeClassifications: state.cascadeClassifications
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   var url  = URL.createObjectURL(blob);
@@ -859,6 +1216,118 @@ function exportJSON() {
   document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
+
+/* ── buildReport ──────────────────────────────────────────────────────────
+   Assembles the full structured report object.
+   Used by the Step 6 display, JSON export, and CSV export so that all
+   three surfaces always show identical data.
+   ──────────────────────────────────────────────────────────────────────── */
+function buildReport() {
+  var drugs      = extractDrugs(state.clinicalNote);
+  var normalized = normalizeDrugs(drugs);
+  var detected   = detectCascades(state.clinicalNote);
+
+  /* Unique drug classes, preserving first-seen order */
+  var uniqueClasses = [];
+  var _seenCls = {};
+  normalized.forEach(function (n) {
+    if (n.class && !_seenCls[n.class]) { _seenCls[n.class] = true; uniqueClasses.push(n.class); }
+  });
+
+  var cascades = detected.map(function (c) {
+    var entry = findCascadeEntry(c.cascade_id);
+    var rec   = entry
+      ? (entry.recommended_first_action_en || entry.clinical_note_en || '')
+      : (c.clinical_hint || '');
+    return {
+      cascade_id:              c.cascade_id,
+      cascade_name:            c.cascade_name,
+      index_drug:              c.index_drug,
+      cascade_drug:            c.cascade_drug,
+      confidence:              c.confidence,
+      ade_en:                  c.ade_en  || '',
+      clinical_recommendation: rec,
+      verification_status:     state.cascadeClassifications[c.cascade_id] || 'unreviewed'
+    };
+  });
+
+  return {
+    patient_id:     state.patientId || '',
+    generated_at:   new Date().toISOString(),
+    kb_version:     getKBVersion(),
+    kb_mode:        state.kbMode,
+    drugs_detected: drugs,
+    drug_classes:   uniqueClasses,
+    cascade_count:  detected.length,
+    cascades:       cascades
+  };
+}
+
+/* ── exportReport ─────────────────────────────────────────────────────────
+   Inline export buttons in Step 6 call: exportReport('json') / ('csv')
+   ──────────────────────────────────────────────────────────────────────── */
+window.exportReport = function (format) {
+  var report   = buildReport();
+  var filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  var blob, mime;
+
+  if (format === 'csv') {
+    /* One row per cascade; header + data rows */
+    var csvCols = [
+      'patient_id', 'generated_at', 'kb_version',
+      'cascade_id', 'cascade_name',
+      'index_drug', 'cascade_drug', 'confidence', 'ade_en',
+      'clinical_recommendation', 'verification_status'
+    ];
+    /* RFC 4180 cell quoting: wrap in " and double any inner " */
+    function csvCell(v) {
+      var s = v === null || v === undefined ? '' : String(v);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    var rows = [csvCols.join(',')];
+    if (report.cascades.length === 0) {
+      /* Single data row indicating no cascades */
+      rows.push([
+        csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
+        csvCell(''), csvCell('No cascades detected'),
+        csvCell(''), csvCell(''), csvCell(''), csvCell(''),
+        csvCell(''), csvCell('')
+      ].join(','));
+    } else {
+      report.cascades.forEach(function (c) {
+        rows.push([
+          csvCell(report.patient_id),
+          csvCell(report.generated_at),
+          csvCell(report.kb_version),
+          csvCell(c.cascade_id),
+          csvCell(c.cascade_name),
+          csvCell(c.index_drug),
+          csvCell(c.cascade_drug),
+          csvCell(c.confidence),
+          csvCell(c.ade_en),
+          csvCell(c.clinical_recommendation),
+          csvCell(c.verification_status)
+        ].join(','));
+      });
+    }
+    blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    mime = 'text/csv';
+    filename += '.csv';
+  } else {
+    blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    mime = 'application/json';
+    filename += '.json';
+  }
+
+  var url = URL.createObjectURL(blob);
+  var a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+};
 
 /* Import Case — reads a previously exported JSON and restores state */
 function importCase(file) {
