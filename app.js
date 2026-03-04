@@ -17,7 +17,9 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null },
+  /* Step 2 — symptoms found in the clinical note */
+  symptomsDetected: [],
   /* Step 5 clinician classifications, keyed by cascade_id.
      Values: 'confirmed' | 'possible' | 'not_cascade' */
   cascadeClassifications: {}
@@ -32,6 +34,7 @@ function saveState() {
       step: state.step,
       patientId: state.patientId,
       clinicalNote: state.clinicalNote,
+      symptomsDetected: state.symptomsDetected,
       cascadeClassifications: state.cascadeClassifications
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
@@ -48,6 +51,7 @@ function loadState() {
     if (saved.patientId)               state.patientId               = saved.patientId;
     if (saved.clinicalNote)            state.clinicalNote            = saved.clinicalNote;
     if (saved.step)                    state.step                    = saved.step;
+    if (saved.symptomsDetected)        state.symptomsDetected        = saved.symptomsDetected;
     if (saved.cascadeClassifications)  state.cascadeClassifications  = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
@@ -60,6 +64,7 @@ function clearState() {
     state.step = 1;
     state.patientId = '';
     state.clinicalNote = '';
+    state.symptomsDetected = [];
     state.cascadeClassifications = {};
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
@@ -72,9 +77,10 @@ function clearState() {
 async function loadKB(track) {
   var folder = 'kb/' + (track || state.kbMode).toLowerCase();
   const files = {
-    coreCascades: folder + '/kb_core_cascades.json',
-    vihModifiers: folder + '/kb_vih_modifiers.json',
-    ddiWatchlist: folder + '/ddi_watchlist.json'
+    coreCascades:      folder + '/kb_core_cascades.json',
+    vihModifiers:      folder + '/kb_vih_modifiers.json',
+    ddiWatchlist:      folder + '/ddi_watchlist.json',
+    symptomDictionary: folder + '/kb_symptoms.json'
   };
 
   const results = await Promise.allSettled(
@@ -111,7 +117,7 @@ function updateKBStatus(loaded, failed) {
   var statusEl = document.getElementById('kb-status');
   if (statusEl) {
     if (failed === 0) {
-      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/3) &mdash; ' + mode + '</span>';
+      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/' + (loaded + failed) + ') &mdash; ' + mode + '</span>';
     } else {
       statusEl.innerHTML =
         '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
@@ -344,6 +350,44 @@ function extractDrugs(noteText) {
 }
 
 /**
+ * Scan `noteText` for symptom terms defined in kb_symptoms.json.
+ * Uses the same drugFoundInNote() whole-word match as extractDrugs().
+ * Each symptom's `term` and `synonyms` are all tested; the first match wins.
+ *
+ * Results are also cached in state.symptomsDetected so other steps can
+ * read them without re-running extraction.
+ *
+ * @param {string} noteText
+ * @returns {Array<{id, term, matched_term, category, cascade_relevance}>}
+ */
+function extractSymptoms(noteText) {
+  if (!noteText || !noteText.trim()) {
+    state.symptomsDetected = [];
+    return [];
+  }
+
+  var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
+  var detected = [];
+
+  symptoms.forEach(function (sym) {
+    var allTerms = [sym.term].concat(sym.synonyms || []);
+    var matched  = allTerms.find(function (t) { return drugFoundInNote(noteText, t); });
+    if (matched) {
+      detected.push({
+        id:                sym.id,
+        term:              sym.term,
+        matched_term:      matched,
+        category:          sym.category          || '',
+        cascade_relevance: sym.cascade_relevance || ''
+      });
+    }
+  });
+
+  state.symptomsDetected = detected;
+  return detected;
+}
+
+/**
  * Map an array of drug names to their canonical drug classes using the KB.
  *
  * Two-pass priority: index-drug roles are resolved first (a drug acting as a
@@ -464,7 +508,7 @@ const STEP_CONTENT = {
     }
   },
   2: {
-    title: '&#128269; Step 2 — Drug Extractor',
+    title: '&#128269; Step 2 — Drug &amp; Symptom Extractor',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
       if (!kbReady) {
@@ -484,44 +528,113 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs = extractDrugs(state.clinicalNote);
-
-      if (drugs.length === 0) {
-        return (
-          '<div class="callout callout-success">' +
-            '<strong>&#10003; No known drug names detected</strong> in the clinical note. ' +
-            'The note may use trade names, abbreviations, or drugs not covered by the current KB.' +
-          '</div>'
-        );
-      }
-
-      /* Reuse normalizeDrugs() so class labels are consistent with Step 3 */
+      /* ── Drug extraction ── */
+      var drugs      = extractDrugs(state.clinicalNote);
       var normalized = normalizeDrugs(drugs);
       var classLookup = {};
       normalized.forEach(function (n) { classLookup[n.drug.toLowerCase()] = n.class; });
 
-      var tags = drugs.map(function (d) {
-        var cls = classLookup[d.toLowerCase()] || '';
-        var clsLabel = cls
-          ? '<span style="display:block;font-size:.68rem;opacity:.82;margin-top:.1rem;font-weight:400;">' + escHtml(cls) + '</span>'
-          : '';
-        return (
-          '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:4px;' +
-            'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
-            'vertical-align:top;line-height:1.3;">' +
-            escHtml(d) + clsLabel +
-          '</span>'
+      var drugSection;
+      if (drugs.length === 0) {
+        drugSection = (
+          '<div class="callout callout-success">' +
+            '<strong>&#10003; No known drug names detected.</strong> ' +
+            'The note may use trade names, abbreviations, or drugs not covered by the current KB.' +
+          '</div>'
         );
-      }).join('');
+      } else {
+        var drugTags = drugs.map(function (d) {
+          var cls = classLookup[d.toLowerCase()] || '';
+          var clsLabel = cls
+            ? '<span style="display:block;font-size:.68rem;opacity:.85;margin-top:.1rem;font-weight:400;">' +
+                escHtml(cls) + '</span>'
+            : '';
+          return (
+            '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:4px;' +
+              'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
+              'vertical-align:top;line-height:1.3;">' +
+              escHtml(d) + clsLabel +
+            '</span>'
+          );
+        }).join('');
+        drugSection = (
+          '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
+            '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
+            ' extracted</strong> from the clinical note.' +
+          '</div>' +
+          '<div style="padding:.2rem 0 .65rem;">' + drugTags + '</div>'
+        );
+      }
+
+      /* ── Symptom extraction — uses extractSymptoms() which also caches in state ── */
+      console.log('[Step2] state.kb.symptomDictionary before extractSymptoms:', state.kb.symptomDictionary);
+      var symptoms    = extractSymptoms(state.clinicalNote);
+      saveState();   /* persist state.symptomsDetected */
+
+      var symptomSection;
+      if (!state.kb.symptomDictionary) {
+        symptomSection = (
+          '<div class="callout callout-warning" style="font-size:.84rem;">' +
+            '&#9888;&nbsp;<strong>Symptom dictionary not loaded.</strong> ' +
+            'Reload the page or check the KB status in the footer.' +
+          '</div>'
+        );
+      } else if (symptoms.length === 0) {
+        symptomSection = (
+          '<div class="callout callout-success">' +
+            '<strong>&#10003; No symptom terms detected</strong> in the clinical note.' +
+          '</div>'
+        );
+      } else {
+        /* Category → colour mapping */
+        var catColor = {
+          gastrointestinal: '#7d6608',
+          anticholinergic:  '#6c3483',
+          neurological:     '#154360',
+          safety:           '#922b21',
+          cardiovascular:   '#1a5276',
+          urological:       '#145a32'
+        };
+        var symTags = symptoms.map(function (s) {
+          var bg  = catColor[s.category] || '#555';
+          /* Show matched synonym in parentheses when it differs from canonical term */
+          var label = escHtml(s.term);
+          if (s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
+            label += ' <span style="font-size:.72rem;opacity:.8;">(' + escHtml(s.matched_term) + ')</span>';
+          }
+          var catLabel = s.category
+            ? '<span style="display:block;font-size:.67rem;opacity:.82;margin-top:.1rem;font-weight:400;">' +
+                escHtml(s.category) + '</span>'
+            : '';
+          return (
+            '<span style="display:inline-block;background:' + bg + ';color:#fff;border-radius:4px;' +
+              'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
+              'vertical-align:top;line-height:1.3;" title="' + escHtml(s.cascade_relevance) + '">' +
+              label + catLabel +
+            '</span>'
+          );
+        }).join('');
+        symptomSection = (
+          '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
+            '<strong>' + symptoms.length + ' symptom term' + (symptoms.length === 1 ? '' : 's') +
+            ' detected</strong> from the clinical note (hover for cascade relevance).' +
+          '</div>' +
+          '<div style="padding:.2rem 0 .65rem;">' + symTags + '</div>'
+        );
+      }
+
+      var divider = '<hr style="border:none;border-top:1px solid #eee;margin:.9rem 0;">';
 
       return (
-        '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-          ' extracted</strong> from the clinical note (matched against all KB entries).' +
-        '</div>' +
-        '<div style="padding:.35rem 0 .6rem;">' + tags + '</div>' +
+        '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
+          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Drugs</div>' +
+        drugSection +
+        divider +
+        '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
+          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Symptoms</div>' +
+        symptomSection +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
-          '&#9888;&nbsp;Extraction is keyword-based. Trade names and abbreviations not in the KB will be missed.' +
+          '&#9888;&nbsp;Extraction is keyword-based. Trade names, abbreviations, and terms not in the KB will be missed.' +
         '</div>'
       );
     }
@@ -1252,14 +1365,17 @@ function buildReport() {
   });
 
   return {
-    patient_id:     state.patientId || '',
-    generated_at:   new Date().toISOString(),
-    kb_version:     getKBVersion(),
-    kb_mode:        state.kbMode,
-    drugs_detected: drugs,
-    drug_classes:   uniqueClasses,
-    cascade_count:  detected.length,
-    cascades:       cascades
+    patient_id:         state.patientId || '',
+    generated_at:       new Date().toISOString(),
+    kb_version:         getKBVersion(),
+    kb_mode:            state.kbMode,
+    drugs_detected:     drugs,
+    drug_classes:       uniqueClasses,
+    symptoms_detected:  state.symptomsDetected.map(function (s) {
+      return { id: s.id, term: s.term, matched_term: s.matched_term, category: s.category };
+    }),
+    cascade_count:      detected.length,
+    cascades:           cascades
   };
 }
 
