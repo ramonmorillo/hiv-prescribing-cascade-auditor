@@ -198,6 +198,24 @@ function runKBValidation() {
   }
 }
 
+/* Strip in-memory __i18n provenance markers from a KB data object before export.
+ * Returns a shallow clone so the live state object is not mutated. */
+function stripI18nMarkers(kbData) {
+  if (!kbData) return kbData;
+  var arrays = ['cascades', 'non_cascade_iatrogenic'];
+  var cloned = Object.assign({}, kbData);
+  arrays.forEach(function (key) {
+    if (!Array.isArray(cloned[key])) return;
+    cloned[key] = cloned[key].map(function (c) {
+      if (!c || !c.__i18n) return c;
+      var copy = Object.assign({}, c);
+      delete copy.__i18n;
+      return copy;
+    });
+  });
+  return cloned;
+}
+
 /* Export KB bundle — downloads core+modifiers+watchlist as single JSON */
 function exportKBBundle() {
   if (!state.kb.coreCascades && !state.kb.vihModifiers && !state.kb.ddiWatchlist) {
@@ -208,7 +226,7 @@ function exportKBBundle() {
     exportedAt: new Date().toISOString(),
     kbMode: state.kbMode,
     kbVersion: getKBVersion(),
-    coreCascades: state.kb.coreCascades,
+    coreCascades: stripI18nMarkers(state.kb.coreCascades),
     vihModifiers: state.kb.vihModifiers,
     ddiWatchlist: state.kb.ddiWatchlist
   };
@@ -2018,6 +2036,36 @@ window.runNlpSelfTest = function () {
            es6s.confidence, 'low');
   }
 
+  console.groupEnd();
+
+  /* ── Group F: bilingual normalization fallback ─────────────────────── */
+  console.group('F — Bilingual normalization fallback');
+  (function () {
+    var minimal = {
+      id: 'CC_TEST_NORM',
+      name_en: 'Test Drug → Test ADE → Test Treatment',
+      index_drug_classes: ['TestClass'],
+      index_drug_examples: ['testdrug'],
+      ade_en: 'Test adverse drug effect',
+      cascade_drug_examples: ['testtreatment'],
+      confidence: 'medium',
+      age_sensitivity: 'low',
+      risk_focus: ['metabolic'],
+      differential_hints: ['Hint one', 'Hint two', 'Hint three'],
+      appropriateness: 'context_dependent'
+    };
+    var testKb = { version: '0.0.1-test', cascades: [minimal] };
+    var vResult = typeof validateKB === 'function' ? validateKB(testKb) : null;
+    if (vResult) {
+      assert('F1: validation passes for cascade without name_es/ade_es', vResult.ok, true);
+      assert('F2: name_es filled from name_en', testKb.cascades[0].name_es, minimal.name_en);
+      assert('F3: ade_es filled from ade_en', testKb.cascades[0].ade_es, minimal.ade_en);
+      assert('F4: __i18n.es_fallback marker set', !!(testKb.cascades[0].__i18n && testKb.cascades[0].__i18n.es_fallback), true);
+      assert('F5: __i18n.fields includes name_es', !!(testKb.cascades[0].__i18n && testKb.cascades[0].__i18n.fields.indexOf('name_es') !== -1), true);
+    } else {
+      assert('F1: validateKB available', false, true);
+    }
+  })();
   console.groupEnd();
 
   console.log('─────────────────────────────────────');

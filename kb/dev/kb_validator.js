@@ -1,13 +1,16 @@
 /* kb_validator.js — DEV KB schema validator
  * Exported as window.validateKB (browser) or module.exports.validateKB (Node).
  * Usage: var result = validateKB(kbJson);  // { ok, errors, warnings }
+ * Also exposes window.normalizeBilingualCascades for use in app.js (export strip).
  */
 (function (root, factory) {
   'use strict';
+  var exports = factory();
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateKB: factory() };
+    module.exports = exports;
   } else {
-    root.validateKB = factory();
+    root.validateKB = exports.validateKB;
+    root.normalizeBilingualCascades = exports.normalizeBilingualFields;
   }
 }(typeof window !== 'undefined' ? window : this, function () {
   'use strict';
@@ -34,11 +37,43 @@
   var VALID_AGE_SENS      = ['high', 'medium', 'low'];
   var VALID_APPROPRIATENESS = ['often_appropriate', 'context_dependent', 'often_inappropriate'];
 
-  /* Bilingual optional pairs — warn if one side exists without the other */
-  var BILINGUAL_OPTIONAL_PAIRS = [
+  /* Bilingual fill pairs — _es is auto-populated from _en if absent.
+   * Order matters: name/ade first, then optional mechanism/action fields. */
+  var BILINGUAL_FILL_PAIRS = [
+    ['name_es',                     'name_en'],
+    ['ade_es',                      'ade_en'],
     ['ade_mechanism_es',            'ade_mechanism_en'],
     ['recommended_first_action_es', 'recommended_first_action_en']
   ];
+
+  /* ── Bilingual normaliser ─────────────────────────────────────────────── */
+  /* Fills missing _es fields from their _en counterparts in-place.
+   * Attaches a __i18n provenance marker so callers know which fields were
+   * auto-filled.  The marker must be stripped before JSON export.        */
+  function normalizeBilingualFields(kbJson) {
+    var allEntries = [];
+    if (Array.isArray(kbJson.cascades)) {
+      allEntries = allEntries.concat(kbJson.cascades);
+    }
+    if (Array.isArray(kbJson.non_cascade_iatrogenic)) {
+      allEntries = allEntries.concat(kbJson.non_cascade_iatrogenic);
+    }
+    allEntries.forEach(function (entry) {
+      if (!entry || typeof entry !== 'object') return;
+      var filled = [];
+      BILINGUAL_FILL_PAIRS.forEach(function (pair) {
+        var esField = pair[0];
+        var enField = pair[1];
+        if (entry[enField] && (!entry[esField] || entry[esField] === '')) {
+          entry[esField] = entry[enField];
+          filled.push(esField);
+        }
+      });
+      if (filled.length > 0) {
+        entry.__i18n = { es_fallback: true, fields: filled };
+      }
+    });
+  }
 
   /* ── Main validator ───────────────────────────────────────────────────── */
   function validateKB(kbJson) {
@@ -49,6 +84,9 @@
       errors.push('KB root is not a valid object.');
       return { ok: false, errors: errors, warnings: warnings };
     }
+
+    /* Fill missing _es fields from _en before running required-field checks */
+    normalizeBilingualFields(kbJson);
 
     /* Top-level structure */
     if (!kbJson.version) {
@@ -164,18 +202,6 @@
       warnings.push('[' + label + '] "differential_hints" has only ' + entry.differential_hints.length + ' item(s); recommended minimum is 3.');
     }
 
-    /* Bilingual optional pair consistency */
-    BILINGUAL_OPTIONAL_PAIRS.forEach(function (pair) {
-      var hasA = pair[0] in entry && entry[pair[0]];
-      var hasB = pair[1] in entry && entry[pair[1]];
-      if (hasA && !hasB) {
-        warnings.push('[' + label + '] Has "' + pair[0] + '" but missing bilingual counterpart "' + pair[1] + '".');
-      }
-      if (hasB && !hasA) {
-        warnings.push('[' + label + '] Has "' + pair[1] + '" but missing bilingual counterpart "' + pair[0] + '".');
-      }
-    });
-
     /* String type checks for required string fields */
     ['id', 'name_es', 'name_en', 'ade_es', 'ade_en', 'confidence', 'age_sensitivity', 'appropriateness'].forEach(function (f) {
       if (f in entry && entry[f] !== null && typeof entry[f] !== 'string') {
@@ -184,5 +210,5 @@
     });
   }
 
-  return validateKB;
+  return { validateKB: validateKB, normalizeBilingualFields: normalizeBilingualFields };
 }));
