@@ -1712,7 +1712,12 @@ const STEP_CONTENT = {
           ) +
 
           section('Drugs Detected (' + r.drugs_detected.length + ')',
-            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276')
+            chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276') +
+            (r.diagnostics && r.diagnostics.inferredDrugsFromCascades
+              ? '<p style="margin:.4rem 0 0;font-size:.75rem;color:#7f8c8d;">' +
+                  '&#9432;&nbsp;' + r.diagnostics.inferredDrugCount + ' drug(s) inferred from cascade matches.' +
+                '</p>'
+              : '')
           ) +
 
           section('Drug Classes (' + r.drug_classes.length + ')',
@@ -1806,6 +1811,40 @@ function exportJSON() {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+/* ── reconcileDrugsWithCascades ────────────────────────────────────────────
+ * Merges cascade index_drug / cascade_drug into the drugs array so that
+ * drugs_detected can never be empty while cascades are shown.
+ *
+ * Why: extractDrugs() scans the note against KB example lists; the cascade
+ * engine can match drugs via symptom-bridge or Spanish INN variants that
+ * extractDrugs() misses.  This function is the single authoritative fix.
+ *
+ * Contract:
+ *   - Returns a new string[] (original array not mutated).
+ *   - Deduplication is case-insensitive; original casing is preserved.
+ *   - Only index_drug and cascade_drug are used; ADE/symptom terms are never
+ *     added (they live in detectedCascades[*].ade_en, not the drug fields).
+ *   - detectedCascades entries with falsy drug fields are silently skipped.
+ * ──────────────────────────────────────────────────────────────────────── */
+function reconcileDrugsWithCascades(drugs, detectedCascades) {
+  var result = drugs.slice();               /* copy — never mutate input */
+  var seen   = {};
+  result.forEach(function (d) { seen[d.toLowerCase()] = true; });
+
+  (detectedCascades || []).forEach(function (c) {
+    [c.index_drug, c.cascade_drug].forEach(function (drug) {
+      if (!drug || typeof drug !== 'string') return;
+      var key = drug.trim().toLowerCase();
+      if (key && !seen[key]) {
+        result.push(drug.trim());
+        seen[key] = true;
+      }
+    });
+  });
+
+  return result;
+}
+
 /* ── buildReport ──────────────────────────────────────────────────────────
    Assembles the full structured report object.
    Used by the Step 6 display, JSON export, and CSV export so that all
@@ -1813,8 +1852,12 @@ function exportJSON() {
    ──────────────────────────────────────────────────────────────────────── */
 function buildReport() {
   var drugs      = extractDrugs(state.clinicalNote);
-  var normalized = normalizeDrugs(drugs);
   var detected   = getDetectedCascades(state.clinicalNote);
+
+  /* Reconcile before normalization so drug_classes also cover cascade drugs */
+  var reconciledDrugs = reconcileDrugsWithCascades(drugs, detected);
+  var inferredCount   = reconciledDrugs.length - drugs.length;
+  var normalized      = normalizeDrugs(reconciledDrugs);
 
   /* Unique drug classes, preserving first-seen order */
   var uniqueClasses = [];
@@ -1845,8 +1888,12 @@ function buildReport() {
     generated_at:       new Date().toISOString(),
     kb_version:         getKBVersion(),
     kb_mode:            state.kbMode,
-    drugs_detected:     drugs,
+    drugs_detected:     reconciledDrugs,
     drug_classes:       uniqueClasses,
+    diagnostics: {
+      inferredDrugsFromCascades: inferredCount > 0,
+      inferredDrugCount:         inferredCount
+    },
     symptoms_detected:  state.symptomsDetected.map(function (s) {
       return { id: s.id, term: s.term, matched_term: s.matched_term, category: s.category };
     }),
@@ -2282,6 +2329,59 @@ window.runNlpSelfTest = function () {
     assert('F11: requireTranslations + no fills → ok = true', f11R.ok, true);
     assert('F11: fallbackFieldCount = 0 when all ES present', f11R.fallbackFieldCount, 0);
   })();
+  console.groupEnd();
+
+  /* ── Group G: reconcileDrugsWithCascades ─────────────────────────────── */
+  console.group('G — Drug-cascade reconciliation');
+
+  /* G1: drugs already present are NOT duplicated */
+  var g1 = reconcileDrugsWithCascades(
+    ['amlodipine'],
+    [{ index_drug: 'Amlodipine', cascade_drug: 'furosemide' }]
+  );
+  assert('G1: existing drug not duplicated (case-insensitive)', g1.filter(function(d){
+    return d.toLowerCase() === 'amlodipine';
+  }).length, 1);
+  assert('G1: cascade_drug added when missing', g1.indexOf('furosemide') >= 0, true);
+
+  /* G2: empty drugs + cascade with both drugs → both back-filled */
+  var g2 = reconcileDrugsWithCascades(
+    [],
+    [{ index_drug: 'amlodipino', cascade_drug: 'furosemida' }]
+  );
+  assert('G2: index_drug added when drugs empty', g2.indexOf('amlodipino') >= 0, true);
+  assert('G2: cascade_drug added when drugs empty', g2.indexOf('furosemida') >= 0, true);
+  assert('G2: length is 2', g2.length, 2);
+
+  /* G3: ADE/symptom terms must NOT appear — cascade has no ADE field used */
+  var g3 = reconcileDrugsWithCascades(
+    [],
+    [{ index_drug: 'amlodipino', cascade_drug: 'furosemida', ade_en: 'oedema' }]
+  );
+  assert('G3: ade_en "oedema" NOT in result', g3.indexOf('oedema'), -1);
+  assert('G3: result length still 2',          g3.length, 2);
+
+  /* G4: null / undefined drug fields are skipped gracefully */
+  var g4 = reconcileDrugsWithCascades(
+    [],
+    [{ index_drug: null, cascade_drug: undefined }]
+  );
+  assert('G4: null/undefined drugs → empty result', g4.length, 0);
+
+  /* G5: buildReport() diagnostics populated when cascades add drugs.
+   * We use reconcileDrugsWithCascades directly (no live note needed). */
+  var g5in  = [];
+  var g5cas = [{ index_drug: 'metoprolol', cascade_drug: 'salbutamol' }];
+  var g5out = reconcileDrugsWithCascades(g5in, g5cas);
+  var g5cnt = g5out.length - g5in.length;
+  assert('G5: inferredCount = 2 when both drugs back-filled', g5cnt, 2);
+
+  /* G6: original input array is NOT mutated */
+  var g6orig = ['atenolol'];
+  var g6     = reconcileDrugsWithCascades(g6orig, [{ index_drug: 'bisoprolol', cascade_drug: 'furosemide' }]);
+  assert('G6: original drugs array not mutated', g6orig.length, 1);
+  assert('G6: returned array has all three',     g6.length,     3);
+
   console.groupEnd();
 
   console.log('─────────────────────────────────────');
