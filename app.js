@@ -176,30 +176,57 @@ function runKBValidation() {
   var opResult = validateKBOperational(kbData);
 
   /* Build per-field editorial notes from the operational fallback report.
-   * Each entry shows count + a <details> block listing affected cascade IDs. */
+   * In demo mode (__DEMO_MODE) the per-field detail lines are hidden behind a
+   * single collapsible toggle so they do not alarm course participants. */
   var editorialItems = [];
   var byField    = opResult.fallbackByField    || {};
   var byFieldIds = opResult.fallbackByFieldIds || {};
-  Object.keys(byField).sort().forEach(function (field) {
-    var count = byField[field];
-    var ids   = byFieldIds[field] || [];
-    var idList = escHtml(ids.join(', '));
+  var isDemo     = typeof window !== 'undefined' && window.__DEMO_MODE === true;
+
+  /* Top summary line — shown whenever any EN→ES fallback is active */
+  if (opResult.fallbackCascadeCount > 0) {
     editorialItems.push(
-      '<li>Missing translation <code>' + escHtml(field) + '</code>: ' + count + ' cascade(s)' +
-      ' — add translations or leave for EN\u2192ES fallback.' +
-      (ids.length ? '<details style="display:inline-block;margin-left:.5rem">' +
-        '<summary style="cursor:pointer;font-size:.75rem;color:#7d6608">Show IDs (' + ids.length + ')</summary>' +
-        '<span style="font-family:monospace;font-size:.72rem;word-break:break-all">' + idList + '</span>' +
-        '</details>' : '') +
+      '<li style="list-style:none;font-weight:600;margin-bottom:.25rem;">' +
+      'Language: mixed (EN fallback active) \u2014 ' +
+      opResult.fallbackCascadeCount + ' cascade(s), ' +
+      opResult.fallbackFieldCount + ' field(s).' +
+      '</li>'
+    );
+  }
+
+  /* Per-field lines with friendlier wording */
+  var perFieldLines = [];
+  Object.keys(byField).sort().forEach(function (field) {
+    var count  = byField[field];
+    var ids    = byFieldIds[field] || [];
+    var idList = escHtml(ids.join(', '));
+    perFieldLines.push(
+      '<li>Spanish translation pending for <code>' + escHtml(field) + '</code>' +
+      ': using EN fallback for ' + count + ' cascade(s).' +
+      (ids.length
+        ? '<details style="display:inline-block;margin-left:.5rem">' +
+            '<summary style="cursor:pointer;font-size:.75rem;color:#7d6608">Show IDs (' + ids.length + ')</summary>' +
+            '<span style="font-family:monospace;font-size:.72rem;word-break:break-all">' + idList + '</span>' +
+          '</details>'
+        : '') +
       '</li>'
     );
   });
-  if (opResult.fallbackCascadeCount > 0) {
+
+  if (isDemo && perFieldLines.length > 0) {
+    /* Demo mode: collapse all per-field lines under one toggle */
     editorialItems.push(
-      '<li>i18n: ' + opResult.fallbackCascadeCount + ' cascade(s), ' +
-      opResult.fallbackFieldCount + ' field fill(s) using EN\u2192ES fallback' +
-      ' \u2014 translations not yet provided in KB source files.</li>'
+      '<li style="list-style:none;">' +
+        '<details>' +
+          '<summary style="cursor:pointer;font-size:.75rem;color:#7d6608">' +
+            'Show translation details (' + perFieldLines.length + ' field(s))' +
+          '</summary>' +
+          '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' + perFieldLines.join('') + '</ul>' +
+        '</details>' +
+      '</li>'
     );
+  } else {
+    editorialItems = editorialItems.concat(perFieldLines);
   }
 
   /* Structural warnings from operational (e.g. differential_hints < 3) */
