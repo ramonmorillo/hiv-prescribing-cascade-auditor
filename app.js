@@ -42,6 +42,11 @@ function saveState() {
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   } catch (err) {
     console.error('[Storage] Could not save state:', err);
+    /* QuotaExceededError means browser storage is full — surface this to the user
+     * so they know their work is at risk, rather than losing it silently. */
+    if (err && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+      showToast('Storage full — auto-save failed. Export your case now to avoid data loss.', 'error');
+    }
   }
 }
 
@@ -50,11 +55,13 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    if (saved.patientId)               state.patientId               = saved.patientId;
-    if (saved.clinicalNote)            state.clinicalNote            = saved.clinicalNote;
-    if (saved.step)                    state.step                    = saved.step;
-    if (saved.symptomsDetected)        state.symptomsDetected        = saved.symptomsDetected;
-    if (saved.cascadeClassifications)  state.cascadeClassifications  = saved.cascadeClassifications;
+    if (typeof saved.patientId === 'string')    state.patientId    = saved.patientId;
+    if (typeof saved.clinicalNote === 'string') state.clinicalNote = saved.clinicalNote;
+    /* Guard against corrupted or out-of-range step values */
+    if (Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 6) state.step = saved.step;
+    if (Array.isArray(saved.symptomsDetected))                 state.symptomsDetected       = saved.symptomsDetected;
+    if (saved.cascadeClassifications && typeof saved.cascadeClassifications === 'object' &&
+        !Array.isArray(saved.cascadeClassifications))          state.cascadeClassifications = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
   }
@@ -104,7 +111,13 @@ async function loadKB(track) {
     Object.entries(files).map(async ([key, url]) => {
       const resp = await fetch(url, { cache: 'no-cache' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
-      state.kb[key] = await resp.json();
+      const parsed = await resp.json();
+      /* Reject non-object payloads (e.g. a JSON string or array at root level)
+       * before they corrupt state.kb and cause downstream null-dereference errors. */
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Unexpected KB format in ' + url + ' — root must be a JSON object');
+      }
+      state.kb[key] = parsed;
       return key;
     })
   );
@@ -134,7 +147,7 @@ async function loadKB(track) {
 
 function getKBVersion() {
   var src = state.kb.coreCascades || state.kb.vihModifiers || state.kb.ddiWatchlist;
-  return (src && src.version) ? src.version : 'unknown';
+  return (src && src.version) ? src.version : '';
 }
 
 function updateKBStatus(loaded, failed) {
@@ -144,8 +157,12 @@ function updateKBStatus(loaded, failed) {
   var statusEl = document.getElementById('kb-status');
   if (statusEl) {
     if (failed === 0) {
-      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/' + (loaded + failed) + ') &mdash; ' + mode + '</span>';
+      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB ' + mode + (version ? ' v' + version : '') + '</span>';
+    } else if (loaded === 0) {
+      /* Total failure — all files unavailable */
+      statusEl.innerHTML = '<span class="kb-chip fail">&#10007; KB unavailable &mdash; ' + failed + ' file(s) failed to load</span>';
     } else {
+      /* Partial failure — some files loaded, some failed */
       statusEl.innerHTML =
         '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
         '<span class="kb-chip fail">&#10007; ' + failed + ' failed</span> ' +
@@ -153,9 +170,9 @@ function updateKBStatus(loaded, failed) {
     }
   }
 
-  var footerModeEl = document.getElementById('kb-footer-mode');
-  if (footerModeEl) {
-    footerModeEl.textContent = 'KB mode: ' + mode + ' | KB version: ' + version;
+  var devModeEl = document.getElementById('kb-footer-mode');
+  if (devModeEl) {
+    devModeEl.textContent = 'KB: ' + mode + (version ? ' v' + version : '');
   }
 }
 
@@ -272,7 +289,7 @@ function stripI18nMarkers(kbData) {
  * Source KB: unmodified — what you see is exactly what is in the JSON files. */
 function exportKBBundle() {
   if (!state.kb.coreCascades && !state.kb.vihModifiers && !state.kb.ddiWatchlist) {
-    alert('KB not loaded yet. Please wait for KB to finish loading.');
+    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
     return;
   }
   var bundle = {
@@ -293,11 +310,11 @@ function exportKBBundle() {
  * NOT modified; add translations there to make them permanent.             */
 function exportKBBundleOperational() {
   if (!state.kb.coreCascades) {
-    alert('KB not loaded yet. Please wait for KB to finish loading.');
+    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
     return;
   }
   if (typeof buildOperationalKB !== 'function') {
-    alert('Validator not loaded. Cannot build operational export.');
+    showToast('KB validator not loaded — cannot build operational export.', 'error');
     return;
   }
   var built = buildOperationalKB(state.kb.coreCascades);
@@ -323,15 +340,20 @@ function exportKBBundleOperational() {
 
 /* Shared download helper used by both export functions */
 function downloadJSON(obj, filename) {
-  var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (err) {
+    console.error('[Export] downloadJSON failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 }
 
 /* ============================================================
@@ -573,8 +595,9 @@ function detectCascades(noteText) {
       signal_type:   'drug_drug',
       index_drug:    foundIndex,
       cascade_drug:  foundCascade,
-      /* confidence: core uses "confidence", VIH uses "plausibility" */
-      confidence:    cascade.confidence || cascade.plausibility || 'unknown',
+      /* confidence: core uses "confidence", VIH uses "plausibility".
+       * Fall back to 'low' rather than the ambiguous string 'unknown'. */
+      confidence:    cascade.confidence || cascade.plausibility || 'low',
       risk_focus:    cascade.risk_focus || [],
       /* ade_en: the intermediate adverse effect that links the two drugs */
       ade_en:        cascade.ade_en || '',
@@ -778,10 +801,6 @@ function extractSymptoms(noteText) {
   }
 
   var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
-  /* DEBUG — remove after confirming Spanish detection works */
-  console.debug('[extractSymptoms] KB version:', state.kb.symptomDictionary && state.kb.symptomDictionary.version,
-    '| entry count:', symptoms.length,
-    '| note NFC?', noteText === noteText.normalize('NFC'));
   var detected = [];
 
   symptoms.forEach(function (sym) {
@@ -914,16 +933,55 @@ window.classifyCascade = function (cascadeId, value) {
    ============================================================ */
 const STEP_CONTENT = {
   1: {
-    title: '&#128203; Step 1 — Clinical Note Input',
+    title: '&#128203; Paso 1 &mdash; Datos del caso',
     body: function () {
+      var onboarding = '';
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        onboarding = (
+          '<div class="onboarding-panel" id="onboarding-panel">' +
+            '<div class="onboarding-header">' +
+              '<span class="onboarding-icon">&#128301;</span>' +
+              '<strong>C&oacute;mo funciona el auditor &mdash; en 3 pasos</strong>' +
+            '</div>' +
+            '<div class="onboarding-steps">' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">1</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>Introduzca la nota cl&iacute;nica</strong>' +
+                  '<p>Pegue la nota cl&iacute;nica seudonimizada del paciente. El auditor extraer&aacute; autom&aacute;ticamente los medicamentos y problemas activos.</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">2</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>El auditor detecta posibles cascadas</strong>' +
+                  '<p>Cruza los f&aacute;rmacos con la base de conocimiento: identifica si alg&uacute;n medicamento puede ser consecuencia de un efecto adverso de otro.</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">3</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>Obtenga un plan farmacoterap&eacute;utico</strong>' +
+                  '<p>Clasifique cada hallazgo, a&ntilde;ada sus notas cl&iacute;nicas y exporte un informe estructurado para el equipo asistencial.</p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="onboarding-actions">' +
+              '<span class="onboarding-hint">&#8594; Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.</span>' +
+              '<button class="btn btn-outline btn-sm" onclick="loadDemoCase()" type="button">&#9654; Probar demo</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
       return (
+        onboarding +
         '<div class="form-group">' +
-          '<label class="form-label" for="note-input">Clinical Note / Nota Cl&iacute;nica</label>' +
+          '<label class="form-label" for="note-input">Nota cl&iacute;nica del caso / Clinical note</label>' +
           '<textarea id="note-input" class="textarea-clinical" ' +
-            'placeholder="Paste pseudonymized clinical note here…">' +
+            'placeholder="Pegue aqu&iacute; la nota cl&iacute;nica seudonimizada&hellip;">' +
             escHtml(state.clinicalNote) +
           '</textarea>' +
-          '<div class="form-hint">No real patient identifiers. Data stays in this browser.</div>' +
+          '<div class="form-hint">Sin identificadores reales de paciente. Los datos permanecen &uacute;nicamente en este navegador.</div>' +
         '</div>'
       );
     },
@@ -939,22 +997,22 @@ const STEP_CONTENT = {
     }
   },
   2: {
-    title: '&#128269; Step 2 — Drug &amp; Symptom Extractor',
+    title: '&#128138; Paso 2 &mdash; Medicaci&oacute;n y problemas activos',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
-            'Check the KB status in the footer and reload the page if needed.' +
+            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
+            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; No clinical note found.</strong> ' +
-            'Please enter a clinical note in Step 1 before running extraction.' +
+            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
+            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
           '</div>'
         );
       }
@@ -969,8 +1027,8 @@ const STEP_CONTENT = {
       if (drugs.length === 0) {
         drugSection = (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; No known drug names detected.</strong> ' +
-            'The note may use trade names, abbreviations, or drugs not covered by the current KB.' +
+            '<strong>&#10003; Sin medicamentos identificados.</strong> ' +
+            'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.' +
           '</div>'
         );
       } else {
@@ -990,8 +1048,8 @@ const STEP_CONTENT = {
         }).join('');
         drugSection = (
           '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
-            '<strong>' + drugs.length + ' drug name' + (drugs.length === 1 ? '' : 's') +
-            ' extracted</strong> from the clinical note.' +
+            '<strong>' + drugs.length + ' medicamento' + (drugs.length === 1 ? '' : 's') +
+            ' detectado' + (drugs.length === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.' +
           '</div>' +
           '<div style="padding:.2rem 0 .65rem;">' + drugTags + '</div>'
         );
@@ -1004,26 +1062,26 @@ const STEP_CONTENT = {
       var symCountLabel;
       var symptomSection;
       if (!state.kb.symptomDictionary) {
-        symCountLabel = 'Symptoms detected — <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>';
+        symCountLabel = 'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>';
         symptomSection = (
           '<div class="callout callout-warning" style="font-size:.84rem;">' +
-            '&#9888;&nbsp;<strong>Symptom dictionary not loaded.</strong> ' +
-            'Reload the page or check the KB status in the footer.' +
+            '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong> ' +
+            'Recargue la p&aacute;gina o compruebe el estado KB.' +
           '</div>'
         );
       } else if (symptoms.length === 0) {
-        symCountLabel = 'Symptoms detected (0)';
+        symCountLabel = 'Problemas activos detectados (0)';
         symptomSection = (
           '<div class="callout callout-success">' +
-            '&#10003;&nbsp;No symptom terms detected in the clinical note.' +
+            '&#10003;&nbsp;No se han detectado problemas cl&iacute;nicos en la nota.' +
           '</div>'
         );
       } else {
         /* Split into active vs non-active (negated / historical) */
         var activeSyms   = symptoms.filter(function (s) { return s.active !== false; });
         var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
-        symCountLabel = 'Symptoms detected (' + activeSyms.length + ' active' +
-          (inactiveSyms.length ? ', ' + inactiveSyms.length + ' non-active' : '') + ')';
+        symCountLabel = 'Problemas detectados (' + activeSyms.length + ' activo' + (activeSyms.length === 1 ? '' : 's') +
+          (inactiveSyms.length ? ', ' + inactiveSyms.length + ' no activo' + (inactiveSyms.length === 1 ? '' : 's') : '') + ')';
 
         /* Category → colour mapping */
         var catColor = {
@@ -1067,15 +1125,15 @@ const STEP_CONTENT = {
 
         var inactiveRow = inactiveSyms.length
           ? '<div style="margin-top:.45rem;">' +
-              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">Non-active mentions ' +
-                '(negated / historical):</span>' +
+              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">Menciones no activas ' +
+                '(negadas o hist&oacute;ricas):</span>' +
               symTagsInactive +
             '</div>'
           : '';
 
         symptomSection = (
           '<div style="padding:.2rem 0 .65rem;">' +
-            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">None</span>') +
+            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">Ninguno</span>') +
             inactiveRow +
           '</div>'
         );
@@ -1085,35 +1143,35 @@ const STEP_CONTENT = {
 
       return (
         '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
-          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Drugs</div>' +
+          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Medicamentos detectados</div>' +
         drugSection +
         divider +
         '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
           'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + symCountLabel + '</div>' +
         symptomSection +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
-          '&#9888;&nbsp;Extraction is keyword-based. Trade names, abbreviations, and terms not in the KB will be missed.' +
+          '&#9888;&nbsp;La detecci&oacute;n es por palabras clave. Nombres comerciales, abreviaturas y t&eacute;rminos no incluidos en la KB pueden no identificarse.' +
         '</div>'
       );
     }
   },
   3: {
-    title: '&#9881;&#65039; Step 3 — Drug Normalizer',
+    title: '&#128230; Paso 3 &mdash; Clasificaci&oacute;n farmacol&oacute;gica',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
-            'Check the KB status in the footer and reload the page if needed.' +
+            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
+            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; No clinical note found.</strong> ' +
-            'Please enter a clinical note in Step 1 before running normalization.' +
+            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
+            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
           '</div>'
         );
       }
@@ -1124,8 +1182,8 @@ const STEP_CONTENT = {
       if (drugs.length === 0) {
         return (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; No drugs to normalize.</strong> ' +
-            'No known drug names were detected in the clinical note (Step 2).' +
+            '<strong>&#10003; Sin medicamentos a clasificar.</strong> ' +
+            'No se detectaron medicamentos en la nota cl&iacute;nica (Paso 2).' +
           '</div>'
         );
       }
@@ -1137,7 +1195,7 @@ const STEP_CONTENT = {
         var classCell = n.class
           ? '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
               'padding:.18rem .55rem;font-size:.82rem;font-weight:600;">' + escHtml(n.class) + '</span>'
-          : '<span style="color:#999;font-size:.82rem;font-style:italic;">unmapped</span>';
+          : '<span style="color:#999;font-size:.82rem;font-style:italic;">sin clasificar</span>';
         return (
           '<tr style="border-bottom:1px solid #eef1f4;">' +
             '<td style="padding:.45rem .6rem;font-size:.88rem;font-weight:600;white-space:nowrap;">' +
@@ -1153,9 +1211,9 @@ const STEP_CONTENT = {
 
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          '<strong>' + drugs.length + ' drug' + (drugs.length === 1 ? '' : 's') +
-          ' normalized &mdash; ' + mappedCount + ' class' + (mappedCount === 1 ? '' : 'es') + ' mapped' +
-          (unmappedCount ? ', ' + unmappedCount + ' unmapped' : '') + '.</strong>' +
+          '<strong>' + drugs.length + ' medicamento' + (drugs.length === 1 ? '' : 's') +
+          ' &rarr; ' + mappedCount + ' grupo' + (mappedCount === 1 ? '' : 's') + ' farmacol&oacute;gico' + (mappedCount === 1 ? '' : 's') + ' identificado' + (mappedCount === 1 ? '' : 's') +
+          (unmappedCount ? ', ' + unmappedCount + ' sin clasificar' : '') + '.</strong>' +
         '</div>' +
         '<div style="overflow-x:auto;">' +
           '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
@@ -1163,10 +1221,10 @@ const STEP_CONTENT = {
             '<thead>' +
               '<tr style="background:#f6f8fa;border-bottom:2px solid #d0d7de;">' +
                 '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Drug name</th>' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Medicamento</th>' +
                 '<th style="padding:.45rem .4rem;width:2rem;"></th>' +
                 '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Canonical class</th>' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Grupo farmacol&oacute;gico</th>' +
               '</tr>' +
             '</thead>' +
             '<tbody>' + rows + '</tbody>' +
@@ -1176,14 +1234,14 @@ const STEP_CONTENT = {
     }
   },
   4: {
-    title: '&#128300; Step 4 — Cascade Detector',
+    title: '&#128269; Paso 4 &mdash; Posibles cascadas terap&eacute;uticas',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
-            'Check the KB status in the footer and reload the page if needed.' +
+            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
+            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
           '</div>'
         );
       }
@@ -1191,8 +1249,8 @@ const STEP_CONTENT = {
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; No clinical note found.</strong> ' +
-            'Please enter a clinical note in Step 1 before running detection.' +
+            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
+            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
           '</div>'
         );
       }
@@ -1203,10 +1261,10 @@ const STEP_CONTENT = {
 
       var kbInfo = (
         '<div class="callout callout-info">' +
-          '<strong>KB ready.</strong> ' +
-          cCount + ' core cascades &mdash; ' +
-          vCount + ' VIH modifiers &mdash; ' +
-          dCount + ' DDI entries loaded.' +
+          '<strong>Base de conocimiento lista.</strong> ' +
+          cCount + ' patrones de cascada &middot; ' +
+          vCount + ' modificadores VIH &middot; ' +
+          dCount + ' interacciones DDI.' +
         '</div>'
       );
 
@@ -1216,8 +1274,8 @@ const STEP_CONTENT = {
         return (
           kbInfo +
           '<div class="callout callout-success" style="margin-top:.75rem;">' +
-            '<strong>&#10003; No cascade signals detected.</strong> ' +
-            'No prescribing cascade patterns were identified in the clinical note.' +
+            '<strong>&#10003; Sin se&ntilde;ales de cascada detectadas.</strong> ' +
+            'No se han identificado patrones de cascada terap&eacute;utica en la nota cl&iacute;nica.' +
           '</div>'
         );
       }
@@ -1281,7 +1339,7 @@ const STEP_CONTENT = {
         /* Risk focus chips */
         var riskTags = c.risk_focus.length
           ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;">' +
-              '<span style="font-size:.72rem;color:#888;">Risk:</span>' +
+              '<span style="font-size:.72rem;color:#888;">Riesgo:</span>' +
               c.risk_focus.map(function (r) {
                 return '<span style="font-size:.72rem;background:#f0f0f0;border-radius:3px;' +
                   'padding:.08rem .38rem;color:#555;">' + escHtml(r) + '</span>';
@@ -1294,7 +1352,7 @@ const STEP_CONTENT = {
           ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
               'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(c.ddi_warning) +
+              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(c.ddi_warning) +
             '</div>'
           : '';
 
@@ -1303,7 +1361,7 @@ const STEP_CONTENT = {
           ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
               'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#128203; Action:</strong>&nbsp;' + escHtml(c.clinical_hint) +
+              '<strong>&#128203; Acci&oacute;n clínica:</strong>&nbsp;' + escHtml(c.clinical_hint) +
             '</div>'
           : '';
 
@@ -1314,7 +1372,7 @@ const STEP_CONTENT = {
             '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;' +
               'border-left:3px solid #aab7b8;padding:.3rem .6rem;background:#f4f6f7;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#128269; Why it fired:</strong>&nbsp;' +
+              '<strong>&#128269; Motivo de detecci&oacute;n:</strong>&nbsp;' +
               escHtml(c.rationale.explanation) +
             '</div>'
           );
@@ -1334,7 +1392,7 @@ const STEP_CONTENT = {
                 (c.signal_type === 'symptom_bridge'
                   ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;' +
                       'border:1px solid #a569bd;border-radius:3px;padding:.08rem .38rem;' +
-                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">symptom bridge</span>'
+                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">v&iacute;a s&iacute;ntoma</span>'
                   : '') +
               '</span>' +
               '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
@@ -1352,33 +1410,33 @@ const STEP_CONTENT = {
         '<div style="margin-top:1rem;">' +
           '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
             '&#128204;&nbsp;' + detected.length +
-            (detected.length === 1 ? ' cascade signal detected' : ' cascade signals detected') +
+            (detected.length === 1 ? ' posible cascada terap&eacute;utica detectada' : ' posibles cascadas terap&eacute;uticas detectadas') +
           '</h3>' +
           rows.join('') +
         '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
-          '&#9888;&nbsp;For clinician review only. Does not recommend medication changes.' +
+          '&#9888;&nbsp;Solo para revisi&oacute;n farmac&eacute;utica y cl&iacute;nica. No sustituye el juicio cl&iacute;nico profesional.' +
         '</div>'
       );
     }
   },
   5: {
-    title: '&#128221; Step 5 — Plan &amp; Verify',
+    title: '&#128221; Paso 5 &mdash; Verificaci&oacute;n cl&iacute;nica',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
-            'Check the KB status in the footer and reload the page if needed.' +
+            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
+            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; No clinical note found.</strong> ' +
-            'Please enter a clinical note in Step 1 before reviewing the plan.' +
+            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
+            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
           '</div>'
         );
       }
@@ -1388,8 +1446,8 @@ const STEP_CONTENT = {
       if (detected.length === 0) {
         return (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; No cascade signals detected.</strong> ' +
-            'No prescribing cascade patterns were identified — no action plan required.' +
+            '<strong>&#10003; Sin se&ntilde;ales de cascada.</strong> ' +
+            'No se identificaron patrones de cascada terap&eacute;utica &mdash; no se requiere plan de actuaci&oacute;n.' +
           '</div>'
         );
       }
@@ -1405,16 +1463,16 @@ const STEP_CONTENT = {
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;' +
           'padding:.65rem .9rem;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;' +
           'font-size:.83rem;align-items:center;">' +
-          '<span style="color:#555;font-weight:600;margin-right:.2rem;">Review progress:</span>' +
+          '<span style="color:#555;font-weight:600;margin-right:.2rem;">Revisi&oacute;n cl&iacute;nica:</span>' +
           '<span style="background:#1e8449;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nConfirmed + ' confirmed</span>' +
+            nConfirmed + ' confirmada' + (nConfirmed === 1 ? '' : 's') + '</span>' +
           '<span style="background:#e67e22;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nPossible + ' possible</span>' +
+            nPossible + ' posible' + (nPossible === 1 ? '' : 's') + '</span>' +
           '<span style="background:#7f8c8d;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nNot + ' not a cascade</span>' +
+            nNot + ' descartada' + (nNot === 1 ? '' : 's') + '</span>' +
           (nUnreviewed > 0
-            ? '<span style="color:#888;margin-left:.15rem;">' + nUnreviewed + ' unreviewed</span>'
-            : '<span style="color:#1e8449;margin-left:.15rem;">&#10003; All reviewed</span>') +
+            ? '<span style="color:#888;margin-left:.15rem;">' + nUnreviewed + ' sin revisar</span>'
+            : '<span style="color:#1e8449;margin-left:.15rem;">&#10003; Todas revisadas</span>') +
         '</div>'
       );
 
@@ -1461,7 +1519,7 @@ const STEP_CONTENT = {
         var ddiHtml = ddiWarning
           ? '<div style="background:#fdedec;border-left:3px solid #e74c3c;padding:.4rem .7rem;' +
               'margin-top:.45rem;font-size:.82rem;color:#922b21;border-radius:0 3px 3px 0;">' +
-              '<strong>&#9888; DDI Warning:</strong>&nbsp;' + escHtml(ddiWarning) +
+              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(ddiWarning) +
             '</div>'
           : '';
 
@@ -1469,14 +1527,14 @@ const STEP_CONTENT = {
         var actionHtml = actionText
           ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.4rem .7rem;' +
               'margin-top:.45rem;font-size:.82rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
-              '<strong>&#128203; Recommended action:</strong>&nbsp;' + escHtml(actionText) +
+              '<strong>&#128203; Acci&oacute;n recomendada:</strong>&nbsp;' + escHtml(actionText) +
             '</div>'
           : '';
 
         /* Differential hints */
         var diffHtml = diffHints.length
           ? '<div style="margin-top:.45rem;font-size:.81rem;color:#555;">' +
-              '<strong>&#128270; Also consider:</strong>&nbsp;' +
+              '<strong>&#128270; Considerar tambi&eacute;n:</strong>&nbsp;' +
               escHtml(diffHints.join(' &bull; ')) +
             '</div>'
           : '';
@@ -1502,10 +1560,10 @@ const STEP_CONTENT = {
 
         var classButtons = (
           '<div style="display:flex;gap:.45rem;margin-top:.7rem;flex-wrap:wrap;align-items:center;">' +
-            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">Classify:</span>' +
-            classBtn('confirmed',   '&#10003;&nbsp;Confirmed cascade', '#1e8449', '#fff') +
-            classBtn('possible',    '&#63;&nbsp;Possible cascade',     '#e67e22', '#fff') +
-            classBtn('not_cascade', '&#10005;&nbsp;Not a cascade',     '#7f8c8d', '#fff') +
+            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">Clasificar:</span>' +
+            classBtn('confirmed',   '&#10003;&nbsp;Cascada confirmada', '#1e8449', '#fff') +
+            classBtn('possible',    '&#63;&nbsp;Cascada posible',       '#e67e22', '#fff') +
+            classBtn('not_cascade', '&#10005;&nbsp;Descartar',          '#7f8c8d', '#fff') +
           '</div>'
         );
 
@@ -1535,7 +1593,7 @@ const STEP_CONTENT = {
 
       return (
         '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.84rem;">' +
-          '&#9888;&nbsp;Review each signal and classify it. For clinician use only.' +
+          '&#9888;&nbsp;Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.' +
         '</div>' +
         tallyHtml +
         rows.join('')
@@ -1543,22 +1601,22 @@ const STEP_CONTENT = {
     }
   },
   6: {
-    title: '&#128196; Step 6 — Report',
+    title: '&#128196; Paso 6 &mdash; Plan farmacoterap&eacute;utico e informe',
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Knowledge base not loaded.</strong> ' +
-            'Check the KB status in the footer and reload the page if needed.' +
+            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
+            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; No clinical note found.</strong> ' +
-            'Please enter a clinical note in Step 1 to generate a report.' +
+            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
+            'Introduzca la nota cl&iacute;nica en el Paso 1 para generar el informe.' +
           '</div>'
         );
       }
@@ -1580,7 +1638,7 @@ const STEP_CONTENT = {
 
       /* ── Drug chips ── */
       function chips(arr, bg, border, color) {
-        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">None detected</em>';
+        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">Ninguno detectado</em>';
         return arr.map(function (d) {
           return (
             '<span style="display:inline-block;background:' + bg + ';border:1px solid ' + border + ';' +
@@ -1593,10 +1651,10 @@ const STEP_CONTENT = {
       /* ── Verification status badge ── */
       function verBadge(status) {
         var map = {
-          confirmed:   { bg: '#1e8449', fg: '#fff', label: 'Confirmed'     },
-          possible:    { bg: '#e67e22', fg: '#fff', label: 'Possible'      },
-          not_cascade: { bg: '#bdc3c7', fg: '#555', label: 'Not a cascade' },
-          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: 'Unreviewed'    }
+          confirmed:   { bg: '#1e8449', fg: '#fff', label: 'Confirmada'    },
+          possible:    { bg: '#e67e22', fg: '#fff', label: 'Posible'       },
+          not_cascade: { bg: '#bdc3c7', fg: '#555', label: 'Descartada'    },
+          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: 'Sin revisar'   }
         };
         var s = map[status] || map.unreviewed;
         return (
@@ -1611,7 +1669,7 @@ const STEP_CONTENT = {
       if (r.cascades.length === 0) {
         cascadeContent = (
           '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' +
-            '&#10003;&nbsp;No prescribing cascade signals detected.' +
+            '&#10003;&nbsp;Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.' +
           '</p>'
         );
       } else {
@@ -1660,11 +1718,11 @@ const STEP_CONTENT = {
           '<div style="overflow-x:auto;">' +
             '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
               '<thead><tr>' +
-                '<th ' + TH + '>Cascade</th>' +
-                '<th ' + TH + '>Drug chain</th>' +
-                '<th ' + TH + '>Confidence</th>' +
-                '<th ' + TH + '>Verification</th>' +
-                '<th ' + TH + '>Clinical recommendation</th>' +
+                '<th ' + TH + '>Cascada terap&eacute;utica</th>' +
+                '<th ' + TH + '>Secuencia farmacol&oacute;gica</th>' +
+                '<th ' + TH + '>Probabilidad</th>' +
+                '<th ' + TH + '>Verificaci&oacute;n cl&iacute;nica</th>' +
+                '<th ' + TH + '>Recomendaci&oacute;n cl&iacute;nica</th>' +
               '</tr></thead>' +
               '<tbody>' + tableRows + '</tbody>' +
             '</table>' +
@@ -1678,12 +1736,12 @@ const STEP_CONTENT = {
           '<button onclick="exportReport(\'json\')" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
-            '&#8681;&nbsp;Export JSON' +
+            '&#8681;&nbsp;Exportar JSON' +
           '</button>' +
           '<button onclick="exportReport(\'csv\')" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
-            '&#8681;&nbsp;Export CSV' +
+            '&#8681;&nbsp;Exportar CSV' +
           '</button>' +
         '</div>'
       );
@@ -1693,42 +1751,42 @@ const STEP_CONTENT = {
           'padding:1.15rem 1.3rem;">' +
 
           '<h3 style="margin:0 0 1rem;font-size:1rem;color:#2c3e50;">' +
-            '&#128196;&nbsp;Cascade Audit Report' +
+            '&#128196;&nbsp;Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas' +
           '</h3>' +
 
-          section('Patient &amp; Audit Metadata',
+          section('Datos del caso y auditor&iacute;a',
             '<table style="font-size:.87rem;border-collapse:collapse;width:auto;">' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Patient ID</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">ID de paciente</td>' +
                   '<td style="padding:.28rem 0;font-weight:700;">' +
-                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">Not set</em>') +
+                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">No establecido</em>') +
                   '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Generated</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Generado</td>' +
                   '<td style="padding:.28rem 0;">' + escHtml(now) + '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">KB version</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Versi&oacute;n KB</td>' +
                   '<td style="padding:.28rem 0;">' +
                     escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
                   '</td></tr>' +
             '</table>'
           ) +
 
-          section('Drugs Detected (' + r.drugs_detected.length + ')',
+          section('Medicamentos detectados (' + r.drugs_detected.length + ')',
             chips(r.drugs_detected, '#eaf4fb', '#aed6f1', '#1a5276') +
             (r.diagnostics && r.diagnostics.inferredDrugsFromCascades
               ? '<p style="margin:.4rem 0 0;font-size:.75rem;color:#7f8c8d;">' +
-                  '&#9432;&nbsp;' + r.diagnostics.inferredDrugCount + ' drug(s) inferred from cascade matches.' +
+                  '&#9432;&nbsp;' + r.diagnostics.inferredDrugCount + ' medicamento(s) inferido(s) a partir de las cascadas detectadas.' +
                 '</p>'
               : '')
           ) +
 
-          section('Drug Classes (' + r.drug_classes.length + ')',
+          section('Grupos farmacol&oacute;gicos (' + r.drug_classes.length + ')',
             chips(r.drug_classes, '#f4ecf7', '#d2b4de', '#6c3483')
           ) +
 
-          section('Detected Cascades (' + r.cascade_count + ')', cascadeContent) +
+          section('Cascadas terap&eacute;uticas detectadas (' + r.cascade_count + ')', cascadeContent) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
-            '&#9888;&nbsp;Decision support only. Not a medical device. ' +
-            'Do not use with real patient identifiers outside a pseudonymised research context.' +
+            '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. No es un producto sanitario (MDR). ' +
+            'No utilizar con identificadores reales de pacientes fuera de un contexto de investigaci&oacute;n seudonimizado.' +
           '</div>' +
 
           exportRow +
@@ -1783,8 +1841,8 @@ function updateNavButtons(step) {
   var next    = document.getElementById('btn-next');
   var counter = document.getElementById('step-counter');
   if (prev)    prev.disabled = step === 1;
-  if (next)    next.innerHTML = step === 6 ? '&#10003; Done' : 'Next &#8594;';
-  if (counter) counter.textContent = 'Step ' + step + ' of 6';
+  if (next)    next.innerHTML = step === 6 ? '&#10003; Finalizar' : 'Siguiente &#8594;';
+  if (counter) counter.textContent = 'Paso ' + step + ' de 6';
 }
 
 /* ============================================================
@@ -1793,22 +1851,28 @@ function updateNavButtons(step) {
 
 /* Export JSON — serialises current state to a downloadable file */
 function exportJSON() {
-  var payload = {
-    exportedAt: new Date().toISOString(),
-    patientId: state.patientId,
-    clinicalNote: state.clinicalNote,
-    step: state.step,
-    cascadeClassifications: state.cascadeClassifications
-  };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'cascade-audit-' + (state.patientId || 'case') + '-' + isoDate() + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var payload = {
+      exportedAt: new Date().toISOString(),
+      patientId: state.patientId,
+      clinicalNote: state.clinicalNote,
+      step: state.step,
+      cascadeClassifications: state.cascadeClassifications
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'cascade-audit-' + (state.patientId || 'case') + '-' + isoDate() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast('Case exported successfully.', 'success');
+  } catch (err) {
+    console.error('[Export] exportJSON failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 }
 
 /* ── reconcileDrugsWithCascades ────────────────────────────────────────────
@@ -1906,8 +1970,15 @@ function buildReport() {
    Inline export buttons in Step 6 call: exportReport('json') / ('csv')
    ──────────────────────────────────────────────────────────────────────── */
 window.exportReport = function (format) {
-  var report   = buildReport();
-  var filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  var report, filename;
+  try {
+    report   = buildReport();
+    filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  } catch (err) {
+    console.error('[Export] buildReport failed:', err);
+    showToast('Could not generate report: ' + (err.message || 'unknown error'), 'error');
+    return;
+  }
   var blob, mime;
 
   if (format === 'csv') {
@@ -1928,7 +1999,7 @@ window.exportReport = function (format) {
       /* Single data row indicating no cascades */
       rows.push([
         csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
-        csvCell(''), csvCell('No cascades detected'),
+        csvCell(''), csvCell('Sin cascadas detectadas'),
         csvCell(''), csvCell(''), csvCell(''), csvCell(''),
         csvCell(''), csvCell('')
       ].join(','));
@@ -1958,43 +2029,90 @@ window.exportReport = function (format) {
     filename += '.json';
   }
 
-  var url = URL.createObjectURL(blob);
-  var a   = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var url = URL.createObjectURL(blob);
+    var a   = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast('Report exported (' + (format || 'json').toUpperCase() + ').', 'success');
+  } catch (err) {
+    console.error('[Export] exportReport download failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 };
 
 /* Import Case — reads a previously exported JSON and restores state */
 function importCase(file) {
   if (!file) return;
+
+  /* Basic file type guard — only accept files with .json extension or application/json MIME */
+  if (file.type && file.type !== 'application/json' && !file.name.endsWith('.json')) {
+    showToast('Import failed: file must be a .json export from this application.', 'error');
+    return;
+  }
+
   var reader = new FileReader();
   reader.onload = function (e) {
     try {
-      var data = JSON.parse(e.target.result);
-      if (typeof data !== 'object' || data === null) {
-        throw new Error('File does not contain a JSON object.');
+      var raw = e.target && e.target.result;
+      if (!raw) throw new Error('File appears to be empty.');
+
+      var data = JSON.parse(raw);
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        throw new Error('File does not contain a valid JSON object.');
       }
-      if (data.patientId)    state.patientId    = data.patientId;
-      if (data.clinicalNote) state.clinicalNote = data.clinicalNote;
-      if (data.step)         state.step         = data.step;
+
+      /* Restore fields with strict type guards to prevent state corruption */
+      var imported = 0;
+      if (typeof data.patientId === 'string' && data.patientId.length <= 200) {
+        state.patientId = data.patientId;
+        imported++;
+      }
+      if (typeof data.clinicalNote === 'string') {
+        state.clinicalNote = data.clinicalNote;
+        imported++;
+      }
+      /* Validate step is a safe integer in range */
+      if (Number.isInteger(data.step) && data.step >= 1 && data.step <= 6) {
+        state.step = data.step;
+        imported++;
+      } else if (data.step !== undefined) {
+        /* Step present but invalid — reset to 1 rather than leaving a bad value */
+        state.step = 1;
+      }
+      /* Restore cascade classifications if present */
+      if (data.cascadeClassifications && typeof data.cascadeClassifications === 'object' &&
+          !Array.isArray(data.cascadeClassifications)) {
+        state.cascadeClassifications = data.cascadeClassifications;
+        imported++;
+      }
+
+      if (imported === 0) {
+        throw new Error('No recognizable case data found in this file. Make sure it was exported by this application.');
+      }
+
+      /* Reset derived state that depends on the imported note */
+      state.symptomsDetected = [];
+      state.detectedCascades = null;
 
       var pidEl = document.getElementById('patient-id');
       if (pidEl) pidEl.value = state.patientId;
 
       saveState();
       goTo(state.step);
+      showToast('Case imported successfully.', 'success');
     } catch (err) {
       console.error('[Import] Could not parse imported file:', err);
-      alert('Import failed: ' + err.message);
+      showToast('Import failed: ' + (err.message || 'invalid file'), 'error');
     }
   };
   reader.onerror = function () {
     console.error('[Import] FileReader error while reading import file.');
-    alert('Could not read the selected file.');
+    showToast('Could not read the selected file.', 'error');
   };
   reader.readAsText(file);
 }
@@ -2006,6 +2124,67 @@ function deleteAllData() {
   var pidEl = document.getElementById('patient-id');
   if (pidEl) pidEl.value = '';
   goTo(1);
+}
+
+/* New Case — resets state and starts from step 1 */
+function newCase() {
+  if (state.clinicalNote && !confirm('Start a new case? Unsaved data will be lost.')) return;
+  clearState();
+  var pidEl = document.getElementById('patient-id');
+  if (pidEl) pidEl.value = '';
+  goTo(1);
+}
+
+/* Load Demo Case — populates a sample clinical note for demonstration.
+ * Scenario: PLHIV on ART + amlodipine (antihypertensive) → ankle oedema
+ * → furosemide (diuretic) prescribed = classic CCB→oedema→diuretic cascade (CC004).
+ * Also includes ibuprofen PRN → hypertension context (CC001). */
+function loadDemoCase() {
+  if (state.clinicalNote && !confirm('¿Cargar el caso demo? Los datos actuales serán reemplazados.')) return;
+  clearState();
+  state.patientId = 'DEMO-001';
+  state.clinicalNote = [
+    'NOTA CLÍNICA — CASO PSEUDONIMIZADO (DEMO)',
+    'Paciente ID: DEMO-001 | Fecha: 2024-03-15 | Servicio: VIH / Enfermedades Infecciosas',
+    '',
+    '=== RESUMEN DEL PACIENTE ===',
+    'Varón de 58 años, persona que vive con el VIH (PVVIH) desde 2010.',
+    'TAR estable: darunavir/cobicistat/emtricitabina/tenofovir alafenamida (Symtuza) desde 2019.',
+    'CD4: 620 células/μL (ene 2024). Carga viral: indetectable (<50 copias/mL, ene 2024).',
+    '',
+    '=== COMORBILIDADES Y MEDICACIÓN ACTIVA ===',
+    '1. Hipertensión arterial — amlodipine 5mg/día (desde jul 2021)',
+    '2. Edema bilateral de tobillos — nuevo inicio sep 2022.',
+    '   Tratado con furosemide 40mg/día desde feb 2023 (derivación a cardiología).',
+    '   Ecocardiograma normal (nov 2022).',
+    '3. Dislipemia — atorvastatin 20mg/noche (desde jun 2021)',
+    '4. Diabetes mellitus tipo 2 — metformin 1g/12h (desde ene 2024; era 500mg/12h desde jun 2023)',
+    '5. Artrosis lumbar crónica — ibuprofen 600mg/8h a demanda (último ciclo feb 2024, 5 días)',
+    '6. Insomnio — zolpidem 5mg nocturno (desde abr 2023)',
+    '',
+    '=== SÍNTOMAS ACTUALES ===',
+    '- Edema maleolar bilateral, con fóvea, moderado. Inicio sep 2022. Peor al final del día.',
+    '  Sin disnea ni ortopnea. Eco normal.',
+    '- Insomnio de inicio: dificultad para conciliar el sueño desde mar 2023.',
+    '- Poliuria/polidipsia leve desde may 2023.',
+    '',
+    '=== ANALÍTICA (ene 2024) ===',
+    'Creatinina: 98 μmol/L, FGe: 72 mL/min/1,73m². Potasio: 3,5 mmol/L (límite bajo).',
+    'Colesterol total: 5,1 mmol/L. TG: 2,8 mmol/L (↑). CK: 180 UI/L.',
+    'ALT: 28 UI/L. HbA1c: 6,9%.',
+    '',
+    '=== NOTAS DEL CLÍNICO ===',
+    'Paciente con polimedicación creciente. Preocupa posible cascada de prescripción:',
+    '¿es el edema de tobillo un efecto adverso del amlodipine tratado con furosemide?',
+    '¿Podría reducirse o suspenderse el diurético si se modifica el antihipertensivo?',
+    'Solicita revisión farmacoterapéutica completa e informe de cascadas.'
+  ].join('\n');
+  state.step = 1;
+  saveState();
+  var pidEl = document.getElementById('patient-id');
+  if (pidEl) pidEl.value = state.patientId;
+  goTo(1);
+  showToast('Caso demo cargado — avance por los pasos para ver las cascadas detectadas.', 'info');
 }
 
 /* ============================================================
@@ -2408,6 +2587,25 @@ function isoDate() {
   return new Date().toISOString().split('T')[0];
 }
 
+/* Simple toast notification */
+function showToast(message, type) {
+  var container = document.getElementById('toast-container');
+  if (!container) return;
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + (type || 'info');
+  toast.innerHTML = escHtml(message) +
+    '<button class="toast-close" aria-label="Dismiss">&times;</button>';
+  toast.querySelector('.toast-close').addEventListener('click', function () {
+    toast.classList.add('hiding');
+    setTimeout(function () { toast.remove(); }, 350);
+  });
+  container.appendChild(toast);
+  setTimeout(function () {
+    toast.classList.add('hiding');
+    setTimeout(function () { toast.remove(); }, 350);
+  }, 4000);
+}
+
 /* ============================================================
    Event wiring
    ============================================================ */
@@ -2453,13 +2651,9 @@ function wireEvents() {
   var btnExportJSON = document.getElementById('btn-export-json');
   if (btnExportJSON) btnExportJSON.addEventListener('click', exportJSON);
 
-  /* Export CSV — disabled in MVP, kept wired so button activates without error */
+  /* Export CSV */
   var btnExportCSV = document.getElementById('btn-export-csv');
-  if (btnExportCSV) {
-    btnExportCSV.addEventListener('click', function () {
-      alert('CSV export will be available once cascade detection is implemented.');
-    });
-  }
+  if (btnExportCSV) btnExportCSV.addEventListener('click', function () { window.exportReport('csv'); });
 
   /* Import Case */
   var btnImport   = document.getElementById('btn-import');
@@ -2476,6 +2670,25 @@ function wireEvents() {
   var btnDelete = document.getElementById('btn-delete-data');
   if (btnDelete) btnDelete.addEventListener('click', deleteAllData);
 
+  /* New Case */
+  var btnNewCase = document.getElementById('btn-new-case');
+  if (btnNewCase) btnNewCase.addEventListener('click', newCase);
+
+  /* Try Demo */
+  var btnDemo = document.getElementById('btn-demo');
+  if (btnDemo) btnDemo.addEventListener('click', loadDemoCase);
+
+  /* Developer panel toggle */
+  var devToggle = document.getElementById('dev-panel-toggle');
+  var devPanel  = document.getElementById('dev-panel');
+  if (devToggle && devPanel) {
+    devToggle.addEventListener('click', function () {
+      var open = devToggle.getAttribute('aria-expanded') === 'true';
+      devToggle.setAttribute('aria-expanded', String(!open));
+      if (open) { devPanel.hidden = true; } else { devPanel.hidden = false; }
+    });
+  }
+
   /* KB mode selector */
   var kbModeSelect = document.getElementById('kb-mode-select');
   if (kbModeSelect) {
@@ -2489,7 +2702,7 @@ function wireEvents() {
         state.kb.ddiWatchlist = null;
         invalidateDetectedCascades();
         var statusEl = document.getElementById('kb-status');
-        if (statusEl) statusEl.innerHTML = '<span class="kb-chip">Loading ' + newMode + '&hellip;</span>';
+        if (statusEl) statusEl.innerHTML = '<span class="kb-chip loading"><span class="spinner" style="width:12px;height:12px;border-width:2px;" aria-hidden="true"></span> ' + newMode + '&hellip;</span>';
         var ok = await loadKB(newMode);
         if (!ok) {
           console.error('[KB] Some files failed to load from ' + newMode + ' track.');
@@ -2518,6 +2731,15 @@ async function init() {
 
     /* Wire all UI events */
     wireEvents();
+
+    /* Show loading state in footer before KB fetch begins */
+    var kbStatusEl = document.getElementById('kb-status');
+    if (kbStatusEl) {
+      kbStatusEl.innerHTML =
+        '<span class="kb-chip loading">' +
+        '<span class="spinner" style="width:10px;height:10px;border-width:2px;vertical-align:middle;margin-right:.3rem;" aria-hidden="true"></span>' +
+        'Loading KB&hellip;</span>';
+    }
 
     /* Load knowledge base files */
     var kbOk = await loadKB();
