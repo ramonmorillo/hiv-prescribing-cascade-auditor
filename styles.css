@@ -606,3 +606,107 @@ td.badge-cell { white-space: nowrap; }
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
+
+/* ---------- Header dev toggle ---------- */
+.header-dev-btn {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: var(--font-size-sm);
+}
+.header-dev-btn:hover { background: rgba(255,255,255,0.25); }
+.header-dev-btn[aria-expanded="true"] {
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.6);
+}
+
+/* ---------- Developer / Tools Panel ---------- */
+.dev-panel {
+  background: #f7f8fa;
+  border-bottom: 2px solid var(--color-border);
+}
+.dev-panel[hidden] { display: none; }
+.dev-panel-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dev-panel-section {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.dev-panel-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-border);
+  margin: 0 0.25rem;
+}
+.dev-panel-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- Safety notice compact hint ---------- */
+.safety-details-hint {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  opacity: 0.75;
+  margin-left: 0.25rem;
+}
+
+/* ---------- Patient bar actions ---------- */
+.patient-bar-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ---------- Help section ---------- */
+.help-section {
+  background: #f0f7ff;
+  border-bottom: 2px solid #2980b9;
+  max-width: 100%;
+}
+.help-toggle { color: #1a5276; }
+.help-block {
+  max-width: 1100px;
+  margin: 0 auto 1.25rem;
+}
+.help-heading {
+  color: #1a5276;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.help-item {
+  border-color: #85c1e9 !important;
+}
+.help-item strong { color: #1a5276 !important; }
+
+/* ---------- Footer ---------- */
+.footer-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+/* ---------- Responsive: dev panel ---------- */
+@media (max-width: 600px) {
+  .dev-panel-inner { padding: 0.5rem 1rem; }
+  .patient-bar-actions { margin-left: 0; margin-top: 0.4rem; width: 100%; }
+  .patient-bar { flex-wrap: wrap; }
+}

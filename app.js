@@ -134,7 +134,7 @@ async function loadKB(track) {
 
 function getKBVersion() {
   var src = state.kb.coreCascades || state.kb.vihModifiers || state.kb.ddiWatchlist;
-  return (src && src.version) ? src.version : 'unknown';
+  return (src && src.version) ? src.version : '';
 }
 
 function updateKBStatus(loaded, failed) {
@@ -144,7 +144,7 @@ function updateKBStatus(loaded, failed) {
   var statusEl = document.getElementById('kb-status');
   if (statusEl) {
     if (failed === 0) {
-      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB loaded (' + loaded + '/' + (loaded + failed) + ') &mdash; ' + mode + '</span>';
+      statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB ' + mode + (version ? ' v' + version : '') + '</span>';
     } else {
       statusEl.innerHTML =
         '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
@@ -153,9 +153,9 @@ function updateKBStatus(loaded, failed) {
     }
   }
 
-  var footerModeEl = document.getElementById('kb-footer-mode');
-  if (footerModeEl) {
-    footerModeEl.textContent = 'KB mode: ' + mode + ' | KB version: ' + version;
+  var devModeEl = document.getElementById('kb-footer-mode');
+  if (devModeEl) {
+    devModeEl.textContent = 'KB: ' + mode + (version ? ' v' + version : '');
   }
 }
 
@@ -2008,6 +2008,50 @@ function deleteAllData() {
   goTo(1);
 }
 
+/* New Case — resets state and starts from step 1 */
+function newCase() {
+  if (state.clinicalNote && !confirm('Start a new case? Unsaved data will be lost.')) return;
+  clearState();
+  var pidEl = document.getElementById('patient-id');
+  if (pidEl) pidEl.value = '';
+  goTo(1);
+}
+
+/* Load Demo Case — populates a sample clinical note for demonstration */
+function loadDemoCase() {
+  if (state.clinicalNote && !confirm('Load the demo case? Current data will be replaced.')) return;
+  clearState();
+  state.patientId = 'DEMO-001';
+  state.clinicalNote = [
+    'Patient: 58-year-old male, PLHIV since 2010, on stable ART.',
+    'Current regimen: darunavir/cobicistat/emtricitabine/tenofovir alafenamide (Symtuza) since 2019.',
+    'CD4: 620 cells/μL. Viral load: undetectable (<50 copies/mL).',
+    '',
+    'Comorbidities: arterial hypertension on amlodipine 5mg/day since 2021;',
+    'bilateral ankle edema (new onset 2022) on furosemide 40mg/day since 2023;',
+    'dyslipidemia on atorvastatin 20mg/night since 2021;',
+    'type 2 diabetes on metformin 1g BID since 2024;',
+    'chronic lumbar osteoarthritis, ibuprofen 600mg TID PRN;',
+    'insomnia on zolpidem 5mg nocte since 2023.',
+    '',
+    'Symptoms: bilateral pitting ankle edema (worse end of day, onset Sep 2022);',
+    'insomnia (difficulty initiating sleep, onset March 2023);',
+    'polyuria/polydipsia (mild, onset May 2023).',
+    '',
+    'Labs (Jan 2024): creatinine 98 μmol/L, eGFR 72; potassium 3.5 mmol/L (low-normal);',
+    'TG 2.8 mmol/L (elevated); CK 180 IU/L. No fever, no chest pain.',
+    '',
+    'Clinician note: growing polypharmacy, possible drug interactions with cobicistat.',
+    'Requesting cascade review.'
+  ].join('\n');
+  state.step = 1;
+  saveState();
+  var pidEl = document.getElementById('patient-id');
+  if (pidEl) pidEl.value = state.patientId;
+  goTo(1);
+  showToast('Demo case loaded. Review the clinical note in Step 1.', 'info');
+}
+
 /* ============================================================
    NLP SELF-TESTS  (call runNlpSelfTest() from browser console)
    ============================================================ */
@@ -2408,6 +2452,25 @@ function isoDate() {
   return new Date().toISOString().split('T')[0];
 }
 
+/* Simple toast notification */
+function showToast(message, type) {
+  var container = document.getElementById('toast-container');
+  if (!container) return;
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + (type || 'info');
+  toast.innerHTML = escHtml(message) +
+    '<button class="toast-close" aria-label="Dismiss">&times;</button>';
+  toast.querySelector('.toast-close').addEventListener('click', function () {
+    toast.classList.add('hiding');
+    setTimeout(function () { toast.remove(); }, 350);
+  });
+  container.appendChild(toast);
+  setTimeout(function () {
+    toast.classList.add('hiding');
+    setTimeout(function () { toast.remove(); }, 350);
+  }, 4000);
+}
+
 /* ============================================================
    Event wiring
    ============================================================ */
@@ -2476,6 +2539,25 @@ function wireEvents() {
   var btnDelete = document.getElementById('btn-delete-data');
   if (btnDelete) btnDelete.addEventListener('click', deleteAllData);
 
+  /* New Case */
+  var btnNewCase = document.getElementById('btn-new-case');
+  if (btnNewCase) btnNewCase.addEventListener('click', newCase);
+
+  /* Try Demo */
+  var btnDemo = document.getElementById('btn-demo');
+  if (btnDemo) btnDemo.addEventListener('click', loadDemoCase);
+
+  /* Developer panel toggle */
+  var devToggle = document.getElementById('dev-panel-toggle');
+  var devPanel  = document.getElementById('dev-panel');
+  if (devToggle && devPanel) {
+    devToggle.addEventListener('click', function () {
+      var open = devToggle.getAttribute('aria-expanded') === 'true';
+      devToggle.setAttribute('aria-expanded', String(!open));
+      if (open) { devPanel.hidden = true; } else { devPanel.hidden = false; }
+    });
+  }
+
   /* KB mode selector */
   var kbModeSelect = document.getElementById('kb-mode-select');
   if (kbModeSelect) {
@@ -2489,7 +2571,7 @@ function wireEvents() {
         state.kb.ddiWatchlist = null;
         invalidateDetectedCascades();
         var statusEl = document.getElementById('kb-status');
-        if (statusEl) statusEl.innerHTML = '<span class="kb-chip">Loading ' + newMode + '&hellip;</span>';
+        if (statusEl) statusEl.innerHTML = '<span class="kb-chip loading"><span class="spinner" style="width:12px;height:12px;border-width:2px;" aria-hidden="true"></span> ' + newMode + '&hellip;</span>';
         var ok = await loadKB(newMode);
         if (!ok) {
           console.error('[KB] Some files failed to load from ' + newMode + ' track.');
