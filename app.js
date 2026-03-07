@@ -42,6 +42,11 @@ function saveState() {
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   } catch (err) {
     console.error('[Storage] Could not save state:', err);
+    /* QuotaExceededError means browser storage is full — surface this to the user
+     * so they know their work is at risk, rather than losing it silently. */
+    if (err && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+      showToast('Storage full — auto-save failed. Export your case now to avoid data loss.', 'error');
+    }
   }
 }
 
@@ -50,11 +55,13 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    if (saved.patientId)               state.patientId               = saved.patientId;
-    if (saved.clinicalNote)            state.clinicalNote            = saved.clinicalNote;
-    if (saved.step)                    state.step                    = saved.step;
-    if (saved.symptomsDetected)        state.symptomsDetected        = saved.symptomsDetected;
-    if (saved.cascadeClassifications)  state.cascadeClassifications  = saved.cascadeClassifications;
+    if (typeof saved.patientId === 'string')    state.patientId    = saved.patientId;
+    if (typeof saved.clinicalNote === 'string') state.clinicalNote = saved.clinicalNote;
+    /* Guard against corrupted or out-of-range step values */
+    if (Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 6) state.step = saved.step;
+    if (Array.isArray(saved.symptomsDetected))                 state.symptomsDetected       = saved.symptomsDetected;
+    if (saved.cascadeClassifications && typeof saved.cascadeClassifications === 'object' &&
+        !Array.isArray(saved.cascadeClassifications))          state.cascadeClassifications = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
   }
@@ -104,7 +111,13 @@ async function loadKB(track) {
     Object.entries(files).map(async ([key, url]) => {
       const resp = await fetch(url, { cache: 'no-cache' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
-      state.kb[key] = await resp.json();
+      const parsed = await resp.json();
+      /* Reject non-object payloads (e.g. a JSON string or array at root level)
+       * before they corrupt state.kb and cause downstream null-dereference errors. */
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Unexpected KB format in ' + url + ' — root must be a JSON object');
+      }
+      state.kb[key] = parsed;
       return key;
     })
   );
@@ -145,7 +158,11 @@ function updateKBStatus(loaded, failed) {
   if (statusEl) {
     if (failed === 0) {
       statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB ' + mode + (version ? ' v' + version : '') + '</span>';
+    } else if (loaded === 0) {
+      /* Total failure — all files unavailable */
+      statusEl.innerHTML = '<span class="kb-chip fail">&#10007; KB unavailable &mdash; ' + failed + ' file(s) failed to load</span>';
     } else {
+      /* Partial failure — some files loaded, some failed */
       statusEl.innerHTML =
         '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
         '<span class="kb-chip fail">&#10007; ' + failed + ' failed</span> ' +
@@ -272,7 +289,7 @@ function stripI18nMarkers(kbData) {
  * Source KB: unmodified — what you see is exactly what is in the JSON files. */
 function exportKBBundle() {
   if (!state.kb.coreCascades && !state.kb.vihModifiers && !state.kb.ddiWatchlist) {
-    alert('KB not loaded yet. Please wait for KB to finish loading.');
+    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
     return;
   }
   var bundle = {
@@ -293,11 +310,11 @@ function exportKBBundle() {
  * NOT modified; add translations there to make them permanent.             */
 function exportKBBundleOperational() {
   if (!state.kb.coreCascades) {
-    alert('KB not loaded yet. Please wait for KB to finish loading.');
+    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
     return;
   }
   if (typeof buildOperationalKB !== 'function') {
-    alert('Validator not loaded. Cannot build operational export.');
+    showToast('KB validator not loaded — cannot build operational export.', 'error');
     return;
   }
   var built = buildOperationalKB(state.kb.coreCascades);
@@ -323,15 +340,20 @@ function exportKBBundleOperational() {
 
 /* Shared download helper used by both export functions */
 function downloadJSON(obj, filename) {
-  var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (err) {
+    console.error('[Export] downloadJSON failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 }
 
 /* ============================================================
@@ -573,8 +595,9 @@ function detectCascades(noteText) {
       signal_type:   'drug_drug',
       index_drug:    foundIndex,
       cascade_drug:  foundCascade,
-      /* confidence: core uses "confidence", VIH uses "plausibility" */
-      confidence:    cascade.confidence || cascade.plausibility || 'unknown',
+      /* confidence: core uses "confidence", VIH uses "plausibility".
+       * Fall back to 'low' rather than the ambiguous string 'unknown'. */
+      confidence:    cascade.confidence || cascade.plausibility || 'low',
       risk_focus:    cascade.risk_focus || [],
       /* ade_en: the intermediate adverse effect that links the two drugs */
       ade_en:        cascade.ade_en || '',
@@ -778,10 +801,6 @@ function extractSymptoms(noteText) {
   }
 
   var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
-  /* DEBUG — remove after confirming Spanish detection works */
-  console.debug('[extractSymptoms] KB version:', state.kb.symptomDictionary && state.kb.symptomDictionary.version,
-    '| entry count:', symptoms.length,
-    '| note NFC?', noteText === noteText.normalize('NFC'));
   var detected = [];
 
   symptoms.forEach(function (sym) {
@@ -1793,22 +1812,28 @@ function updateNavButtons(step) {
 
 /* Export JSON — serialises current state to a downloadable file */
 function exportJSON() {
-  var payload = {
-    exportedAt: new Date().toISOString(),
-    patientId: state.patientId,
-    clinicalNote: state.clinicalNote,
-    step: state.step,
-    cascadeClassifications: state.cascadeClassifications
-  };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'cascade-audit-' + (state.patientId || 'case') + '-' + isoDate() + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var payload = {
+      exportedAt: new Date().toISOString(),
+      patientId: state.patientId,
+      clinicalNote: state.clinicalNote,
+      step: state.step,
+      cascadeClassifications: state.cascadeClassifications
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'cascade-audit-' + (state.patientId || 'case') + '-' + isoDate() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast('Case exported successfully.', 'success');
+  } catch (err) {
+    console.error('[Export] exportJSON failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 }
 
 /* ── reconcileDrugsWithCascades ────────────────────────────────────────────
@@ -1906,8 +1931,15 @@ function buildReport() {
    Inline export buttons in Step 6 call: exportReport('json') / ('csv')
    ──────────────────────────────────────────────────────────────────────── */
 window.exportReport = function (format) {
-  var report   = buildReport();
-  var filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  var report, filename;
+  try {
+    report   = buildReport();
+    filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
+  } catch (err) {
+    console.error('[Export] buildReport failed:', err);
+    showToast('Could not generate report: ' + (err.message || 'unknown error'), 'error');
+    return;
+  }
   var blob, mime;
 
   if (format === 'csv') {
@@ -1958,43 +1990,90 @@ window.exportReport = function (format) {
     filename += '.json';
   }
 
-  var url = URL.createObjectURL(blob);
-  var a   = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try {
+    var url = URL.createObjectURL(blob);
+    var a   = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast('Report exported (' + (format || 'json').toUpperCase() + ').', 'success');
+  } catch (err) {
+    console.error('[Export] exportReport download failed:', err);
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  }
 };
 
 /* Import Case — reads a previously exported JSON and restores state */
 function importCase(file) {
   if (!file) return;
+
+  /* Basic file type guard — only accept files with .json extension or application/json MIME */
+  if (file.type && file.type !== 'application/json' && !file.name.endsWith('.json')) {
+    showToast('Import failed: file must be a .json export from this application.', 'error');
+    return;
+  }
+
   var reader = new FileReader();
   reader.onload = function (e) {
     try {
-      var data = JSON.parse(e.target.result);
-      if (typeof data !== 'object' || data === null) {
-        throw new Error('File does not contain a JSON object.');
+      var raw = e.target && e.target.result;
+      if (!raw) throw new Error('File appears to be empty.');
+
+      var data = JSON.parse(raw);
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        throw new Error('File does not contain a valid JSON object.');
       }
-      if (data.patientId)    state.patientId    = data.patientId;
-      if (data.clinicalNote) state.clinicalNote = data.clinicalNote;
-      if (data.step)         state.step         = data.step;
+
+      /* Restore fields with strict type guards to prevent state corruption */
+      var imported = 0;
+      if (typeof data.patientId === 'string' && data.patientId.length <= 200) {
+        state.patientId = data.patientId;
+        imported++;
+      }
+      if (typeof data.clinicalNote === 'string') {
+        state.clinicalNote = data.clinicalNote;
+        imported++;
+      }
+      /* Validate step is a safe integer in range */
+      if (Number.isInteger(data.step) && data.step >= 1 && data.step <= 6) {
+        state.step = data.step;
+        imported++;
+      } else if (data.step !== undefined) {
+        /* Step present but invalid — reset to 1 rather than leaving a bad value */
+        state.step = 1;
+      }
+      /* Restore cascade classifications if present */
+      if (data.cascadeClassifications && typeof data.cascadeClassifications === 'object' &&
+          !Array.isArray(data.cascadeClassifications)) {
+        state.cascadeClassifications = data.cascadeClassifications;
+        imported++;
+      }
+
+      if (imported === 0) {
+        throw new Error('No recognizable case data found in this file. Make sure it was exported by this application.');
+      }
+
+      /* Reset derived state that depends on the imported note */
+      state.symptomsDetected = [];
+      state.detectedCascades = null;
 
       var pidEl = document.getElementById('patient-id');
       if (pidEl) pidEl.value = state.patientId;
 
       saveState();
       goTo(state.step);
+      showToast('Case imported successfully.', 'success');
     } catch (err) {
       console.error('[Import] Could not parse imported file:', err);
-      alert('Import failed: ' + err.message);
+      showToast('Import failed: ' + (err.message || 'invalid file'), 'error');
     }
   };
   reader.onerror = function () {
     console.error('[Import] FileReader error while reading import file.');
-    alert('Could not read the selected file.');
+    showToast('Could not read the selected file.', 'error');
   };
   reader.readAsText(file);
 }
@@ -2516,13 +2595,9 @@ function wireEvents() {
   var btnExportJSON = document.getElementById('btn-export-json');
   if (btnExportJSON) btnExportJSON.addEventListener('click', exportJSON);
 
-  /* Export CSV — disabled in MVP, kept wired so button activates without error */
+  /* Export CSV */
   var btnExportCSV = document.getElementById('btn-export-csv');
-  if (btnExportCSV) {
-    btnExportCSV.addEventListener('click', function () {
-      alert('CSV export will be available once cascade detection is implemented.');
-    });
-  }
+  if (btnExportCSV) btnExportCSV.addEventListener('click', function () { window.exportReport('csv'); });
 
   /* Import Case */
   var btnImport   = document.getElementById('btn-import');
@@ -2600,6 +2675,15 @@ async function init() {
 
     /* Wire all UI events */
     wireEvents();
+
+    /* Show loading state in footer before KB fetch begins */
+    var kbStatusEl = document.getElementById('kb-status');
+    if (kbStatusEl) {
+      kbStatusEl.innerHTML =
+        '<span class="kb-chip loading">' +
+        '<span class="spinner" style="width:10px;height:10px;border-width:2px;vertical-align:middle;margin-right:.3rem;" aria-hidden="true"></span>' +
+        'Loading KB&hellip;</span>';
+    }
 
     /* Load knowledge base files */
     var kbOk = await loadKB();
