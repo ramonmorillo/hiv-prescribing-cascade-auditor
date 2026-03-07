@@ -935,7 +935,46 @@ const STEP_CONTENT = {
   1: {
     title: '&#128203; Paso 1 &mdash; Datos del caso',
     body: function () {
+      var onboarding = '';
+      if (!state.clinicalNote || !state.clinicalNote.trim()) {
+        onboarding = (
+          '<div class="onboarding-panel" id="onboarding-panel">' +
+            '<div class="onboarding-header">' +
+              '<span class="onboarding-icon">&#128301;</span>' +
+              '<strong>C&oacute;mo funciona el auditor &mdash; en 3 pasos</strong>' +
+            '</div>' +
+            '<div class="onboarding-steps">' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">1</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>Introduzca la nota cl&iacute;nica</strong>' +
+                  '<p>Pegue la nota cl&iacute;nica seudonimizada del paciente. El auditor extraer&aacute; autom&aacute;ticamente los medicamentos y problemas activos.</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">2</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>El auditor detecta posibles cascadas</strong>' +
+                  '<p>Cruza los f&aacute;rmacos con la base de conocimiento: identifica si alg&uacute;n medicamento puede ser consecuencia de un efecto adverso de otro.</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="onboarding-step">' +
+                '<span class="onboarding-step-num">3</span>' +
+                '<div class="onboarding-step-body">' +
+                  '<strong>Obtenga un plan farmacoterap&eacute;utico</strong>' +
+                  '<p>Clasifique cada hallazgo, a&ntilde;ada sus notas cl&iacute;nicas y exporte un informe estructurado para el equipo asistencial.</p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="onboarding-actions">' +
+              '<span class="onboarding-hint">&#8594; Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.</span>' +
+              '<button class="btn btn-outline btn-sm" onclick="loadDemoCase()" type="button">&#9654; Probar demo</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
       return (
+        onboarding +
         '<div class="form-group">' +
           '<label class="form-label" for="note-input">Nota cl&iacute;nica del caso / Clinical note</label>' +
           '<textarea id="note-input" class="textarea-clinical" ' +
@@ -2096,39 +2135,56 @@ function newCase() {
   goTo(1);
 }
 
-/* Load Demo Case — populates a sample clinical note for demonstration */
+/* Load Demo Case — populates a sample clinical note for demonstration.
+ * Scenario: PLHIV on ART + amlodipine (antihypertensive) → ankle oedema
+ * → furosemide (diuretic) prescribed = classic CCB→oedema→diuretic cascade (CC004).
+ * Also includes ibuprofen PRN → hypertension context (CC001). */
 function loadDemoCase() {
-  if (state.clinicalNote && !confirm('Load the demo case? Current data will be replaced.')) return;
+  if (state.clinicalNote && !confirm('¿Cargar el caso demo? Los datos actuales serán reemplazados.')) return;
   clearState();
   state.patientId = 'DEMO-001';
   state.clinicalNote = [
-    'Patient: 58-year-old male, PLHIV since 2010, on stable ART.',
-    'Current regimen: darunavir/cobicistat/emtricitabine/tenofovir alafenamide (Symtuza) since 2019.',
-    'CD4: 620 cells/μL. Viral load: undetectable (<50 copies/mL).',
+    'NOTA CLÍNICA — CASO PSEUDONIMIZADO (DEMO)',
+    'Paciente ID: DEMO-001 | Fecha: 2024-03-15 | Servicio: VIH / Enfermedades Infecciosas',
     '',
-    'Comorbidities: arterial hypertension on amlodipine 5mg/day since 2021;',
-    'bilateral ankle edema (new onset 2022) on furosemide 40mg/day since 2023;',
-    'dyslipidemia on atorvastatin 20mg/night since 2021;',
-    'type 2 diabetes on metformin 1g BID since 2024;',
-    'chronic lumbar osteoarthritis, ibuprofen 600mg TID PRN;',
-    'insomnia on zolpidem 5mg nocte since 2023.',
+    '=== RESUMEN DEL PACIENTE ===',
+    'Varón de 58 años, persona que vive con el VIH (PVVIH) desde 2010.',
+    'TAR estable: darunavir/cobicistat/emtricitabina/tenofovir alafenamida (Symtuza) desde 2019.',
+    'CD4: 620 células/μL (ene 2024). Carga viral: indetectable (<50 copias/mL, ene 2024).',
     '',
-    'Symptoms: bilateral pitting ankle edema (worse end of day, onset Sep 2022);',
-    'insomnia (difficulty initiating sleep, onset March 2023);',
-    'polyuria/polydipsia (mild, onset May 2023).',
+    '=== COMORBILIDADES Y MEDICACIÓN ACTIVA ===',
+    '1. Hipertensión arterial — amlodipine 5mg/día (desde jul 2021)',
+    '2. Edema bilateral de tobillos — nuevo inicio sep 2022.',
+    '   Tratado con furosemide 40mg/día desde feb 2023 (derivación a cardiología).',
+    '   Ecocardiograma normal (nov 2022).',
+    '3. Dislipemia — atorvastatin 20mg/noche (desde jun 2021)',
+    '4. Diabetes mellitus tipo 2 — metformin 1g/12h (desde ene 2024; era 500mg/12h desde jun 2023)',
+    '5. Artrosis lumbar crónica — ibuprofen 600mg/8h a demanda (último ciclo feb 2024, 5 días)',
+    '6. Insomnio — zolpidem 5mg nocturno (desde abr 2023)',
     '',
-    'Labs (Jan 2024): creatinine 98 μmol/L, eGFR 72; potassium 3.5 mmol/L (low-normal);',
-    'TG 2.8 mmol/L (elevated); CK 180 IU/L. No fever, no chest pain.',
+    '=== SÍNTOMAS ACTUALES ===',
+    '- Edema maleolar bilateral, con fóvea, moderado. Inicio sep 2022. Peor al final del día.',
+    '  Sin disnea ni ortopnea. Eco normal.',
+    '- Insomnio de inicio: dificultad para conciliar el sueño desde mar 2023.',
+    '- Poliuria/polidipsia leve desde may 2023.',
     '',
-    'Clinician note: growing polypharmacy, possible drug interactions with cobicistat.',
-    'Requesting cascade review.'
+    '=== ANALÍTICA (ene 2024) ===',
+    'Creatinina: 98 μmol/L, FGe: 72 mL/min/1,73m². Potasio: 3,5 mmol/L (límite bajo).',
+    'Colesterol total: 5,1 mmol/L. TG: 2,8 mmol/L (↑). CK: 180 UI/L.',
+    'ALT: 28 UI/L. HbA1c: 6,9%.',
+    '',
+    '=== NOTAS DEL CLÍNICO ===',
+    'Paciente con polimedicación creciente. Preocupa posible cascada de prescripción:',
+    '¿es el edema de tobillo un efecto adverso del amlodipine tratado con furosemide?',
+    '¿Podría reducirse o suspenderse el diurético si se modifica el antihipertensivo?',
+    'Solicita revisión farmacoterapéutica completa e informe de cascadas.'
   ].join('\n');
   state.step = 1;
   saveState();
   var pidEl = document.getElementById('patient-id');
   if (pidEl) pidEl.value = state.patientId;
   goTo(1);
-  showToast('Demo case loaded. Review the clinical note in Step 1.', 'info');
+  showToast('Caso demo cargado — avance por los pasos para ver las cascadas detectadas.', 'info');
 }
 
 /* ============================================================
