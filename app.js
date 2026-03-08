@@ -1994,6 +1994,12 @@ function hasText(value) {
   return !!(value && String(value).trim());
 }
 
+function isNonspecificSymptom(symptomTerm) {
+  if (!hasText(symptomTerm)) return false;
+  var nonspecific = ['dizziness', 'nausea', 'insomnia'];
+  return nonspecific.indexOf(String(symptomTerm).trim().toLowerCase()) !== -1;
+}
+
 function detectDrugPairTemporality(noteText, signal) {
   if (!hasText(noteText) || !signal) {
     return { status: 'unknown', detail: 'Sin datos temporales suficientes.' };
@@ -2099,6 +2105,15 @@ function derivePharmacyPriority(signal, recommendationText, evidence) {
       score -= 1;
       reasons.push('Sin soporte temporal claro: prioridad penalizada.');
     }
+  }
+
+  var hasAdditionalSupport = !!(
+    evidence && evidence.temporality && evidence.temporality.status === 'supportive'
+  ) || signal.confidence === 'high';
+
+  if (signal.signal_type === 'symptom_bridge' && isNonspecificSymptom(signal.ade_en) && !hasAdditionalSupport) {
+    score -= 1;
+    reasons.push('Penalización adicional: síntoma inespecífico sin soporte temporal/causal claro.');
   }
 
   if (score >= 6) return { level: 'alta', label: 'Alta prioridad', score: score, reasons: reasons };
@@ -2669,6 +2684,38 @@ window.runNlpSelfTest = function () {
   );
   var tAs = tA.sigs.find(function (s) { return s.ade_en === 'oedema' || s.ade_en === 'peripheral oedema'; });
   assert('TA: amlodipine→oedema→furosemide fires', !!tAs, true);
+
+  console.groupEnd();
+
+  /* ── Priority penalty checks for non-specific symptoms ── */
+  console.group('C2. Priority penalty — non-specific symptoms');
+
+  var p1 = probeCascades(
+    'Patient reports dizziness. Amlodipine and meclizine are listed with no clear temporal relation.'
+  );
+  var p1s = p1.sigs.find(function (s) { return s.ade_en === 'dizziness'; });
+  var p1e = p1s ? buildEvidenceProfile(p1s, p1s.clinical_hint || '', 'Patient reports dizziness. Amlodipine and meclizine are listed with no clear temporal relation.') : null;
+  var p1p = p1s ? derivePharmacyPriority(p1s, p1s.clinical_hint || '', p1e) : null;
+  assert('P1: dizziness + unknown temporality gets additional penalty (score <= 4)',
+         p1p ? p1p.score <= 4 : null, true);
+
+  var p2 = probeCascades(
+    'After starting amlodipine the patient developed new dizziness. Meclizine was added.'
+  );
+  var p2s = p2.sigs.find(function (s) { return s.ade_en === 'dizziness'; });
+  var p2e = p2s ? buildEvidenceProfile(p2s, p2s.clinical_hint || '', 'After starting amlodipine the patient developed new dizziness. Meclizine was added.') : null;
+  var p2p = p2s ? derivePharmacyPriority(p2s, p2s.clinical_hint || '', p2e) : null;
+  assert('P2: dizziness + supportive temporality avoids extra penalty (score >= 5)',
+         p2p ? p2p.score >= 5 : null, true);
+
+  var p3 = probeCascades(
+    'New onset oedema after amlodipine start. Furosemide prescribed due to persistent ankle swelling.'
+  );
+  var p3s = p3.sigs.find(function (s) { return s.ade_en === 'oedema'; });
+  var p3e = p3s ? buildEvidenceProfile(p3s, p3s.clinical_hint || '', 'New onset oedema after amlodipine start. Furosemide prescribed due to persistent ankle swelling.') : null;
+  var p3p = p3s ? derivePharmacyPriority(p3s, p3s.clinical_hint || '', p3e) : null;
+  assert('P3: specific symptom with clinical support keeps higher score (>=5)',
+         p3p ? p3p.score >= 5 : null, true);
 
   console.groupEnd();
 
