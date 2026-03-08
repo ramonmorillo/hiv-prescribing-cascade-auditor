@@ -1761,6 +1761,16 @@ const STEP_CONTENT = {
       /* ── Export buttons ── */
       var exportRow = (
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
+          '<button onclick="copyReportForClinicalRecord()" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#34495e;color:#fff;border:none;font-weight:600;">' +
+            '&#128203;&nbsp;Copiar para historia cl&iacute;nica' +
+          '</button>' +
+          '<button onclick="printReportAsPDF()" ' +
+            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
+              'background:#8e44ad;color:#fff;border:none;font-weight:600;">' +
+            '&#128438;&nbsp;Guardar como PDF' +
+          '</button>' +
           '<button onclick="exportReport(\'json\')" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
@@ -2118,6 +2128,90 @@ function buildReport() {
     }
   };
 }
+
+function formatReportForClinicalRecord(report) {
+  var lines = [];
+  lines.push('INFORME FARMACOTERAPÉUTICO — AUDITORÍA DE CASCADAS');
+  lines.push('Paciente: ' + (report.patient_id || 'No establecido'));
+  lines.push('Fecha informe: ' + report.generated_at);
+  lines.push('KB: ' + report.kb_mode + (report.kb_version ? ' v' + report.kb_version : ''));
+  lines.push('');
+  lines.push('Resumen:');
+  lines.push('- Cascadas detectadas: ' + report.cascade_count);
+  lines.push('- Medicamentos detectados: ' + (report.drugs_detected.join(', ') || 'Ninguno'));
+  lines.push('- Grupos farmacológicos: ' + (report.drug_classes.join(', ') || 'No clasificados'));
+  lines.push('');
+
+  if (!report.cascades.length) {
+    lines.push('No se han detectado cascadas terapéuticas con los datos actuales.');
+  } else {
+    lines.push('Cascadas terapéuticas:');
+    report.cascades.forEach(function (c, idx) {
+      lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
+      lines.push('   - Secuencia: ' + c.sequence);
+      lines.push('   - Estado de verificación: ' + c.verification_status);
+      lines.push('   - Prioridad: ' + c.pharmacy_priority);
+      lines.push('   - Recomendación: ' + (c.suggested_intervention || c.clinical_recommendation || 'Sin recomendación específica'));
+    });
+  }
+
+  lines.push('');
+  lines.push('Advertencia: Requiere validación clínica-farmacéutica antes de cualquier cambio terapéutico.');
+  return lines.join('\n');
+}
+
+function copyTextToClipboard(text) {
+  if (!text) return Promise.reject(new Error('No text to copy.'));
+
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    return navigator.clipboard.writeText(text);
+  }
+
+  return new Promise(function (resolve, reject) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', 'readonly');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.focus();
+    area.select();
+    try {
+      var ok = document.execCommand('copy');
+      document.body.removeChild(area);
+      if (!ok) return reject(new Error('Clipboard copy command was rejected.'));
+      resolve();
+    } catch (err) {
+      document.body.removeChild(area);
+      reject(err);
+    }
+  });
+}
+
+window.copyReportForClinicalRecord = function () {
+  var report;
+  try {
+    report = buildReport();
+  } catch (err) {
+    console.error('[Report] buildReport failed for clipboard export:', err);
+    showToast('No se pudo generar el informe para copiar.', 'error');
+    return;
+  }
+
+  copyTextToClipboard(formatReportForClinicalRecord(report))
+    .then(function () {
+      showToast('Informe copiado al portapapeles.', 'success');
+    })
+    .catch(function (err) {
+      console.error('[Clipboard] Could not copy report:', err);
+      showToast('No se pudo copiar automáticamente. Use Exportar JSON/CSV o Guardar como PDF.', 'error');
+    });
+};
+
+window.printReportAsPDF = function () {
+  showToast('Use "Guardar como PDF" en el diálogo de impresión.', 'success');
+  window.print();
+};
 
 /* ── exportReport ─────────────────────────────────────────────────────────
    Inline export buttons in Step 6 call: exportReport('json') / ('csv')
