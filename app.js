@@ -24,7 +24,9 @@ const state = {
      Values: 'confirmed' | 'possible' | 'not_cascade' */
   cascadeClassifications: {},
   /* Cache for detectCascades() — invalidated when note or KB changes */
-  detectedCascades: null
+  detectedCascades: null,
+  /* Drug mention resolver cache (rebuilt when KB changes) */
+  drugResolver: null
 };
 
 /* ============================================================
@@ -76,6 +78,7 @@ function clearState() {
     state.symptomsDetected = [];
     state.cascadeClassifications = {};
     state.detectedCascades = null;
+    state.drugResolver = null;
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
   }
@@ -131,6 +134,8 @@ async function loadKB(track) {
   const loaded = results.filter(r => r.status === 'fulfilled').length;
   updateKBStatus(loaded, failed.length);
   runKBValidation();
+  invalidateDrugResolver();
+  invalidateDetectedCascades();
 
   /* Immutability guard — in dev mode, freeze all loaded KB objects so any
    * accidental mutation throws TypeError instead of silently corrupting state. */
@@ -386,20 +391,167 @@ function downloadJSON(obj, filename) {
    ============================================================ */
 
 /**
- * Returns true when `drug` (or any slash-separated component) appears
- * as a whole word inside `noteText` (case-insensitive).
+ * Drug mention resolver (Phase 1):
+ * - text normalization (NFC + diacritic folding + punctuation simplification)
+ * - aliases / abbreviations / frequent brand names
+ * - slash combinations support
+ *
+ * Output shape for each mention:
+ * {
+ *   mention, canonical, drug_class,
+ *   match_type: 'exact'|'alias'|'combo'|'normalized',
+ *   confidence: 'high'|'medium'
+ * }
+ */
+function normalizeDrugText(text) {
+  var raw = (text || '');
+  if (raw.normalize) {
+    raw = raw.normalize('NFC').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  return raw
+    .toLowerCase()
+    .replace(/[’'`´]/g, '')
+    .replace(/[‐-―]/g, '-')
+    .replace(/[\(\)\[\],;:]/g, ' ')
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildDrugResolver() {
+  var resolver = {
+    byVariant: {},
+    variantPattern: null
+  };
+
+  var allCascades = [].concat(
+    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
+    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
+  );
+
+  var MANUAL_ALIASES = {
+    'azt': 'zidovudine',
+    'tdf': 'tenofovir disoproxil fumarate',
+    'dtg': 'dolutegravir',
+    'biktarvy': 'bictegravir',
+    'descovy': 'tenofovir disoproxil fumarate',
+    'truvada': 'tenofovir disoproxil fumarate',
+    'kaletra': 'lopinavir/ritonavir',
+    'prezista': 'darunavir',
+    'rezolsta': 'darunavir/cobicistat',
+    'symtuza': 'darunavir/cobicistat',
+    'evotaz': 'atazanavir/cobicistat',
+    'reyataz': 'atazanavir',
+    'norvir': 'ritonavir',
+    'isentress': 'raltegravir',
+    'tivicay': 'dolutegravir'
+  };
+
+  function addVariant(rawVariant, canonical, drugClass, matchType, confidence) {
+    var normVariant = normalizeDrugText(rawVariant);
+    if (!normVariant || normVariant.length < 2) return;
+
+    var current = resolver.byVariant[normVariant];
+    if (!current || (current.confidence !== 'high' && confidence === 'high')) {
+      resolver.byVariant[normVariant] = {
+        variant: rawVariant,
+        canonical: canonical,
+        drug_class: drugClass || '',
+        match_type: matchType,
+        confidence: confidence
+      };
+    }
+  }
+
+  allCascades.forEach(function (cascade) {
+    var idxClass = cascade.index_drug_class ||
+      (Array.isArray(cascade.index_drug_classes) ? cascade.index_drug_classes[0] : '') || '';
+    var casClass = cascade.cascade_drug_class || '';
+
+    getIndexExamples(cascade).forEach(function (drug) {
+      addVariant(drug, drug, idxClass, 'exact', 'high');
+      addVariant(drug.replace(/\//g, ' / '), drug, idxClass, 'combo', 'high');
+      drug.split('/').forEach(function (part) {
+        addVariant(part.trim(), drug, idxClass, 'combo', 'medium');
+      });
+    });
+
+    getCascadeExamples(cascade).forEach(function (drug) {
+      addVariant(drug, drug, casClass, 'exact', 'high');
+      addVariant(drug.replace(/\//g, ' / '), drug, casClass, 'combo', 'high');
+      drug.split('/').forEach(function (part) {
+        addVariant(part.trim(), drug, casClass, 'combo', 'medium');
+      });
+    });
+  });
+
+  Object.keys(MANUAL_ALIASES).forEach(function (alias) {
+    var canonical = MANUAL_ALIASES[alias];
+    var canonicalMeta = resolver.byVariant[normalizeDrugText(canonical)] || null;
+    addVariant(alias, canonical, canonicalMeta ? canonicalMeta.drug_class : '', 'alias', 'medium');
+  });
+
+  var escaped = Object.keys(resolver.byVariant)
+    .sort(function (a, b) { return b.length - a.length; })
+    .map(function (term) { return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+
+  if (escaped.length) {
+    resolver.variantPattern = new RegExp('(^|[^a-z0-9])(' + escaped.join('|') + ')(?=[^a-z0-9]|$)', 'gi');
+  }
+
+  return resolver;
+}
+
+function getDrugResolver() {
+  if (!state.drugResolver) {
+    state.drugResolver = buildDrugResolver();
+  }
+  return state.drugResolver;
+}
+
+function resolveDrugMentions(noteText) {
+  if (!noteText || !noteText.trim()) return [];
+
+  var resolver = getDrugResolver();
+  if (!resolver.variantPattern) return [];
+
+  var normalized = normalizeDrugText(noteText);
+  var mentions = [];
+  var seen = {};
+  var match;
+
+  while ((match = resolver.variantPattern.exec(normalized)) !== null) {
+    var variant = (match[2] || '').trim();
+    if (!variant) continue;
+
+    var meta = resolver.byVariant[variant];
+    if (!meta) continue;
+
+    var dedupeKey = meta.canonical + '::' + match.index;
+    if (seen[dedupeKey]) continue;
+    seen[dedupeKey] = true;
+
+    mentions.push({
+      mention: variant,
+      canonical: meta.canonical,
+      drug_class: meta.drug_class || '',
+      match_type: meta.match_type || 'normalized',
+      confidence: meta.confidence || 'medium',
+      start_index: match.index
+    });
+  }
+
+  mentions.sort(function (a, b) { return a.start_index - b.start_index; });
+  return mentions;
+}
+
+/**
+ * Backward-compatible boolean matcher used by existing logic.
  */
 function drugFoundInNote(noteText, drug) {
-  var parts = drug.split('/');
-  return parts.some(function (part) {
-    part = part.trim();
-    if (!part) return false;
-    try {
-      var escaped = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp('\\b' + escaped + '\\b', 'i').test(noteText);
-    } catch (e) {
-      return noteText.toLowerCase().indexOf(part.toLowerCase()) !== -1;
-    }
+  var target = normalizeDrugText(drug);
+  return resolveDrugMentions(noteText).some(function (m) {
+    return normalizeDrugText(m.canonical) === target;
   });
 }
 
@@ -598,6 +750,14 @@ function getCascadeExamples(cascade) {
 function detectCascades(noteText) {
   if (!noteText || !noteText.trim()) return [];
 
+  var mentions = resolveDrugMentions(noteText);
+  var mentionByCanonical = {};
+  mentions.forEach(function (m) {
+    var key = normalizeDrugText(m.canonical);
+    if (!mentionByCanonical[key]) mentionByCanonical[key] = [];
+    mentionByCanonical[key].push(m);
+  });
+
   var allCascades = [].concat(
     (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
     (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
@@ -609,8 +769,29 @@ function detectCascades(noteText) {
     var indexExamples   = getIndexExamples(cascade);
     var cascadeExamples = getCascadeExamples(cascade);
 
-    var foundIndex   = indexExamples.find(function (d) { return drugFoundInNote(noteText, d); });
-    var foundCascade = cascadeExamples.find(function (d) { return drugFoundInNote(noteText, d); });
+    var foundIndex = null;
+    var foundIndexMeta = null;
+    indexExamples.some(function (d) {
+      var hit = mentionByCanonical[normalizeDrugText(d)];
+      if (hit && hit.length) {
+        foundIndex = d;
+        foundIndexMeta = hit[0];
+        return true;
+      }
+      return false;
+    });
+
+    var foundCascade = null;
+    var foundCascadeMeta = null;
+    cascadeExamples.some(function (d) {
+      var hit = mentionByCanonical[normalizeDrugText(d)];
+      if (hit && hit.length) {
+        foundCascade = d;
+        foundCascadeMeta = hit[0];
+        return true;
+      }
+      return false;
+    });
 
     if (!foundIndex || !foundCascade) return;
 
@@ -620,21 +801,20 @@ function detectCascades(noteText) {
       signal_type:   'drug_drug',
       index_drug:    foundIndex,
       cascade_drug:  foundCascade,
-      /* confidence: core uses "confidence", VIH uses "plausibility".
-       * Fall back to 'low' rather than the ambiguous string 'unknown'. */
+      drug_resolution: {
+        index: foundIndexMeta,
+        cascade: foundCascadeMeta
+      },
       confidence:    cascade.confidence || cascade.plausibility || 'low',
       risk_focus:    cascade.risk_focus || [],
-      /* ade_en: the intermediate adverse effect that links the two drugs */
       ade_en:        cascade.ade_en || '',
-      /* appropriateness: "often_inappropriate" | "often_appropriate" | "context_dependent" */
       appropriateness: cascade.appropriateness || '',
-      /* ddi_warning kept separate so the UI can render it as a red alert */
       ddi_warning:   cascade.ddi_warning_en || '',
       clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
     });
   });
 
-  return detected.concat(detectSymptomCascades(noteText));
+  return detected.concat(detectSymptomCascades(noteText, mentionByCanonical));
 }
 
 /**
@@ -650,7 +830,7 @@ function detectCascades(noteText) {
  * @param {string} noteText
  * @returns {Array} Same signal shape as detectCascades()
  */
-function detectSymptomCascades(noteText) {
+function detectSymptomCascades(noteText, mentionByCanonical) {
   if (!noteText || !noteText.trim()) return [];
 
   var symEntries = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
@@ -670,6 +850,8 @@ function detectSymptomCascades(noteText) {
 
   var signals = [];
 
+  var mentionMap = mentionByCanonical || {};
+
   detectedSymptoms.forEach(function (ds) {
     /* ── Gate 1: symptom must be contextually active ── */
     if (ds.active === false) return;
@@ -682,13 +864,29 @@ function detectSymptomCascades(noteText) {
     if (!causedBy.length || !treatedBy.length) return;
 
     /* Find cause and treatment drugs and their positions */
-    var foundCause = null; var causePos = null;
+    var foundCause = null; var causePos = null; var foundCauseMeta = null;
     for (var ci = 0; ci < causedBy.length; ci++) {
+      var cKey = normalizeDrugText(causedBy[ci]);
+      var cHit = mentionMap[cKey];
+      if (cHit && cHit.length) {
+        foundCause = causedBy[ci];
+        foundCauseMeta = cHit[0];
+        causePos = { index: foundCauseMeta.start_index || 0, length: foundCauseMeta.mention.length };
+        break;
+      }
       var cp = findTermInNote(noteText, causedBy[ci]);
       if (cp) { foundCause = causedBy[ci]; causePos = cp; break; }
     }
-    var foundTreatment = null; var treatPos = null;
+    var foundTreatment = null; var treatPos = null; var foundTreatmentMeta = null;
     for (var ti = 0; ti < treatedBy.length; ti++) {
+      var tKey = normalizeDrugText(treatedBy[ti]);
+      var tHit = mentionMap[tKey];
+      if (tHit && tHit.length) {
+        foundTreatment = treatedBy[ti];
+        foundTreatmentMeta = tHit[0];
+        treatPos = { index: foundTreatmentMeta.start_index || 0, length: foundTreatmentMeta.mention.length };
+        break;
+      }
       var tp = findTermInNote(noteText, treatedBy[ti]);
       if (tp) { foundTreatment = treatedBy[ti]; treatPos = tp; break; }
     }
@@ -733,6 +931,7 @@ function detectSymptomCascades(noteText) {
       index_drug:      foundCause,
       cascade_drug:    foundTreatment,
       signal_type:     'symptom_bridge',
+      drug_resolution: { index: foundCauseMeta || null, cascade: foundTreatmentMeta || null },
       confidence:      confidence,
       risk_focus:      [ds.category],
       ade_en:          ds.term,
@@ -773,6 +972,10 @@ function invalidateDetectedCascades() {
   state.detectedCascades = null;
 }
 
+function invalidateDrugResolver() {
+  state.drugResolver = null;
+}
+
 /**
  * Scan `noteText` for any drug name present in the KB (both index and cascade
  * drug examples across all loaded cascade entries).
@@ -786,23 +989,13 @@ function extractDrugs(noteText) {
   var seen   = {};
   var result = [];
 
-  var allCascades = [].concat(
-    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
-    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
-  );
-
-  allCascades.forEach(function (cascade) {
-    var examples = [].concat(
-      getIndexExamples(cascade),
-      getCascadeExamples(cascade)
-    );
-    examples.forEach(function (drug) {
-      var key = drug.toLowerCase();
-      if (!seen[key] && drugFoundInNote(noteText, drug)) {
-        seen[key] = true;
-        result.push(drug);
-      }
-    });
+  resolveDrugMentions(noteText).forEach(function (mention) {
+    var canonical = mention.canonical;
+    var key = normalizeDrugText(canonical);
+    if (!seen[key]) {
+      seen[key] = true;
+      result.push(canonical);
+    }
   });
 
   return result;
@@ -1016,6 +1209,7 @@ const STEP_CONTENT = {
         ta.addEventListener('input', function () {
           state.clinicalNote = ta.value;
           invalidateDetectedCascades();
+          invalidateDrugResolver();
           saveState();
         });
       }
@@ -3020,6 +3214,24 @@ window.runNlpSelfTest = function () {
   var g6     = reconcileDrugsWithCascades(g6orig, [{ index_drug: 'bisoprolol', cascade_drug: 'furosemide' }]);
   assert('G6: original drugs array not mutated', g6orig.length, 1);
   assert('G6: returned array has all three',     g6.length,     3);
+
+  console.groupEnd();
+
+  console.group('H — Drug resolver (alias/brand/abbr/combo/normalized)');
+
+  var h1 = resolveDrugMentions('Paciente en Kaletra por TAR.').map(function (m) { return m.canonical; });
+  assert('H1: brand name Kaletra → lopinavir/ritonavir', h1.indexOf('lopinavir/ritonavir') >= 0, true);
+
+  var h2 = resolveDrugMentions('Se inicia AZT por disponibilidad.');
+  var h2m = h2.find(function (m) { return m.canonical === 'zidovudine'; });
+  assert('H2: abbreviation AZT resolved to zidovudine', !!h2m, true);
+  assert('H2: abbreviation match_type = alias', h2m ? h2m.match_type : null, 'alias');
+
+  var h3 = resolveDrugMentions('Regimen actual: atazanavir / ritonavir.').map(function (m) { return m.canonical; });
+  assert('H3: slash combination resolved', h3.indexOf('atazanavir/ritonavir') >= 0, true);
+
+  var h4 = resolveDrugMentions('Paciente con oxibutinína y estreñimiento.').map(function (m) { return m.canonical; });
+  assert('H4: orthographic variant (accent) resolves to oxybutynin', h4.indexOf('oxybutynin') >= 0, true);
 
   console.groupEnd();
 
