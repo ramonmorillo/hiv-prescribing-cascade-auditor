@@ -8,15 +8,40 @@
       "id": "CC001",
       "name_es": "AINE → Hipertensión → Antihipertensivo",
       "name_en": "NSAID → Hypertension → Antihypertensive",
-      "index_drug_classes": ["NSAID"],
-      "index_drug_examples": ["ibuprofen", "naproxen", "diclofenac", "meloxicam", "ketorolac", "celecoxib", "indomethacin", "piroxicam"],
+      "index_drug_classes": [
+        "NSAID"
+      ],
+      "index_drug_examples": [
+        "ibuprofen",
+        "naproxen",
+        "diclofenac",
+        "meloxicam",
+        "ketorolac",
+        "celecoxib",
+        "indomethacin",
+        "piroxicam"
+      ],
       "ade_mechanism_en": "Prostaglandin inhibition → sodium/water retention + vasoconstriction → BP elevation",
       "ade_en": "Blood pressure elevation",
       "cascade_drug_class": "Antihypertensive",
-      "cascade_drug_examples": ["amlodipine", "enalapril", "lisinopril", "losartan", "valsartan", "hydrochlorothiazide", "bisoprolol", "atenolol", "furosemide", "doxazosin"],
+      "cascade_drug_examples": [
+        "amlodipine",
+        "enalapril",
+        "lisinopril",
+        "losartan",
+        "valsartan",
+        "hydrochlorothiazide",
+        "bisoprolol",
+        "atenolol",
+        "furosemide",
+        "doxazosin"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "renal"],
+      "risk_focus": [
+        "cardiovascular",
+        "renal"
+      ],
       "differential_hints": [
         "Essential hypertension poorly controlled prior to NSAID initiation",
         "White coat hypertension (24h ambulatory monitoring may clarify)",
@@ -28,21 +53,45 @@
       "time_window_days_min": 7,
       "time_window_days_max": 90,
       "recommended_first_action_en": "Consider if NSAIDs are truly necessary. In PLHIV, prefer paracetamol when possible.",
-      "references": ["Scott IA et al. Med J Aust 2013", "Lanas A et al. Aliment Pharmacol Ther 2003"]
+      "references": [
+        "Scott IA et al. Med J Aust 2013",
+        "Lanas A et al. Aliment Pharmacol Ther 2003"
+      ],
+      "ade_es": "Elevación de la presión arterial",
+      "ade_mechanism_es": "Inhibición de prostaglandinas → retención de sodio/agua + vasoconstricción → elevación de la PA",
+      "recommended_first_action_es": "Valorar si los AINE son realmente necesarios. En PVVIH, preferir paracetamol cuando sea posible."
     },
     {
       "id": "CC002",
       "name_es": "AINE → Síntomas GI → IBP",
       "name_en": "NSAID → GI Symptoms → PPI",
-      "index_drug_classes": ["NSAID"],
-      "index_drug_examples": ["ibuprofen", "naproxen", "diclofenac", "meloxicam", "aspirin", "ketorolac"],
+      "index_drug_classes": [
+        "NSAID"
+      ],
+      "index_drug_examples": [
+        "ibuprofen",
+        "naproxen",
+        "diclofenac",
+        "meloxicam",
+        "aspirin",
+        "ketorolac"
+      ],
       "ade_mechanism_en": "Gastric COX-1 inhibition → reduced protective mucus → GI irritation/ulceration",
       "ade_en": "Dyspepsia, peptic ulcer, nausea, abdominal pain",
       "cascade_drug_class": "PPI",
-      "cascade_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole", "rabeprazole"],
+      "cascade_drug_examples": [
+        "omeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "esomeprazole",
+        "rabeprazole"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["gastrointestinal", "hepatic"],
+      "risk_focus": [
+        "gastrointestinal",
+        "hepatic"
+      ],
       "differential_hints": [
         "Helicobacter pylori infection as primary cause of dyspepsia",
         "Functional dyspepsia unrelated to NSAID use",
@@ -53,21 +102,44 @@
       "time_window_days_min": 3,
       "time_window_days_max": 60,
       "recommended_first_action_en": "If NSAID is stopped, the PPI may not be needed. In PLHIV verify PPI-ARV interactions.",
-      "references": ["Lanas A et al. 2006", "Targownik LE et al. 2008"]
+      "references": [
+        "Lanas A et al. 2006",
+        "Targownik LE et al. 2008"
+      ],
+      "ade_es": "Dispepsia, úlcera péptica, náuseas, dolor abdominal",
+      "ade_mechanism_es": "Inhibición gástrica de COX-1 → reducción del moco protector → irritación/ulceración GI",
+      "recommended_first_action_es": "Si se suspende el AINE, el IBP puede no ser necesario. En PVVIH, verificar interacciones IBP-ARV."
     },
     {
       "id": "CC003",
       "name_es": "IECA → Tos → Antitusivo / Cambio a ARA-II",
       "name_en": "ACE Inhibitor → Cough → Antitussive / Switch to ARB",
-      "index_drug_classes": ["ACE inhibitor"],
-      "index_drug_examples": ["enalapril", "lisinopril", "ramipril", "captopril", "perindopril", "fosinopril"],
+      "index_drug_classes": [
+        "ACE inhibitor"
+      ],
+      "index_drug_examples": [
+        "enalapril",
+        "lisinopril",
+        "ramipril",
+        "captopril",
+        "perindopril",
+        "fosinopril"
+      ],
       "ade_mechanism_en": "Bradykinin accumulation → respiratory tract irritation → dry cough",
       "ade_en": "Persistent dry cough",
       "cascade_drug_class": "Antitussive",
-      "cascade_drug_examples": ["dextromethorphan", "codeine", "benzonatate", "guaifenesin"],
+      "cascade_drug_examples": [
+        "dextromethorphan",
+        "codeine",
+        "benzonatate",
+        "guaifenesin"
+      ],
       "confidence": "high",
       "age_sensitivity": "low",
-      "risk_focus": ["respiratory", "adherence"],
+      "risk_focus": [
+        "respiratory",
+        "adherence"
+      ],
       "differential_hints": [
         "Respiratory tract infection as cause of acute cough",
         "Post-nasal drip syndrome unrelated to ACEi",
@@ -79,21 +151,42 @@
       "time_window_days_min": 7,
       "time_window_days_max": 180,
       "recommended_first_action_en": "The correct solution is to switch ACE inhibitor to ARB, not add an antitussive.",
-      "references": ["Dicpinigaitis PV. Chest 2006"]
+      "references": [
+        "Dicpinigaitis PV. Chest 2006"
+      ],
+      "ade_es": "Tos seca persistente",
+      "ade_mechanism_es": "Acumulación de bradicinina → irritación del tracto respiratorio → tos seca",
+      "recommended_first_action_es": "La solución correcta es cambiar IECA por ARA-II, no añadir un antitusivo."
     },
     {
       "id": "CC004",
       "name_es": "Antagonista del calcio → Edema maleolar → Diurético",
       "name_en": "Calcium Channel Blocker → Ankle Edema → Diuretic",
-      "index_drug_classes": ["Calcium channel blocker"],
-      "index_drug_examples": ["amlodipine", "nifedipine", "felodipine", "lercanidipine"],
+      "index_drug_classes": [
+        "Calcium channel blocker"
+      ],
+      "index_drug_examples": [
+        "amlodipine",
+        "nifedipine",
+        "felodipine",
+        "lercanidipine"
+      ],
       "ade_mechanism_en": "Preferential arteriolar vasodilation → increased capillary pressure → peripheral edema",
       "ade_en": "Ankle/leg edema",
       "cascade_drug_class": "Diuretic",
-      "cascade_drug_examples": ["furosemide", "hydrochlorothiazide", "indapamide", "spironolactone", "torasemide"],
+      "cascade_drug_examples": [
+        "furosemide",
+        "hydrochlorothiazide",
+        "indapamide",
+        "spironolactone",
+        "torasemide"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "renal"],
+      "risk_focus": [
+        "cardiovascular",
+        "renal"
+      ],
       "differential_hints": [
         "Heart failure as cause of ankle edema (require echocardiography)",
         "Venous insufficiency or varicose veins as primary etiology",
@@ -105,21 +198,45 @@
       "time_window_days_min": 14,
       "time_window_days_max": 120,
       "recommended_first_action_en": "Consider reducing CCB dose, switching to less vasodilatory dihydropyridine, or adding ACEi/ARB.",
-      "references": ["Elliott WJ. J Clin Hypertens 2003"]
+      "references": [
+        "Elliott WJ. J Clin Hypertens 2003"
+      ],
+      "ade_es": "Edema de tobillo/pierna",
+      "ade_mechanism_es": "Vasodilatación arteriolar preferencial → aumento de la presión capilar → edema periférico",
+      "recommended_first_action_es": "Considerar reducir dosis de BCC, cambiar a dihidropiridina menos vasodilatadora o añadir IECA/ARA-II."
     },
     {
       "id": "CC005",
       "name_es": "Corticosteroide → Hiperglucemia → Antidiabético",
       "name_en": "Corticosteroid → Hyperglycemia → Antidiabetic",
-      "index_drug_classes": ["Corticosteroid"],
-      "index_drug_examples": ["prednisone", "prednisolone", "methylprednisolone", "dexamethasone", "hydrocortisone", "betamethasone"],
+      "index_drug_classes": [
+        "Corticosteroid"
+      ],
+      "index_drug_examples": [
+        "prednisone",
+        "prednisolone",
+        "methylprednisolone",
+        "dexamethasone",
+        "hydrocortisone",
+        "betamethasone"
+      ],
       "ade_mechanism_en": "Glucocorticoid-induced insulin resistance → hyperglycemia",
       "ade_en": "Hyperglycemia, steroid-induced diabetes",
       "cascade_drug_class": "Antidiabetic",
-      "cascade_drug_examples": ["metformin", "glipizide", "glibenclamide", "sitagliptin", "insulin glargine", "insulin aspart"],
+      "cascade_drug_examples": [
+        "metformin",
+        "glipizide",
+        "glibenclamide",
+        "sitagliptin",
+        "insulin glargine",
+        "insulin aspart"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["metabolic", "endocrine"],
+      "risk_focus": [
+        "metabolic",
+        "endocrine"
+      ],
       "differential_hints": [
         "Type 2 diabetes mellitus newly diagnosed independent of corticosteroid",
         "Stress hyperglycemia in acute illness context",
@@ -130,21 +247,41 @@
       "time_window_days_min": 1,
       "time_window_days_max": 30,
       "recommended_first_action_en": "Review whether corticosteroid can be reduced/discontinued. Insulin is often more appropriate than metformin for steroid-induced hyperglycemia.",
-      "references": ["Clore JN, Thurby-Hay L. Ann Pharmacother 2009"]
+      "references": [
+        "Clore JN, Thurby-Hay L. Ann Pharmacother 2009"
+      ],
+      "ade_es": "Hiperglucemia, diabetes inducida por esteroides",
+      "ade_mechanism_es": "Resistencia a la insulina inducida por glucocorticoides → hiperglucemia",
+      "recommended_first_action_es": "Revisar si el corticoide puede reducirse/suspenderse. La insulina suele ser más apropiada que metformina para hiperglucemia por esteroides."
     },
     {
       "id": "CC006",
       "name_es": "Corticosteroide → Osteoporosis → Bisfosfonato",
       "name_en": "Corticosteroid → Osteoporosis → Bisphosphonate",
-      "index_drug_classes": ["Corticosteroid"],
-      "index_drug_examples": ["prednisone", "prednisolone", "methylprednisolone", "dexamethasone"],
+      "index_drug_classes": [
+        "Corticosteroid"
+      ],
+      "index_drug_examples": [
+        "prednisone",
+        "prednisolone",
+        "methylprednisolone",
+        "dexamethasone"
+      ],
       "ade_mechanism_en": "Osteoblast inhibition + osteoclast activation → bone loss",
       "ade_en": "Corticosteroid-induced osteoporosis",
       "cascade_drug_class": "Bisphosphonate",
-      "cascade_drug_examples": ["alendronate", "risedronate", "zoledronic acid", "ibandronate"],
+      "cascade_drug_examples": [
+        "alendronate",
+        "risedronate",
+        "zoledronic acid",
+        "ibandronate"
+      ],
       "confidence": "high",
       "age_sensitivity": "high",
-      "risk_focus": ["musculoskeletal", "endocrine"],
+      "risk_focus": [
+        "musculoskeletal",
+        "endocrine"
+      ],
       "differential_hints": [
         "Primary osteoporosis (postmenopausal or age-related) independent of corticosteroid",
         "Vitamin D deficiency as primary contributor to bone loss",
@@ -155,21 +292,41 @@
       "time_window_days_min": 90,
       "time_window_days_max": 730,
       "recommended_first_action_en": "May be an appropriate prescription if corticosteroid is needed long-term. Evaluate the context.",
-      "references": ["Weinstein RS. Endocrinol Metab Clin North Am 2012"]
+      "references": [
+        "Weinstein RS. Endocrinol Metab Clin North Am 2012"
+      ],
+      "ade_es": "Osteoporosis inducida por corticoides",
+      "ade_mechanism_es": "Inhibición de osteoblastos + activación de osteoclastos → pérdida ósea",
+      "recommended_first_action_es": "Puede ser una prescripción apropiada si se requiere corticoide a largo plazo. Evaluar el contexto."
     },
     {
       "id": "CC007",
       "name_es": "Tiazida → Hiperuricemia/Gota → Alopurinol/AINE",
       "name_en": "Thiazide → Hyperuricemia/Gout → Allopurinol/NSAID",
-      "index_drug_classes": ["Thiazide diuretic"],
-      "index_drug_examples": ["hydrochlorothiazide", "chlorthalidone", "indapamide"],
+      "index_drug_classes": [
+        "Thiazide diuretic"
+      ],
+      "index_drug_examples": [
+        "hydrochlorothiazide",
+        "chlorthalidone",
+        "indapamide"
+      ],
       "ade_mechanism_en": "Reduced renal urate excretion → hyperuricemia → gout attack",
       "ade_en": "Hyperuricemia, gouty arthritis",
       "cascade_drug_class": "Urate-lowering therapy / NSAID",
-      "cascade_drug_examples": ["allopurinol", "febuxostat", "colchicine", "indomethacin", "prednisolone"],
+      "cascade_drug_examples": [
+        "allopurinol",
+        "febuxostat",
+        "colchicine",
+        "indomethacin",
+        "prednisolone"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["renal", "musculoskeletal"],
+      "risk_focus": [
+        "renal",
+        "musculoskeletal"
+      ],
       "differential_hints": [
         "Primary gout with genetic predisposition independent of diuretic",
         "High purine diet as primary driver of hyperuricemia",
@@ -180,21 +337,47 @@
       "time_window_days_min": 30,
       "time_window_days_max": 365,
       "recommended_first_action_en": "If thiazide can be stopped, urate levels may normalize. Evaluate indication.",
-      "references": ["Choi HK et al. BMJ 2012"]
+      "references": [
+        "Choi HK et al. BMJ 2012"
+      ],
+      "ade_es": "Hiperuricemia, artritis gotosa",
+      "ade_mechanism_es": "Disminución de la excreción renal de urato → hiperuricemia → ataque de gota",
+      "recommended_first_action_es": "Si puede suspenderse la tiazida, los niveles de urato pueden normalizarse. Evaluar indicación."
     },
     {
       "id": "CC008",
       "name_es": "Opioide → Estreñimiento → Laxante",
       "name_en": "Opioid → Constipation → Laxative",
-      "index_drug_classes": ["Opioid analgesic"],
-      "index_drug_examples": ["morphine", "oxycodone", "fentanyl", "tramadol", "codeine", "buprenorphine", "methadone"],
+      "index_drug_classes": [
+        "Opioid analgesic"
+      ],
+      "index_drug_examples": [
+        "morphine",
+        "oxycodone",
+        "fentanyl",
+        "tramadol",
+        "codeine",
+        "buprenorphine",
+        "methadone"
+      ],
       "ade_mechanism_en": "Activation of mu-opioid receptors in enteric plexus → reduced peristalsis → constipation",
       "ade_en": "Opioid-induced constipation (OIC)",
       "cascade_drug_class": "Laxative",
-      "cascade_drug_examples": ["lactulose", "macrogol", "bisacodyl", "senna", "sodium docusate", "naloxegol", "methylnaltrexone"],
+      "cascade_drug_examples": [
+        "lactulose",
+        "macrogol",
+        "bisacodyl",
+        "senna",
+        "sodium docusate",
+        "naloxegol",
+        "methylnaltrexone"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["gastrointestinal", "neurological"],
+      "risk_focus": [
+        "gastrointestinal",
+        "neurological"
+      ],
       "differential_hints": [
         "Inadequate fluid or fibre intake as primary cause of constipation",
         "Hypothyroidism causing constipation independently",
@@ -205,21 +388,43 @@
       "time_window_days_min": 1,
       "time_window_days_max": 14,
       "recommended_first_action_en": "In this case the laxative may be appropriate. Evaluate if the opioid can be reduced or stopped.",
-      "references": ["Pappagallo M. Am J Surg 2001"]
+      "references": [
+        "Pappagallo M. Am J Surg 2001"
+      ],
+      "ade_es": "Estreñimiento inducido por opioides (EIO)",
+      "ade_mechanism_es": "Activación de receptores mu-opioides en el plexo entérico → reducción del peristaltismo → estreñimiento",
+      "recommended_first_action_es": "En este caso, el laxante puede ser apropiado. Evaluar si el opioide puede reducirse o suspenderse."
     },
     {
       "id": "CC009",
       "name_es": "Antipsicótico → Síntomas extrapiramidales → Anticolinérgico",
       "name_en": "Antipsychotic → Extrapyramidal Symptoms → Anticholinergic",
-      "index_drug_classes": ["Antipsychotic"],
-      "index_drug_examples": ["haloperidol", "chlorpromazine", "olanzapine", "risperidone", "quetiapine", "aripiprazole"],
+      "index_drug_classes": [
+        "Antipsychotic"
+      ],
+      "index_drug_examples": [
+        "haloperidol",
+        "chlorpromazine",
+        "olanzapine",
+        "risperidone",
+        "quetiapine",
+        "aripiprazole"
+      ],
       "ade_mechanism_en": "D2 dopaminergic blockade in nigrostriatal pathway → extrapyramidal symptoms",
       "ade_en": "Parkinsonism, dystonia, akathisia",
       "cascade_drug_class": "Anticholinergic / Antiparkinsonian",
-      "cascade_drug_examples": ["biperiden", "trihexyphenidyl", "benztropine", "procyclidine"],
+      "cascade_drug_examples": [
+        "biperiden",
+        "trihexyphenidyl",
+        "benztropine",
+        "procyclidine"
+      ],
       "confidence": "high",
       "age_sensitivity": "high",
-      "risk_focus": ["neurological", "cognitive"],
+      "risk_focus": [
+        "neurological",
+        "cognitive"
+      ],
       "differential_hints": [
         "Idiopathic Parkinson's disease unrelated to antipsychotic use",
         "Essential tremor not caused by D2 blockade",
@@ -230,21 +435,47 @@
       "time_window_days_min": 3,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Anticholinergics have many adverse effects themselves (confusion, urinary retention, glaucoma). Avoid in elderly.",
-      "references": ["Kane JM et al. J Clin Psychiatry 2009"]
+      "references": [
+        "Kane JM et al. J Clin Psychiatry 2009"
+      ],
+      "ade_es": "Parkinsonismo, distonía, acatisia",
+      "ade_mechanism_es": "Bloqueo dopaminérgico D2 en vía nigroestriatal → síntomas extrapiramidales",
+      "recommended_first_action_es": "Los anticolinérgicos tienen múltiples efectos adversos (confusión, retención urinaria, glaucoma). Evitarlos en personas mayores."
     },
     {
       "id": "CC010",
       "name_es": "ISRS → Insomnio → Hipnótico/Sedante",
       "name_en": "SSRI → Insomnia → Hypnotic/Sedative",
-      "index_drug_classes": ["SSRI"],
-      "index_drug_examples": ["fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram", "fluvoxamine"],
+      "index_drug_classes": [
+        "SSRI"
+      ],
+      "index_drug_examples": [
+        "fluoxetine",
+        "sertraline",
+        "paroxetine",
+        "citalopram",
+        "escitalopram",
+        "fluvoxamine"
+      ],
       "ade_mechanism_en": "Serotonergic activation → central stimulation → insomnia, especially at initiation",
       "ade_en": "Insomnia, sleep disturbances",
       "cascade_drug_class": "Hypnotic / Sedative",
-      "cascade_drug_examples": ["zolpidem", "lorazepam", "alprazolam", "clonazepam", "diazepam", "melatonin", "mirtazapine", "trazodone"],
+      "cascade_drug_examples": [
+        "zolpidem",
+        "lorazepam",
+        "alprazolam",
+        "clonazepam",
+        "diazepam",
+        "melatonin",
+        "mirtazapine",
+        "trazodone"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["neurological", "cognitive"],
+      "risk_focus": [
+        "neurological",
+        "cognitive"
+      ],
       "differential_hints": [
         "Insomnia as symptom of underlying depression not yet responding to SSRI",
         "Anxiety disorder causing sleep disturbance independently",
@@ -256,21 +487,41 @@
       "time_window_days_min": 1,
       "time_window_days_max": 30,
       "recommended_first_action_en": "Hypnotics carry dependency risk. Consider sleep hygiene, changing SSRI timing, or switching antidepressant.",
-      "references": ["Fava M et al. J Clin Psychiatry 2006"]
+      "references": [
+        "Fava M et al. J Clin Psychiatry 2006"
+      ],
+      "ade_es": "Insomnio, alteraciones del sueño",
+      "ade_mechanism_es": "Activación serotoninérgica → estimulación central → insomnio, especialmente al inicio",
+      "recommended_first_action_es": "Los hipnóticos conllevan riesgo de dependencia. Considerar higiene del sueño, cambiar horario del ISRS o cambiar antidepresivo."
     },
     {
       "id": "CC011",
       "name_es": "Inhibidor de colinesterasa → Incontinencia urinaria → Anticolinérgico",
       "name_en": "Cholinesterase Inhibitor → Urinary Incontinence → Anticholinergic",
-      "index_drug_classes": ["Cholinesterase inhibitor"],
-      "index_drug_examples": ["donepezil", "rivastigmine", "galantamine"],
+      "index_drug_classes": [
+        "Cholinesterase inhibitor"
+      ],
+      "index_drug_examples": [
+        "donepezil",
+        "rivastigmine",
+        "galantamine"
+      ],
       "ade_mechanism_en": "Bladder cholinergic excess → involuntary detrusor contractions → urge incontinence",
       "ade_en": "Urge urinary incontinence, urinary urgency",
       "cascade_drug_class": "Anticholinergic (urinary)",
-      "cascade_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin"],
+      "cascade_drug_examples": [
+        "oxybutynin",
+        "tolterodine",
+        "solifenacin",
+        "fesoterodine",
+        "darifenacin"
+      ],
       "confidence": "high",
       "age_sensitivity": "high",
-      "risk_focus": ["urological", "cognitive"],
+      "risk_focus": [
+        "urological",
+        "cognitive"
+      ],
       "differential_hints": [
         "Overactive bladder syndrome unrelated to cholinesterase inhibitor",
         "Urinary tract infection causing urgency and incontinence",
@@ -281,21 +532,38 @@
       "time_window_days_min": 7,
       "time_window_days_max": 90,
       "recommended_first_action_en": "Particularly problematic cascade: treating incontinence reduces effectiveness of Alzheimer's treatment.",
-      "references": ["Gill SS et al. Arch Intern Med 2005"]
+      "references": [
+        "Gill SS et al. Arch Intern Med 2005"
+      ],
+      "ade_es": "Incontinencia urinaria de urgencia, urgencia miccional",
+      "ade_mechanism_es": "Exceso colinérgico vesical → contracciones involuntarias del detrusor → incontinencia de urgencia",
+      "recommended_first_action_es": "Cascada especialmente problemática: tratar la incontinencia reduce la efectividad del tratamiento del Alzheimer."
     },
     {
       "id": "CC012",
       "name_es": "Metformina → Síntomas GI → Antidiarreico/Antiespasmódico",
       "name_en": "Metformin → GI Symptoms → Antidiarrheal/Antispasmodic",
-      "index_drug_classes": ["Biguanide"],
-      "index_drug_examples": ["metformin"],
+      "index_drug_classes": [
+        "Biguanide"
+      ],
+      "index_drug_examples": [
+        "metformin"
+      ],
       "ade_mechanism_en": "GI microbiota alteration and motility changes → diarrhea, nausea, abdominal pain",
       "ade_en": "Diarrhea, nausea, bloating, abdominal pain",
       "cascade_drug_class": "Antidiarrheal / Antispasmodic",
-      "cascade_drug_examples": ["loperamide", "bismuth subsalicylate", "hyoscine", "mebeverine"],
+      "cascade_drug_examples": [
+        "loperamide",
+        "bismuth subsalicylate",
+        "hyoscine",
+        "mebeverine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "low",
-      "risk_focus": ["gastrointestinal", "metabolic"],
+      "risk_focus": [
+        "gastrointestinal",
+        "metabolic"
+      ],
       "differential_hints": [
         "Irritable bowel syndrome as primary cause of GI symptoms",
         "Infectious gastroenteritis coinciding with metformin initiation",
@@ -306,20 +574,49 @@
       "time_window_days_min": 1,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Preferred solution: extended-release formulation or dose reduction, not adding an antidiarrheal.",
-      "references": ["Bailey CJ et al. Lancet 1996"]
+      "references": [
+        "Bailey CJ et al. Lancet 1996"
+      ],
+      "ade_es": "Diarrea, náuseas, distensión, dolor abdominal",
+      "ade_mechanism_es": "Alteración de microbiota GI y cambios de motilidad → diarrea, náuseas, dolor abdominal",
+      "recommended_first_action_es": "Solución preferida: formulación de liberación prolongada o reducción de dosis, no añadir antidiarreico."
     },
     {
       "id": "CC013",
       "name_en": "Anticholinergic → Constipation → Laxative",
-      "index_drug_classes": ["Anticholinergic (urinary)", "Anticholinergic / Antiparkinsonian", "Tricyclic antidepressant"],
-      "index_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin", "biperiden", "trihexyphenidyl", "amitriptyline", "nortriptyline", "promethazine"],
+      "index_drug_classes": [
+        "Anticholinergic (urinary)",
+        "Anticholinergic / Antiparkinsonian",
+        "Tricyclic antidepressant"
+      ],
+      "index_drug_examples": [
+        "oxybutynin",
+        "tolterodine",
+        "solifenacin",
+        "fesoterodine",
+        "darifenacin",
+        "biperiden",
+        "trihexyphenidyl",
+        "amitriptyline",
+        "nortriptyline",
+        "promethazine"
+      ],
       "ade_mechanism_en": "Muscarinic blockade in enteric nervous system → reduced GI motility → constipation",
       "ade_en": "Anticholinergic-induced constipation",
       "cascade_drug_class": "Laxative",
-      "cascade_drug_examples": ["lactulose", "macrogol", "bisacodyl", "senna", "sodium docusate"],
+      "cascade_drug_examples": [
+        "lactulose",
+        "macrogol",
+        "bisacodyl",
+        "senna",
+        "sodium docusate"
+      ],
       "confidence": "high",
       "age_sensitivity": "high",
-      "risk_focus": ["gastrointestinal", "cognitive"],
+      "risk_focus": [
+        "gastrointestinal",
+        "cognitive"
+      ],
       "differential_hints": [
         "Inadequate dietary fibre or fluid intake",
         "Opioid co-administration contributing to constipation",
@@ -330,20 +627,48 @@
       "time_window_days_min": 3,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Review anticholinergic burden (ACB score). Reduce or switch to agent with lower anticholinergic load rather than adding laxative.",
-      "references": ["Rochon PA, Gurwitz JH. Lancet 1995", "Brath H et al. Br J Clin Pharmacol 2019"]
+      "references": [
+        "Rochon PA, Gurwitz JH. Lancet 1995",
+        "Brath H et al. Br J Clin Pharmacol 2019"
+      ],
+      "name_es": "Anticolinérgico → Estreñimiento → Laxante",
+      "ade_es": "Estreñimiento inducido por anticolinérgicos",
+      "ade_mechanism_es": "Bloqueo muscarínico en sistema nervioso entérico → reducción de motilidad GI → estreñimiento",
+      "recommended_first_action_es": "Revisar carga anticolinérgica (escala ACB). Reducir dosis o cambiar a agente con menor carga anticolinérgica en lugar de añadir laxante."
     },
     {
       "id": "CC014",
       "name_en": "Anticholinergic → Dry Mouth → Saliva Substitute / Pilocarpine",
-      "index_drug_classes": ["Anticholinergic (urinary)", "Tricyclic antidepressant", "Antipsychotic"],
-      "index_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "amitriptyline", "nortriptyline", "haloperidol", "chlorpromazine", "promethazine"],
+      "index_drug_classes": [
+        "Anticholinergic (urinary)",
+        "Tricyclic antidepressant",
+        "Antipsychotic"
+      ],
+      "index_drug_examples": [
+        "oxybutynin",
+        "tolterodine",
+        "solifenacin",
+        "amitriptyline",
+        "nortriptyline",
+        "haloperidol",
+        "chlorpromazine",
+        "promethazine"
+      ],
       "ade_mechanism_en": "Muscarinic M3 receptor blockade in salivary glands → reduced saliva production → xerostomia",
       "ade_en": "Dry mouth (xerostomia)",
       "cascade_drug_class": "Saliva substitute / Sialagogue",
-      "cascade_drug_examples": ["pilocarpine", "cevimeline", "artificial saliva", "bethanechol"],
+      "cascade_drug_examples": [
+        "pilocarpine",
+        "cevimeline",
+        "artificial saliva",
+        "bethanechol"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["oral", "anticholinergic"],
+      "risk_focus": [
+        "oral",
+        "anticholinergic"
+      ],
       "differential_hints": [
         "Sjögren's syndrome or other autoimmune salivary gland disease",
         "Dehydration or low fluid intake",
@@ -354,20 +679,46 @@
       "time_window_days_min": 3,
       "time_window_days_max": 90,
       "recommended_first_action_en": "Reassess anticholinergic burden. Switch to agent with lower anticholinergic load (e.g., mirabegron for OAB) rather than adding sialagogue.",
-      "references": ["Durán CE et al. Br J Clin Pharmacol 2013"]
+      "references": [
+        "Durán CE et al. Br J Clin Pharmacol 2013"
+      ],
+      "name_es": "Anticolinérgico → Xerostomía → Sustituto salival / Pilocarpina",
+      "ade_es": "Boca seca (xerostomía)",
+      "ade_mechanism_es": "Bloqueo de receptores muscarínicos M3 en glándulas salivales → reducción de producción salival → xerostomía",
+      "recommended_first_action_es": "Reevaluar carga anticolinérgica. Cambiar a agente con menor carga (p. ej., mirabegrón para VH) en lugar de añadir sialogogo."
     },
     {
       "id": "CC015",
       "name_en": "Opioid → Nausea/Vomiting → Antiemetic",
-      "index_drug_classes": ["Opioid analgesic"],
-      "index_drug_examples": ["morphine", "oxycodone", "fentanyl", "tramadol", "codeine", "buprenorphine", "methadone"],
+      "index_drug_classes": [
+        "Opioid analgesic"
+      ],
+      "index_drug_examples": [
+        "morphine",
+        "oxycodone",
+        "fentanyl",
+        "tramadol",
+        "codeine",
+        "buprenorphine",
+        "methadone"
+      ],
       "ade_mechanism_en": "Stimulation of chemoreceptor trigger zone (area postrema) and vestibular system by opioids → nausea and vomiting",
       "ade_en": "Opioid-induced nausea and vomiting",
       "cascade_drug_class": "Antiemetic",
-      "cascade_drug_examples": ["metoclopramide", "ondansetron", "prochlorperazine", "domperidone", "promethazine", "haloperidol"],
+      "cascade_drug_examples": [
+        "metoclopramide",
+        "ondansetron",
+        "prochlorperazine",
+        "domperidone",
+        "promethazine",
+        "haloperidol"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["gastrointestinal", "neurological"],
+      "risk_focus": [
+        "gastrointestinal",
+        "neurological"
+      ],
       "differential_hints": [
         "Nausea from underlying disease (oncology, renal failure) not opioid-related",
         "Constipation-related nausea as secondary phenomenon",
@@ -378,20 +729,44 @@
       "time_window_days_min": 1,
       "time_window_days_max": 14,
       "recommended_first_action_en": "Antiemetic is often appropriate short-term. Reassess at 2 weeks — opioid-induced nausea typically improves with tolerance. Avoid promethazine in elderly.",
-      "references": ["Benyamin R et al. Pain Physician 2008"]
+      "references": [
+        "Benyamin R et al. Pain Physician 2008"
+      ],
+      "name_es": "Opioide → Náuseas/Vómitos → Antiemético",
+      "ade_es": "Náuseas y vómitos inducidos por opioides",
+      "ade_mechanism_es": "Estimulación de la zona gatillo quimiorreceptora (área postrema) y del sistema vestibular por opioides → náuseas y vómitos",
+      "recommended_first_action_es": "El antiemético suele ser apropiado a corto plazo. Reevaluar a las 2 semanas: la náusea por opioides suele mejorar con tolerancia. Evitar prometazina en personas mayores."
     },
     {
       "id": "CC016",
       "name_en": "Opioid → Sedation → Stimulant / Opioid Dose Reduction",
-      "index_drug_classes": ["Opioid analgesic"],
-      "index_drug_examples": ["morphine", "oxycodone", "fentanyl", "tramadol", "codeine", "buprenorphine"],
+      "index_drug_classes": [
+        "Opioid analgesic"
+      ],
+      "index_drug_examples": [
+        "morphine",
+        "oxycodone",
+        "fentanyl",
+        "tramadol",
+        "codeine",
+        "buprenorphine"
+      ],
       "ade_mechanism_en": "CNS mu-opioid receptor activation → respiratory depression and sedation",
       "ade_en": "Opioid-induced sedation and cognitive impairment",
       "cascade_drug_class": "CNS Stimulant",
-      "cascade_drug_examples": ["methylphenidate", "modafinil", "dextroamphetamine", "amantadine"],
+      "cascade_drug_examples": [
+        "methylphenidate",
+        "modafinil",
+        "dextroamphetamine",
+        "amantadine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["neurological", "cognitive", "safety"],
+      "risk_focus": [
+        "neurological",
+        "cognitive",
+        "safety"
+      ],
       "differential_hints": [
         "Depression-related fatigue and psychomotor slowing independent of opioid",
         "Anaemia causing fatigue (check Hb in PLHIV)",
@@ -402,20 +777,42 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Consider opioid dose reduction, rotation, or switching to a less sedating analgesic before adding a stimulant.",
-      "references": ["Slatkin NE. J Support Oncol 2009"]
+      "references": [
+        "Slatkin NE. J Support Oncol 2009"
+      ],
+      "name_es": "Opioide → Sedación → Estimulante / Reducción de dosis de opioide",
+      "ade_es": "Sedación y deterioro cognitivo inducidos por opioides",
+      "ade_mechanism_es": "Activación de receptores mu-opioides en SNC → depresión respiratoria y sedación",
+      "recommended_first_action_es": "Considerar reducción de dosis, rotación de opioide o cambio a analgésico menos sedante antes de añadir estimulante."
     },
     {
       "id": "CC017",
       "name_en": "Beta-Blocker → Fatigue/Exercise Intolerance → Stimulant",
-      "index_drug_classes": ["Beta-blocker"],
-      "index_drug_examples": ["bisoprolol", "atenolol", "metoprolol", "propranolol", "carvedilol", "nebivolol"],
+      "index_drug_classes": [
+        "Beta-blocker"
+      ],
+      "index_drug_examples": [
+        "bisoprolol",
+        "atenolol",
+        "metoprolol",
+        "propranolol",
+        "carvedilol",
+        "nebivolol"
+      ],
       "ade_mechanism_en": "Beta-1 blockade → reduced cardiac output + skeletal muscle vasoconstriction → fatigue and exercise intolerance",
       "ade_en": "Fatigue, exercise intolerance, lethargy",
       "cascade_drug_class": "CNS Stimulant",
-      "cascade_drug_examples": ["methylphenidate", "modafinil", "caffeine-based preparations"],
+      "cascade_drug_examples": [
+        "methylphenidate",
+        "modafinil",
+        "caffeine-based preparations"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "neurological"],
+      "risk_focus": [
+        "cardiovascular",
+        "neurological"
+      ],
       "differential_hints": [
         "Heart failure itself as primary cause of fatigue (not beta-blocker)",
         "Anaemia or hypothyroidism causing fatigue independently",
@@ -427,20 +824,44 @@
       "time_window_days_min": 14,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Assess whether beta-blocker dose can be reduced or switched to cardioselective agent. Exercise rehabilitation may be more appropriate.",
-      "references": ["Brath H et al. Br J Clin Pharmacol 2019"]
+      "references": [
+        "Brath H et al. Br J Clin Pharmacol 2019"
+      ],
+      "name_es": "Betabloqueador → Fatiga/Intolerancia al ejercicio → Estimulante",
+      "ade_es": "Fatiga, intolerancia al ejercicio, letargo",
+      "ade_mechanism_es": "Bloqueo beta-1 → reducción del gasto cardiaco + vasoconstricción muscular esquelética → fatiga e intolerancia al ejercicio",
+      "recommended_first_action_es": "Evaluar si la dosis de betabloqueador puede reducirse o cambiarse por agente cardioselectivo. La rehabilitación con ejercicio puede ser más apropiada."
     },
     {
       "id": "CC018",
       "name_en": "Beta-Blocker → Depression → Antidepressant",
-      "index_drug_classes": ["Beta-blocker"],
-      "index_drug_examples": ["propranolol", "atenolol", "metoprolol", "bisoprolol", "timolol"],
+      "index_drug_classes": [
+        "Beta-blocker"
+      ],
+      "index_drug_examples": [
+        "propranolol",
+        "atenolol",
+        "metoprolol",
+        "bisoprolol",
+        "timolol"
+      ],
       "ade_mechanism_en": "CNS beta-blockade + possible interference with serotonin and noradrenaline pathways → depressive symptoms",
       "ade_en": "Depression, low mood, anhedonia",
       "cascade_drug_class": "Antidepressant",
-      "cascade_drug_examples": ["sertraline", "citalopram", "escitalopram", "fluoxetine", "venlafaxine", "mirtazapine"],
+      "cascade_drug_examples": [
+        "sertraline",
+        "citalopram",
+        "escitalopram",
+        "fluoxetine",
+        "venlafaxine",
+        "mirtazapine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["neurological", "cardiovascular"],
+      "risk_focus": [
+        "neurological",
+        "cardiovascular"
+      ],
       "differential_hints": [
         "Major depressive disorder pre-existing or independent of beta-blocker",
         "Cardiac disease burden itself causing reactive depression",
@@ -451,20 +872,45 @@
       "time_window_days_min": 30,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Evaluate temporal relationship to beta-blocker initiation. Consider switching to hydrophilic beta-blocker (atenolol) with less CNS penetration before adding antidepressant.",
-      "references": ["Ko DT et al. JAMA 2002"]
+      "references": [
+        "Ko DT et al. JAMA 2002"
+      ],
+      "name_es": "Betabloqueador → Depresión → Antidepresivo",
+      "ade_es": "Depresión, bajo estado de ánimo, anhedonia",
+      "ade_mechanism_es": "Bloqueo beta en SNC + posible interferencia con vías de serotonina y noradrenalina → síntomas depresivos",
+      "recommended_first_action_es": "Evaluar relación temporal con inicio del betabloqueador. Considerar cambio a betabloqueador hidrofílico (atenolol) con menor penetración SNC antes de añadir antidepresivo."
     },
     {
       "id": "CC019",
       "name_en": "SSRI / SNRI → Sexual Dysfunction → PDE5 Inhibitor",
-      "index_drug_classes": ["SSRI", "SNRI"],
-      "index_drug_examples": ["fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram", "venlafaxine", "duloxetine"],
+      "index_drug_classes": [
+        "SSRI",
+        "SNRI"
+      ],
+      "index_drug_examples": [
+        "fluoxetine",
+        "sertraline",
+        "paroxetine",
+        "citalopram",
+        "escitalopram",
+        "venlafaxine",
+        "duloxetine"
+      ],
       "ade_mechanism_en": "Serotonergic excess → 5-HT2 receptor activation + prolactin elevation → inhibition of nitric oxide release → sexual dysfunction",
       "ade_en": "Sexual dysfunction (delayed ejaculation, anorgasmia, decreased libido, erectile dysfunction)",
       "cascade_drug_class": "PDE5 inhibitor",
-      "cascade_drug_examples": ["sildenafil", "tadalafil", "vardenafil", "avanafil"],
+      "cascade_drug_examples": [
+        "sildenafil",
+        "tadalafil",
+        "vardenafil",
+        "avanafil"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["neurological", "cardiovascular"],
+      "risk_focus": [
+        "neurological",
+        "cardiovascular"
+      ],
       "differential_hints": [
         "Sexual dysfunction as symptom of underlying depression itself",
         "Testosterone deficiency (common in PLHIV) as primary driver",
@@ -477,20 +923,45 @@
       "time_window_days_max": 180,
       "ddi_warning_en": "CAUTION: PDE5 inhibitors + ritonavir-boosted regimens: significant increase in PDE5 inhibitor levels. Start sildenafil at 25 mg max; tadalafil 10 mg no more than q72h.",
       "recommended_first_action_en": "Discuss dose reduction or switch to antidepressant with lower sexual side-effect burden (bupropion, mirtazapine) before adding PDE5 inhibitor. Check testosterone level.",
-      "references": ["Clayton AH et al. J Clin Psychiatry 2002", "DHHS Guidelines 2024"]
+      "references": [
+        "Clayton AH et al. J Clin Psychiatry 2002",
+        "DHHS Guidelines 2024"
+      ],
+      "name_es": "ISRS / ISRN → Disfunción sexual → Inhibidor PDE5",
+      "ade_es": "Disfunción sexual (eyaculación retardada, anorgasmia, disminución de la libido, disfunción eréctil)",
+      "ade_mechanism_es": "Exceso serotoninérgico → activación de receptores 5-HT2 + elevación de prolactina → inhibición de liberación de óxido nítrico → disfunción sexual",
+      "recommended_first_action_es": "Discutir reducción de dosis o cambio a antidepresivo con menor carga de efectos sexuales (bupropión, mirtazapina) antes de añadir inhibidor PDE5. Comprobar testosterona."
     },
     {
       "id": "CC020",
       "name_en": "Diuretic (Loop/Thiazide) → Hypokalemia → Potassium Supplement",
-      "index_drug_classes": ["Diuretic", "Thiazide diuretic"],
-      "index_drug_examples": ["furosemide", "torasemide", "hydrochlorothiazide", "chlorthalidone", "indapamide", "bumetanide"],
+      "index_drug_classes": [
+        "Diuretic",
+        "Thiazide diuretic"
+      ],
+      "index_drug_examples": [
+        "furosemide",
+        "torasemide",
+        "hydrochlorothiazide",
+        "chlorthalidone",
+        "indapamide",
+        "bumetanide"
+      ],
       "ade_mechanism_en": "Increased urinary potassium excretion via sodium-potassium exchange in distal tubule → hypokalaemia",
       "ade_en": "Hypokalaemia, muscle cramps, weakness",
       "cascade_drug_class": "Potassium supplement",
-      "cascade_drug_examples": ["potassium chloride", "potassium citrate", "potassium phosphate"],
+      "cascade_drug_examples": [
+        "potassium chloride",
+        "potassium citrate",
+        "potassium phosphate"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "renal", "electrolyte"],
+      "risk_focus": [
+        "cardiovascular",
+        "renal",
+        "electrolyte"
+      ],
       "differential_hints": [
         "Low dietary potassium intake contributing",
         "GI losses (diarrhoea/vomiting) as primary cause of hypokalaemia",
@@ -501,20 +972,44 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Potassium supplementation is often appropriate. Consider switching to potassium-sparing diuretic (spironolactone) or ACEi/ARB if clinically appropriate.",
-      "references": ["Alfonzo AV et al. Nephrol Dial Transplant 2006"]
+      "references": [
+        "Alfonzo AV et al. Nephrol Dial Transplant 2006"
+      ],
+      "name_es": "Diurético (asa/tiazida) → Hipopotasemia → Suplemento de potasio",
+      "ade_es": "Hipopotasemia, calambres musculares, debilidad",
+      "ade_mechanism_es": "Aumento de la excreción urinaria de potasio vía intercambio sodio-potasio en túbulo distal → hipopotasemia",
+      "recommended_first_action_es": "La suplementación de potasio suele ser apropiada. Considerar cambio a diurético ahorrador de potasio (espironolactona) o IECA/ARA-II si clínicamente apropiado."
     },
     {
       "id": "CC021",
       "name_en": "Diuretic → Dehydration / Orthostatic Hypotension → Falls / Electrolyte Replacement",
-      "index_drug_classes": ["Diuretic", "Thiazide diuretic"],
-      "index_drug_examples": ["furosemide", "hydrochlorothiazide", "indapamide", "spironolactone", "torasemide"],
+      "index_drug_classes": [
+        "Diuretic",
+        "Thiazide diuretic"
+      ],
+      "index_drug_examples": [
+        "furosemide",
+        "hydrochlorothiazide",
+        "indapamide",
+        "spironolactone",
+        "torasemide"
+      ],
       "ade_mechanism_en": "Excessive volume depletion → reduced cerebral perfusion on standing → orthostatic hypotension → falls",
       "ade_en": "Orthostatic hypotension, dizziness, falls",
       "cascade_drug_class": "Bisphosphonate / Calcium supplement",
-      "cascade_drug_examples": ["alendronate", "risedronate", "calcium carbonate", "cholecalciferol"],
+      "cascade_drug_examples": [
+        "alendronate",
+        "risedronate",
+        "calcium carbonate",
+        "cholecalciferol"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["safety", "cardiovascular", "musculoskeletal"],
+      "risk_focus": [
+        "safety",
+        "cardiovascular",
+        "musculoskeletal"
+      ],
       "differential_hints": [
         "Pre-existing autonomic neuropathy (HIV, diabetes) contributing to orthostatic hypotension",
         "Cardiac cause of syncope requiring investigation",
@@ -525,20 +1020,45 @@
       "time_window_days_min": 7,
       "time_window_days_max": 90,
       "recommended_first_action_en": "Reassess diuretic dose and indication. Orthostatic BP measurement recommended. Consider dose reduction or switch before adding bone protection.",
-      "references": ["Dhruv Kazi et al. JAMA Intern Med 2016"]
+      "references": [
+        "Dhruv Kazi et al. JAMA Intern Med 2016"
+      ],
+      "name_es": "Diurético → Deshidratación / Hipotensión ortostática → Caídas / Reposición electrolítica",
+      "ade_es": "Hipotensión ortostática, mareo, caídas",
+      "ade_mechanism_es": "Depleción excesiva de volumen → reducción de perfusión cerebral al ponerse de pie → hipotensión ortostática → caídas",
+      "recommended_first_action_es": "Reevaluar dosis e indicación del diurético. Se recomienda medición de PA ortostática. Considerar reducción de dosis o cambio antes de añadir protección ósea."
     },
     {
       "id": "CC022",
       "name_en": "Antidepressant (TCA/SNRI) → Urinary Retention → Alpha-Blocker / Catheter",
-      "index_drug_classes": ["Tricyclic antidepressant", "SNRI"],
-      "index_drug_examples": ["amitriptyline", "nortriptyline", "imipramine", "clomipramine", "duloxetine", "venlafaxine"],
+      "index_drug_classes": [
+        "Tricyclic antidepressant",
+        "SNRI"
+      ],
+      "index_drug_examples": [
+        "amitriptyline",
+        "nortriptyline",
+        "imipramine",
+        "clomipramine",
+        "duloxetine",
+        "venlafaxine"
+      ],
       "ade_mechanism_en": "Anticholinergic + alpha-1 adrenergic blockade → relaxation of detrusor + tightening of bladder neck → urinary retention",
       "ade_en": "Urinary retention, hesitancy, weak stream",
       "cascade_drug_class": "Alpha-blocker",
-      "cascade_drug_examples": ["tamsulosin", "alfuzosin", "doxazosin", "terazosin", "bethanechol"],
+      "cascade_drug_examples": [
+        "tamsulosin",
+        "alfuzosin",
+        "doxazosin",
+        "terazosin",
+        "bethanechol"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["urological", "anticholinergic"],
+      "risk_focus": [
+        "urological",
+        "anticholinergic"
+      ],
       "differential_hints": [
         "Benign prostatic hyperplasia as primary cause in men",
         "Neurogenic bladder from HIV neuropathy or diabetes",
@@ -549,20 +1069,40 @@
       "time_window_days_min": 3,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Switch antidepressant to agent with lower anticholinergic burden (SSRI, mirtazapine). Treat prostatic disease definitively if confirmed.",
-      "references": ["Brath H et al. Br J Clin Pharmacol 2019"]
+      "references": [
+        "Brath H et al. Br J Clin Pharmacol 2019"
+      ],
+      "name_es": "Antidepresivo (ATC/ISRN) → Retención urinaria → Alfabloqueador / Catéter",
+      "ade_es": "Retención urinaria, dificultad miccional, chorro débil",
+      "ade_mechanism_es": "Bloqueo anticolinérgico + adrenérgico alfa-1 → relajación del detrusor + contracción del cuello vesical → retención urinaria",
+      "recommended_first_action_es": "Cambiar antidepresivo a agente con menor carga anticolinérgica (ISRS, mirtazapina). Tratar de forma definitiva enfermedad prostática si se confirma."
     },
     {
       "id": "CC023",
       "name_en": "Antipsychotic → Hyperprolactinaemia → Dopamine Agonist",
-      "index_drug_classes": ["Antipsychotic"],
-      "index_drug_examples": ["haloperidol", "risperidone", "chlorpromazine", "amisulpride", "sulpiride"],
+      "index_drug_classes": [
+        "Antipsychotic"
+      ],
+      "index_drug_examples": [
+        "haloperidol",
+        "risperidone",
+        "chlorpromazine",
+        "amisulpride",
+        "sulpiride"
+      ],
       "ade_mechanism_en": "D2 receptor blockade in tuberoinfundibular pathway → removal of dopamine inhibition → elevated prolactin",
       "ade_en": "Hyperprolactinaemia, galactorrhoea, amenorrhoea, sexual dysfunction",
       "cascade_drug_class": "Dopamine agonist",
-      "cascade_drug_examples": ["cabergoline", "bromocriptine"],
+      "cascade_drug_examples": [
+        "cabergoline",
+        "bromocriptine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "low",
-      "risk_focus": ["endocrine", "neurological"],
+      "risk_focus": [
+        "endocrine",
+        "neurological"
+      ],
       "differential_hints": [
         "Prolactinoma requiring imaging investigation",
         "Hypothyroidism causing secondary hyperprolactinaemia",
@@ -573,20 +1113,43 @@
       "time_window_days_min": 14,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Switch to prolactin-sparing antipsychotic (quetiapine, aripiprazole, clozapine) rather than adding a dopamine agonist.",
-      "references": ["Meaney AM, O'Keane V. Int J Neuropsychopharmacol 2002"]
+      "references": [
+        "Meaney AM, O'Keane V. Int J Neuropsychopharmacol 2002"
+      ],
+      "name_es": "Antipsicótico → Hiperprolactinemia → Agonista dopaminérgico",
+      "ade_es": "Hiperprolactinemia, galactorrea, amenorrea, disfunción sexual",
+      "ade_mechanism_es": "Bloqueo de receptores D2 en vía tuberoinfundibular → retirada de la inhibición dopaminérgica → prolactina elevada",
+      "recommended_first_action_es": "Cambiar a antipsicótico ahorrador de prolactina (quetiapina, aripiprazol, clozapina) en lugar de añadir agonista dopaminérgico."
     },
     {
       "id": "CC024",
       "name_en": "Antipsychotic / Atypical → Weight Gain / Metabolic Syndrome → Antidiabetic / Lipid-lowering",
-      "index_drug_classes": ["Antipsychotic"],
-      "index_drug_examples": ["olanzapine", "quetiapine", "clozapine", "risperidone", "aripiprazole"],
+      "index_drug_classes": [
+        "Antipsychotic"
+      ],
+      "index_drug_examples": [
+        "olanzapine",
+        "quetiapine",
+        "clozapine",
+        "risperidone",
+        "aripiprazole"
+      ],
       "ade_mechanism_en": "H1, 5-HT2C, dopamine D2 antagonism → appetite stimulation + insulin resistance → weight gain and metabolic syndrome",
       "ade_en": "Weight gain, type 2 diabetes, dyslipidaemia, metabolic syndrome",
       "cascade_drug_class": "Antidiabetic / Lipid-lowering",
-      "cascade_drug_examples": ["metformin", "sitagliptin", "liraglutide", "atorvastatin", "rosuvastatin"],
+      "cascade_drug_examples": [
+        "metformin",
+        "sitagliptin",
+        "liraglutide",
+        "atorvastatin",
+        "rosuvastatin"
+      ],
       "confidence": "high",
       "age_sensitivity": "medium",
-      "risk_focus": ["metabolic", "cardiovascular"],
+      "risk_focus": [
+        "metabolic",
+        "cardiovascular"
+      ],
       "differential_hints": [
         "Pre-existing type 2 diabetes or dyslipidaemia before antipsychotic",
         "INSTI-associated weight gain in HIV-positive patients on antipsychotics",
@@ -597,20 +1160,41 @@
       "time_window_days_min": 30,
       "time_window_days_max": 365,
       "recommended_first_action_en": "Consider switching to metabolically neutral antipsychotic (aripiprazole, ziprasidone) before adding cardiometabolic drugs. Monitor BMI, glucose and lipids regularly.",
-      "references": ["Newcomer JW. J Clin Psychiatry 2004"]
+      "references": [
+        "Newcomer JW. J Clin Psychiatry 2004"
+      ],
+      "name_es": "Antipsicótico / Atípico → Aumento de peso / Síndrome metabólico → Antidiabético / Hipolipemiante",
+      "ade_es": "Aumento de peso, diabetes tipo 2, dislipidemia, síndrome metabólico",
+      "ade_mechanism_es": "Antagonismo H1, 5-HT2C y dopamina D2 → estimulación del apetito + resistencia a la insulina → aumento de peso y síndrome metabólico",
+      "recommended_first_action_es": "Considerar cambio a antipsicótico metabólicamente neutro (aripiprazol, ziprasidona) antes de añadir fármacos cardiometabólicos. Monitorizar IMC, glucosa y lípidos regularmente."
     },
     {
       "id": "CC025",
       "name_en": "Loop Diuretic → Hypomagnesaemia → Magnesium Supplement",
-      "index_drug_classes": ["Diuretic"],
-      "index_drug_examples": ["furosemide", "torasemide", "bumetanide", "ethacrynic acid"],
+      "index_drug_classes": [
+        "Diuretic"
+      ],
+      "index_drug_examples": [
+        "furosemide",
+        "torasemide",
+        "bumetanide",
+        "ethacrynic acid"
+      ],
       "ade_mechanism_en": "Blockade of NKCC2 transporter in thick ascending loop → increased urinary magnesium wasting → hypomagnesaemia",
       "ade_en": "Hypomagnesaemia, muscle cramps, cardiac arrhythmia risk",
       "cascade_drug_class": "Magnesium supplement",
-      "cascade_drug_examples": ["magnesium oxide", "magnesium glycinate", "magnesium sulfate", "magnesium citrate"],
+      "cascade_drug_examples": [
+        "magnesium oxide",
+        "magnesium glycinate",
+        "magnesium sulfate",
+        "magnesium citrate"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["electrolyte", "cardiovascular"],
+      "risk_focus": [
+        "electrolyte",
+        "cardiovascular"
+      ],
       "differential_hints": [
         "Dietary magnesium deficiency as primary cause",
         "PPI-induced magnesium malabsorption (particularly with long-term PPI use)",
@@ -621,20 +1205,41 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Magnesium supplementation is appropriate. Assess concurrent PPI use (double diuretic + PPI hypomagnesaemia risk). Consider dose reduction of loop diuretic if feasible.",
-      "references": ["Ryan MP. Annu Rev Pharmacol Toxicol 1984"]
+      "references": [
+        "Ryan MP. Annu Rev Pharmacol Toxicol 1984"
+      ],
+      "name_es": "Diurético de asa → Hipomagnesemia → Suplemento de magnesio",
+      "ade_es": "Hipomagnesemia, calambres musculares, riesgo de arritmia cardiaca",
+      "ade_mechanism_es": "Bloqueo del transportador NKCC2 en rama ascendente gruesa → aumento de pérdida urinaria de magnesio → hipomagnesemia",
+      "recommended_first_action_es": "La suplementación de magnesio es apropiada. Evaluar uso concomitante de IBP (riesgo doble de hipomagnesemia: diurético + IBP). Considerar reducción de dosis de diurético de asa si es posible."
     },
     {
       "id": "CC026",
       "name_en": "PPI (long-term) → Hypomagnesaemia → Magnesium Supplement",
-      "index_drug_classes": ["PPI"],
-      "index_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole", "rabeprazole"],
+      "index_drug_classes": [
+        "PPI"
+      ],
+      "index_drug_examples": [
+        "omeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "esomeprazole",
+        "rabeprazole"
+      ],
       "ade_mechanism_en": "Impaired TRPM6/7 channel-mediated magnesium absorption in intestine due to altered luminal pH → hypomagnesaemia",
       "ade_en": "Hypomagnesaemia (after ≥3 months of PPI therapy), tetany, arrhythmia",
       "cascade_drug_class": "Magnesium supplement",
-      "cascade_drug_examples": ["magnesium oxide", "magnesium glycinate", "magnesium citrate"],
+      "cascade_drug_examples": [
+        "magnesium oxide",
+        "magnesium glycinate",
+        "magnesium citrate"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["electrolyte", "gastrointestinal"],
+      "risk_focus": [
+        "electrolyte",
+        "gastrointestinal"
+      ],
       "differential_hints": [
         "Loop diuretic co-administration increasing magnesium wasting (synergistic)",
         "Dietary deficiency as primary driver",
@@ -645,20 +1250,39 @@
       "time_window_days_min": 90,
       "time_window_days_max": 730,
       "recommended_first_action_en": "Consider whether PPI indication remains valid. H2 antagonist may be sufficient with lower hypomagnesaemia risk. If PPI required, monitor Mg and supplement as needed.",
-      "references": ["Cundy T, Mackay J. Aliment Pharmacol Ther 2011"]
+      "references": [
+        "Cundy T, Mackay J. Aliment Pharmacol Ther 2011"
+      ],
+      "name_es": "IBP (a largo plazo) → Hipomagnesemia → Suplemento de magnesio",
+      "ade_es": "Hipomagnesemia (tras ≥3 meses de terapia con IBP), tetania, arritmia",
+      "ade_mechanism_es": "Absorción intestinal de magnesio mediada por canales TRPM6/7 alterada por cambios de pH luminal → hipomagnesemia",
+      "recommended_first_action_es": "Considerar si la indicación de IBP sigue vigente. Un antagonista H2 puede ser suficiente con menor riesgo de hipomagnesemia. Si IBP es necesario, monitorizar Mg y suplementar según necesidad."
     },
     {
       "id": "CC027",
       "name_en": "Gabapentinoid → Peripheral Oedema → Diuretic",
-      "index_drug_classes": ["Gabapentinoid"],
-      "index_drug_examples": ["gabapentin", "pregabalin"],
+      "index_drug_classes": [
+        "Gabapentinoid"
+      ],
+      "index_drug_examples": [
+        "gabapentin",
+        "pregabalin"
+      ],
       "ade_mechanism_en": "Alpha-2-delta calcium channel subunit blockade → peripheral vasodilation + fluid redistribution → limb oedema",
       "ade_en": "Peripheral oedema, ankle swelling",
       "cascade_drug_class": "Diuretic",
-      "cascade_drug_examples": ["furosemide", "hydrochlorothiazide", "spironolactone", "indapamide"],
+      "cascade_drug_examples": [
+        "furosemide",
+        "hydrochlorothiazide",
+        "spironolactone",
+        "indapamide"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "renal"],
+      "risk_focus": [
+        "cardiovascular",
+        "renal"
+      ],
       "differential_hints": [
         "CCB-induced oedema if patient on both CCB and gabapentinoid (CC004)",
         "Cardiac or venous insufficiency as primary etiology",
@@ -669,20 +1293,39 @@
       "time_window_days_min": 14,
       "time_window_days_max": 120,
       "recommended_first_action_en": "Reassess indication for gabapentinoid. Dose reduction or switch to alternative analgesic/neuropathic pain agent is preferable to adding a diuretic.",
-      "references": ["Shneker BF, McAuley JW. Ann Pharmacother 2005"]
+      "references": [
+        "Shneker BF, McAuley JW. Ann Pharmacother 2005"
+      ],
+      "name_es": "Gabapentinoide → Edema periférico → Diurético",
+      "ade_es": "Edema periférico, hinchazón maleolar",
+      "ade_mechanism_es": "Bloqueo de subunidad alfa-2-delta de canal de calcio → vasodilatación periférica + redistribución de fluidos → edema de extremidades",
+      "recommended_first_action_es": "Reevaluar indicación de gabapentinoide. La reducción de dosis o cambio a analgésico/neuromodulador alternativo es preferible a añadir diurético."
     },
     {
       "id": "CC028",
       "name_en": "Bisphosphonate → Upper GI Symptoms → PPI",
-      "index_drug_classes": ["Bisphosphonate"],
-      "index_drug_examples": ["alendronate", "risedronate", "ibandronate"],
+      "index_drug_classes": [
+        "Bisphosphonate"
+      ],
+      "index_drug_examples": [
+        "alendronate",
+        "risedronate",
+        "ibandronate"
+      ],
       "ade_mechanism_en": "Direct mucosal contact + altered epithelial tight junctions → oesophageal and gastric irritation",
       "ade_en": "Oesophageal irritation, dyspepsia, oesophagitis",
       "cascade_drug_class": "PPI",
-      "cascade_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole"],
+      "cascade_drug_examples": [
+        "omeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "esomeprazole"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["gastrointestinal"],
+      "risk_focus": [
+        "gastrointestinal"
+      ],
       "differential_hints": [
         "GERD as pre-existing condition",
         "NSAID co-administration causing GI irritation",
@@ -693,20 +1336,45 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Verify correct administration technique first (full glass water, remain upright 30 min). Switch to IV bisphosphonate or quarterly ibandronate if oral intolerance confirmed. PPI adds drug burden unnecessarily if technique corrected.",
-      "references": ["Rosen CJ. N Engl J Med 2005"]
+      "references": [
+        "Rosen CJ. N Engl J Med 2005"
+      ],
+      "name_es": "Bifosfonato → Síntomas GI altos → IBP",
+      "ade_es": "Irritación esofágica, dispepsia, esofagitis",
+      "ade_mechanism_es": "Contacto mucoso directo + alteración de uniones epiteliales estrechas → irritación esofágica y gástrica",
+      "recommended_first_action_es": "Verificar primero técnica correcta de administración (vaso lleno de agua, permanecer erguido 30 min). Cambiar a bifosfonato IV o ibandronato trimestral si se confirma intolerancia oral. El IBP añade carga farmacológica innecesaria si se corrige la técnica."
     },
     {
       "id": "CC029",
       "name_en": "Antihypertensive (Multi-drug) → Erectile Dysfunction → PDE5 Inhibitor",
-      "index_drug_classes": ["Antihypertensive", "Beta-blocker", "Thiazide diuretic"],
-      "index_drug_examples": ["bisoprolol", "atenolol", "propranolol", "hydrochlorothiazide", "chlorthalidone", "spironolactone"],
+      "index_drug_classes": [
+        "Antihypertensive",
+        "Beta-blocker",
+        "Thiazide diuretic"
+      ],
+      "index_drug_examples": [
+        "bisoprolol",
+        "atenolol",
+        "propranolol",
+        "hydrochlorothiazide",
+        "chlorthalidone",
+        "spironolactone"
+      ],
       "ade_mechanism_en": "Beta-1 blockade reducing cardiac output + penile vasoconstriction; thiazide-induced zinc depletion reducing testosterone → erectile dysfunction",
       "ade_en": "Erectile dysfunction, decreased libido",
       "cascade_drug_class": "PDE5 inhibitor",
-      "cascade_drug_examples": ["sildenafil", "tadalafil", "vardenafil", "avanafil"],
+      "cascade_drug_examples": [
+        "sildenafil",
+        "tadalafil",
+        "vardenafil",
+        "avanafil"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular", "endocrine"],
+      "risk_focus": [
+        "cardiovascular",
+        "endocrine"
+      ],
       "differential_hints": [
         "Testosterone deficiency (prevalent in PLHIV, aging men)",
         "Vascular atherosclerosis as primary driver of erectile dysfunction",
@@ -719,20 +1387,45 @@
       "time_window_days_max": 365,
       "ddi_warning_en": "CAUTION: PDE5 inhibitors contraindicated with nitrates (severe hypotension). In PLHIV on PI/r, dose adjustment required — max sildenafil 25 mg/48h.",
       "recommended_first_action_en": "Check testosterone, assess cardiovascular risk, and consider switching antihypertensive to agent with less ED risk (ACEi, ARB, CCB) before prescribing PDE5 inhibitor.",
-      "references": ["Baumhäkel M et al. Int J Clin Pract 2011"]
+      "references": [
+        "Baumhäkel M et al. Int J Clin Pract 2011"
+      ],
+      "name_es": "Antihipertensivo (multifármaco) → Disfunción eréctil → Inhibidor PDE5",
+      "ade_es": "Disfunción eréctil, disminución de la libido",
+      "ade_mechanism_es": "Bloqueo beta-1 con reducción de gasto cardiaco + vasoconstricción peneana; depleción de zinc inducida por tiazidas con reducción de testosterona → disfunción eréctil",
+      "recommended_first_action_es": "Comprobar testosterona, evaluar riesgo cardiovascular y considerar cambiar antihipertensivo a agente con menor riesgo de DE (IECA, ARA-II, BCC) antes de prescribir inhibidor PDE5."
     },
     {
       "id": "CC030",
       "name_en": "SSRI → Hyponatraemia → Sodium Supplement / Fluid Restriction Review",
-      "index_drug_classes": ["SSRI", "SNRI"],
-      "index_drug_examples": ["fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram", "venlafaxine", "duloxetine"],
+      "index_drug_classes": [
+        "SSRI",
+        "SNRI"
+      ],
+      "index_drug_examples": [
+        "fluoxetine",
+        "sertraline",
+        "paroxetine",
+        "citalopram",
+        "escitalopram",
+        "venlafaxine",
+        "duloxetine"
+      ],
       "ade_mechanism_en": "SIADH via enhanced ADH secretion and renal V2 receptor potentiation → dilutional hyponatraemia",
       "ade_en": "Hyponatraemia (particularly in elderly), confusion, falls, seizures in severe cases",
       "cascade_drug_class": "Sodium supplement / Fluid restriction advice / Demeclocycline",
-      "cascade_drug_examples": ["sodium chloride tablets", "demeclocycline", "tolvaptan"],
+      "cascade_drug_examples": [
+        "sodium chloride tablets",
+        "demeclocycline",
+        "tolvaptan"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["neurological", "electrolyte", "safety"],
+      "risk_focus": [
+        "neurological",
+        "electrolyte",
+        "safety"
+      ],
       "differential_hints": [
         "Hypothyroidism or adrenal insufficiency as primary SIADH cause",
         "Heart failure, cirrhosis, or nephrotic syndrome causing dilutional hyponatraemia",
@@ -743,20 +1436,45 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "In most cases, stop or reduce the SSRI. Switching antidepressant class is preferable to adding sodium replacement or demeclocycline. Monitor sodium weekly at initiation in elderly.",
-      "references": ["Fabian TJ et al. J Clin Psychiatry 2004"]
+      "references": [
+        "Fabian TJ et al. J Clin Psychiatry 2004"
+      ],
+      "name_es": "ISRS → Hiponatremia → Suplemento de sodio / Revisión de restricción hídrica",
+      "ade_es": "Hiponatremia (particularmente en personas mayores), confusión, caídas, convulsiones en casos graves",
+      "ade_mechanism_es": "SIADH por aumento de secreción de ADH y potenciación del receptor renal V2 → hiponatremia dilucional",
+      "recommended_first_action_es": "En la mayoría de los casos, suspender o reducir ISRS. Cambiar de clase antidepresiva es preferible a añadir reposición de sodio o demeclociclina. Monitorizar sodio semanalmente al inicio en personas mayores."
     },
     {
       "id": "CC031",
       "name_en": "Tricyclic Antidepressant → Orthostatic Hypotension → Fall-related Injury Treatment",
-      "index_drug_classes": ["Tricyclic antidepressant"],
-      "index_drug_examples": ["amitriptyline", "nortriptyline", "imipramine", "clomipramine", "doxepin"],
+      "index_drug_classes": [
+        "Tricyclic antidepressant"
+      ],
+      "index_drug_examples": [
+        "amitriptyline",
+        "nortriptyline",
+        "imipramine",
+        "clomipramine",
+        "doxepin"
+      ],
       "ade_mechanism_en": "Alpha-1 adrenergic blockade → peripheral vasodilation → postural blood pressure drop → orthostatic hypotension → falls",
       "ade_en": "Orthostatic hypotension, dizziness, falls, fractures",
       "cascade_drug_class": "Bisphosphonate / Analgesic / Fracture treatment",
-      "cascade_drug_examples": ["alendronate", "risedronate", "paracetamol", "ibuprofen", "tramadol", "calcium carbonate"],
+      "cascade_drug_examples": [
+        "alendronate",
+        "risedronate",
+        "paracetamol",
+        "ibuprofen",
+        "tramadol",
+        "calcium carbonate"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["safety", "neurological", "musculoskeletal"],
+      "risk_focus": [
+        "safety",
+        "neurological",
+        "musculoskeletal"
+      ],
       "differential_hints": [
         "Autonomic neuropathy from diabetes or HIV as independent contributor",
         "Volume depletion from diuretic or inadequate fluid intake",
@@ -767,20 +1485,42 @@
       "time_window_days_min": 7,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Switch TCA to SSRI with lower orthostatic risk (sertraline, escitalopram) rather than treating fall consequences. Assess bone density in high-risk patients.",
-      "references": ["Woolcott JC et al. Arch Intern Med 2009"]
+      "references": [
+        "Woolcott JC et al. Arch Intern Med 2009"
+      ],
+      "name_es": "Antidepresivo tricíclico → Hipotensión ortostática → Tratamiento de lesión por caída",
+      "ade_es": "Hipotensión ortostática, mareo, caídas, fracturas",
+      "ade_mechanism_es": "Bloqueo adrenérgico alfa-1 → vasodilatación periférica → caída de presión arterial postural → hipotensión ortostática → caídas",
+      "recommended_first_action_es": "Cambiar ATC a ISRS con menor riesgo ortostático (sertralina, escitalopram) en lugar de tratar consecuencias de caídas. Evaluar densidad ósea en pacientes de alto riesgo."
     },
     {
       "id": "CC032",
       "name_en": "Corticosteroid → Mood Disturbance / Insomnia → Hypnotic / Antidepressant",
-      "index_drug_classes": ["Corticosteroid"],
-      "index_drug_examples": ["prednisolone", "prednisone", "methylprednisolone", "dexamethasone"],
+      "index_drug_classes": [
+        "Corticosteroid"
+      ],
+      "index_drug_examples": [
+        "prednisolone",
+        "prednisone",
+        "methylprednisolone",
+        "dexamethasone"
+      ],
       "ade_mechanism_en": "Glucocorticoid receptor activation in limbic system + HPA axis disruption → mood instability, hypomania, depression, insomnia",
       "ade_en": "Mood disturbance (euphoria/depression), insomnia, anxiety",
       "cascade_drug_class": "Hypnotic / Sedative / Antidepressant",
-      "cascade_drug_examples": ["zolpidem", "lorazepam", "quetiapine", "sertraline", "mirtazapine"],
+      "cascade_drug_examples": [
+        "zolpidem",
+        "lorazepam",
+        "quetiapine",
+        "sertraline",
+        "mirtazapine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["neurological", "cognitive"],
+      "risk_focus": [
+        "neurological",
+        "cognitive"
+      ],
       "differential_hints": [
         "Pre-existing bipolar disorder or major depressive disorder",
         "Underlying disease (malignancy, autoimmune) causing psychiatric symptoms",
@@ -791,20 +1531,43 @@
       "time_window_days_min": 3,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Taper corticosteroid to lowest effective dose. Avoid benzodiazepines and Z-drugs when possible. Consider quetiapine low-dose for sleep in steroid-induced insomnia with mood component.",
-      "references": ["Brown ES et al. Psychosom Med 2004"]
+      "references": [
+        "Brown ES et al. Psychosom Med 2004"
+      ],
+      "name_es": "Corticoide → Alteración del estado de ánimo / Insomnio → Hipnótico / Antidepresivo",
+      "ade_es": "Alteración del estado de ánimo (euforia/depresión), insomnio, ansiedad",
+      "ade_mechanism_es": "Activación de receptores glucocorticoides en sistema límbico + disrupción del eje HPA → inestabilidad del ánimo, hipomanía, depresión, insomnio",
+      "recommended_first_action_es": "Reducir corticoide a la dosis mínima efectiva. Evitar benzodiacepinas y fármacos Z cuando sea posible. Considerar quetiapina a dosis bajas para sueño en insomnio por esteroides con componente afectivo."
     },
     {
       "id": "CC033",
       "name_en": "Statin → Myalgia / Muscle Weakness → Analgesic / Physiotherapy Referral",
-      "index_drug_classes": ["Statin"],
-      "index_drug_examples": ["atorvastatin", "rosuvastatin", "simvastatin", "pravastatin", "pitavastatin"],
+      "index_drug_classes": [
+        "Statin"
+      ],
+      "index_drug_examples": [
+        "atorvastatin",
+        "rosuvastatin",
+        "simvastatin",
+        "pravastatin",
+        "pitavastatin"
+      ],
       "ade_mechanism_en": "Decreased CoQ10 synthesis + impaired mitochondrial function in myocytes → myopathy ranging from myalgia to rhabdomyolysis",
       "ade_en": "Myalgia, muscle weakness, elevated CK, myopathy",
       "cascade_drug_class": "Analgesic / NSAID",
-      "cascade_drug_examples": ["paracetamol", "ibuprofen", "naproxen", "diclofenac", "tramadol"],
+      "cascade_drug_examples": [
+        "paracetamol",
+        "ibuprofen",
+        "naproxen",
+        "diclofenac",
+        "tramadol"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["musculoskeletal", "renal"],
+      "risk_focus": [
+        "musculoskeletal",
+        "renal"
+      ],
       "differential_hints": [
         "Pre-existing inflammatory myopathy (polymyositis, dermatomyositis)",
         "Hypothyroidism causing myopathy independently",
@@ -816,20 +1579,42 @@
       "time_window_days_max": 180,
       "ddi_warning_en": "CAUTION: PI/r dramatically increases simvastatin/lovastatin exposure. Prefer rosuvastatin, pravastatin, or pitavastatin in PLHIV on PI/r.",
       "recommended_first_action_en": "Stop statin and reassess after 4-6 weeks. If myalgia resolves, confirm statin causation. Switch to low-dose hydrophilic statin (pravastatin, rosuvastatin) rather than adding analgesic long-term.",
-      "references": ["Bruckert E et al. Cardiovasc Drugs Ther 2005"]
+      "references": [
+        "Bruckert E et al. Cardiovasc Drugs Ther 2005"
+      ],
+      "name_es": "Estatina → Mialgia / Debilidad muscular → Analgésico / Derivación a fisioterapia",
+      "ade_es": "Mialgia, debilidad muscular, CK elevada, miopatía",
+      "ade_mechanism_es": "Disminución de síntesis de CoQ10 + deterioro de función mitocondrial en miocitos → miopatía desde mialgia hasta rabdomiólisis",
+      "recommended_first_action_es": "Suspender estatina y reevaluar tras 4-6 semanas. Si la mialgia se resuelve, confirmar causalidad. Cambiar a estatina hidrofílica a baja dosis (pravastatina, rosuvastatina) en lugar de añadir analgésico crónico."
     },
     {
       "id": "CC034",
       "name_en": "Antipsychotic → QTc Prolongation → Anti-arrhythmic / ECG Monitoring Burden",
-      "index_drug_classes": ["Antipsychotic"],
-      "index_drug_examples": ["haloperidol", "chlorpromazine", "quetiapine", "olanzapine", "risperidone", "amisulpride", "sertindole"],
+      "index_drug_classes": [
+        "Antipsychotic"
+      ],
+      "index_drug_examples": [
+        "haloperidol",
+        "chlorpromazine",
+        "quetiapine",
+        "olanzapine",
+        "risperidone",
+        "amisulpride",
+        "sertindole"
+      ],
       "ade_mechanism_en": "hERG potassium channel blockade in cardiac myocytes → prolonged QT interval → increased risk of torsades de pointes",
       "ade_en": "QTc prolongation, increased arrhythmia risk (torsades de pointes)",
       "cascade_drug_class": "Anti-arrhythmic (caution) / Electrolyte correction",
-      "cascade_drug_examples": ["magnesium sulfate", "potassium chloride", "amiodarone"],
+      "cascade_drug_examples": [
+        "magnesium sulfate",
+        "potassium chloride",
+        "amiodarone"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["cardiovascular"],
+      "risk_focus": [
+        "cardiovascular"
+      ],
       "differential_hints": [
         "Congenital long QT syndrome as independent risk factor",
         "Concurrent medications also prolonging QT (fluoroquinolones, macrolides, antiemetics)",
@@ -841,20 +1626,42 @@
       "time_window_days_max": 60,
       "ddi_warning_en": "CAUTION: Multiple QT-prolonging drugs are common in PLHIV (ARVs + antiemetics + antipsychotics). Use CredibleMeds or similar QT risk checker.",
       "recommended_first_action_en": "Correct electrolytes (K, Mg). Switch to antipsychotic with lower QTc risk (aripiprazole). Avoid combining with other QT-prolonging agents. Do not add amiodarone without specialist review.",
-      "references": ["Glassman AH, Bigger JT Jr. Am J Psychiatry 2001"]
+      "references": [
+        "Glassman AH, Bigger JT Jr. Am J Psychiatry 2001"
+      ],
+      "name_es": "Antipsicótico → Prolongación del QTc → Antiarrítmico / Carga de monitorización ECG",
+      "ade_es": "Prolongación del QTc, aumento del riesgo de arritmia (torsades de pointes)",
+      "ade_mechanism_es": "Bloqueo de canales de potasio hERG en miocitos cardiacos → prolongación del intervalo QT → aumento del riesgo de torsades de pointes",
+      "recommended_first_action_es": "Corregir electrolitos (K, Mg). Cambiar a antipsicótico con menor riesgo de QTc (aripiprazol). Evitar combinar con otros fármacos que prolonguen QT. No añadir amiodarona sin revisión especializada."
     },
     {
       "id": "CC035",
       "name_en": "Alpha-Blocker (for BPH) → Orthostatic Hypotension → Dizziness Medication",
-      "index_drug_classes": ["Alpha-blocker"],
-      "index_drug_examples": ["tamsulosin", "alfuzosin", "doxazosin", "terazosin"],
+      "index_drug_classes": [
+        "Alpha-blocker"
+      ],
+      "index_drug_examples": [
+        "tamsulosin",
+        "alfuzosin",
+        "doxazosin",
+        "terazosin"
+      ],
       "ade_mechanism_en": "Alpha-1 adrenergic receptor blockade → systemic vasodilation → orthostatic hypotension, especially when co-prescribed with antihypertensives",
       "ade_en": "Orthostatic hypotension, dizziness, syncope",
       "cascade_drug_class": "Antihistamine / Vestibular agent",
-      "cascade_drug_examples": ["meclizine", "betahistine", "cinnarizine", "dimenhydrinate"],
+      "cascade_drug_examples": [
+        "meclizine",
+        "betahistine",
+        "cinnarizine",
+        "dimenhydrinate"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["cardiovascular", "safety", "neurological"],
+      "risk_focus": [
+        "cardiovascular",
+        "safety",
+        "neurological"
+      ],
       "differential_hints": [
         "Concurrent antihypertensive drugs amplifying vasodilation",
         "PDE5 inhibitor co-administration causing profound hypotension",
@@ -866,20 +1673,42 @@
       "time_window_days_max": 60,
       "ddi_warning_en": "CAUTION: Alpha-blocker + PDE5 inhibitor → severe hypotension. Use tamsulosin 0.4 mg if PDE5 inhibitor required; avoid first-line non-selective alpha-blockers.",
       "recommended_first_action_en": "Switch to uroselective tamsulosin if using non-selective agent. Review and reduce antihypertensive burden. Antihistamines for dizziness add sedation risk — address root cause instead.",
-      "references": ["Chapple CR. Eur Urol 2004"]
+      "references": [
+        "Chapple CR. Eur Urol 2004"
+      ],
+      "name_es": "Alfabloqueador (para HBP) → Hipotensión ortostática → Medicación para mareo",
+      "ade_es": "Hipotensión ortostática, mareo, síncope",
+      "ade_mechanism_es": "Bloqueo de receptores adrenérgicos alfa-1 → vasodilatación sistémica → hipotensión ortostática, especialmente con coprescripción de antihipertensivos",
+      "recommended_first_action_es": "Cambiar a tamsulosina uroselectiva si se usa agente no selectivo. Revisar y reducir carga antihipertensiva. Los antihistamínicos para mareo aumentan riesgo de sedación: abordar la causa raíz."
     },
     {
       "id": "CC036",
       "name_en": "Progestogen-only / Combined Hormonal Contraceptive → Depression → Antidepressant",
-      "index_drug_classes": ["Hormonal contraceptive"],
-      "index_drug_examples": ["levonorgestrel", "desogestrel", "medroxyprogesterone", "norethisterone", "etonogestrel"],
+      "index_drug_classes": [
+        "Hormonal contraceptive"
+      ],
+      "index_drug_examples": [
+        "levonorgestrel",
+        "desogestrel",
+        "medroxyprogesterone",
+        "norethisterone",
+        "etonogestrel"
+      ],
       "ade_mechanism_en": "Progestogen-mediated effects on neuroactive steroids and serotonin metabolism → mood changes, depressive symptoms",
       "ade_en": "Depression, mood deterioration, low libido",
       "cascade_drug_class": "Antidepressant",
-      "cascade_drug_examples": ["sertraline", "escitalopram", "citalopram", "fluoxetine", "mirtazapine"],
+      "cascade_drug_examples": [
+        "sertraline",
+        "escitalopram",
+        "citalopram",
+        "fluoxetine",
+        "mirtazapine"
+      ],
       "confidence": "medium",
       "age_sensitivity": "low",
-      "risk_focus": ["neurological"],
+      "risk_focus": [
+        "neurological"
+      ],
       "differential_hints": [
         "Pre-existing depression or psychosocial stressors",
         "HIV-related stigma and psychosocial burden as primary driver",
@@ -890,20 +1719,42 @@
       "time_window_days_min": 30,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Explore temporal relationship. Consider switching to non-hormonal or progestogen-free contraception before initiating antidepressant. Note ARV-hormonal interactions (enzyme-inducing ARVs reduce contraceptive efficacy).",
-      "references": ["Skovlund CW et al. JAMA Psychiatry 2016"]
+      "references": [
+        "Skovlund CW et al. JAMA Psychiatry 2016"
+      ],
+      "name_es": "Progestágeno solo / Anticonceptivo hormonal combinado → Depresión → Antidepresivo",
+      "ade_es": "Depresión, deterioro del estado de ánimo, baja libido",
+      "ade_mechanism_es": "Efectos mediados por progestágenos sobre esteroides neuroactivos y metabolismo de serotonina → cambios del estado de ánimo, síntomas depresivos",
+      "recommended_first_action_es": "Explorar relación temporal. Considerar cambio a anticoncepción no hormonal o libre de progestágeno antes de iniciar antidepresivo. Tener en cuenta interacciones ARV-hormonales (ARV inductores enzimáticos reducen eficacia anticonceptiva)."
     },
     {
       "id": "CC037",
       "name_en": "Anticholinergic (Bladder) → Cognitive Impairment / Delirium → Antipsychotic",
-      "index_drug_classes": ["Anticholinergic (urinary)"],
-      "index_drug_examples": ["oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin"],
+      "index_drug_classes": [
+        "Anticholinergic (urinary)"
+      ],
+      "index_drug_examples": [
+        "oxybutynin",
+        "tolterodine",
+        "solifenacin",
+        "fesoterodine",
+        "darifenacin"
+      ],
       "ade_mechanism_en": "Muscarinic M1 receptor blockade in prefrontal cortex and hippocampus → impaired cholinergic neurotransmission → cognitive impairment, confusion, delirium",
       "ade_en": "Cognitive impairment, acute confusion, delirium",
       "cascade_drug_class": "Antipsychotic",
-      "cascade_drug_examples": ["haloperidol", "quetiapine", "risperidone", "olanzapine"],
+      "cascade_drug_examples": [
+        "haloperidol",
+        "quetiapine",
+        "risperidone",
+        "olanzapine"
+      ],
       "confidence": "high",
       "age_sensitivity": "high",
-      "risk_focus": ["cognitive", "neurological"],
+      "risk_focus": [
+        "cognitive",
+        "neurological"
+      ],
       "differential_hints": [
         "Underlying dementia (HIV-associated neurocognitive disorder, Alzheimer's) worsening independently",
         "CNS opportunistic infection in PLHIV causing acute confusion",
@@ -914,20 +1765,39 @@
       "time_window_days_min": 7,
       "time_window_days_max": 60,
       "recommended_first_action_en": "Stop the offending anticholinergic. Switch to mirabegron (beta-3 agonist, no CNS anticholinergic effect) for OAB rather than adding antipsychotic. Antipsychotics worsen anticholinergic burden.",
-      "references": ["Gray SL et al. JAMA Intern Med 2015"]
+      "references": [
+        "Gray SL et al. JAMA Intern Med 2015"
+      ],
+      "name_es": "Anticolinérgico (vejiga) → Deterioro cognitivo / Delirio → Antipsicótico",
+      "ade_es": "Deterioro cognitivo, confusión aguda, delirio",
+      "ade_mechanism_es": "Bloqueo de receptores muscarínicos M1 en corteza prefrontal e hipocampo → deterioro de neurotransmisión colinérgica → deterioro cognitivo, confusión, delirio",
+      "recommended_first_action_es": "Suspender el anticolinérgico causal. Cambiar a mirabegrón (agonista beta-3, sin efecto anticolinérgico SNC) para VH en lugar de añadir antipsicótico. Los antipsicóticos empeoran la carga anticolinérgica."
     },
     {
       "id": "CC038",
       "name_en": "Tramadol → Serotonin Toxicity / Seizures → Antiepileptic",
-      "index_drug_classes": ["Opioid analgesic"],
-      "index_drug_examples": ["tramadol"],
+      "index_drug_classes": [
+        "Opioid analgesic"
+      ],
+      "index_drug_examples": [
+        "tramadol"
+      ],
       "ade_mechanism_en": "Serotonin and noradrenaline reuptake inhibition + opioid activity → serotonin excess or lowered seizure threshold, especially with SSRI co-prescription",
       "ade_en": "Serotonin syndrome symptoms, seizures, agitation",
       "cascade_drug_class": "Antiepileptic / Anxiolytic",
-      "cascade_drug_examples": ["carbamazepine", "valproate", "levetiracetam", "diazepam", "clonazepam"],
+      "cascade_drug_examples": [
+        "carbamazepine",
+        "valproate",
+        "levetiracetam",
+        "diazepam",
+        "clonazepam"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["neurological", "safety"],
+      "risk_focus": [
+        "neurological",
+        "safety"
+      ],
       "differential_hints": [
         "Serotonin toxicity from SSRI + tramadol combination (must assess concurrent SSRIs)",
         "Epilepsy newly diagnosed independent of tramadol",
@@ -939,20 +1809,42 @@
       "time_window_days_max": 30,
       "ddi_warning_en": "CAUTION: Tramadol + SSRI/SNRI → significant serotonin toxicity risk. Tramadol + carbamazepine → reduced analgesia (CYP3A4 induction). Tramadol is generally avoided in patients on SSRIs.",
       "recommended_first_action_en": "Discontinue tramadol and switch to a non-serotonergic opioid analgesic. Adding an antiepileptic without addressing the root cause is inappropriate.",
-      "references": ["Tashakkori M et al. Ann Emerg Med 2009"]
+      "references": [
+        "Tashakkori M et al. Ann Emerg Med 2009"
+      ],
+      "name_es": "Tramadol → Toxicidad serotoninérgica / Convulsiones → Antiepiléptico",
+      "ade_es": "Síntomas de síndrome serotoninérgico, convulsiones, agitación",
+      "ade_mechanism_es": "Inhibición de recaptación de serotonina y noradrenalina + actividad opioide → exceso serotoninérgico o umbral convulsivo reducido, especialmente con coprescripción de ISRS",
+      "recommended_first_action_es": "Suspender tramadol y cambiar a analgésico opioide no serotoninérgico. Añadir antiepiléptico sin corregir la causa raíz es inapropiado."
     },
     {
       "id": "CC039",
       "name_en": "Long-term PPI → Osteoporosis / Fracture Risk → Bisphosphonate / Calcium Supplement",
-      "index_drug_classes": ["PPI"],
-      "index_drug_examples": ["omeprazole", "pantoprazole", "lansoprazole", "esomeprazole", "rabeprazole"],
+      "index_drug_classes": [
+        "PPI"
+      ],
+      "index_drug_examples": [
+        "omeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "esomeprazole",
+        "rabeprazole"
+      ],
       "ade_mechanism_en": "Achlorhydria → reduced calcium and vitamin B12 absorption → secondary hyperparathyroidism + bone resorption; also reduced magnesium (CC026)",
       "ade_en": "Reduced bone density, increased hip/vertebral fracture risk with prolonged use",
       "cascade_drug_class": "Bisphosphonate / Calcium supplement",
-      "cascade_drug_examples": ["alendronate", "risedronate", "calcium carbonate", "cholecalciferol"],
+      "cascade_drug_examples": [
+        "alendronate",
+        "risedronate",
+        "calcium carbonate",
+        "cholecalciferol"
+      ],
       "confidence": "medium",
       "age_sensitivity": "high",
-      "risk_focus": ["musculoskeletal", "gastrointestinal"],
+      "risk_focus": [
+        "musculoskeletal",
+        "gastrointestinal"
+      ],
       "differential_hints": [
         "Age-related osteoporosis in postmenopausal women or older men",
         "TDF-related bone loss in PLHIV (synergistic with PPI) — see VIH002",
@@ -963,20 +1855,45 @@
       "time_window_days_min": 365,
       "time_window_days_max": 1825,
       "recommended_first_action_en": "Reassess PPI indication — consider step-down to lowest effective dose or switch to H2 antagonist. If PPI required long-term, ensure adequate calcium/vitamin D intake and consider DEXA scan.",
-      "references": ["Yang YX et al. JAMA 2006", "Corley DA et al. Arch Intern Med 2010"]
+      "references": [
+        "Yang YX et al. JAMA 2006",
+        "Corley DA et al. Arch Intern Med 2010"
+      ],
+      "name_es": "IBP a largo plazo → Osteoporosis / Riesgo de fractura → Bifosfonato / Suplemento de calcio",
+      "ade_es": "Disminución de densidad ósea, aumento del riesgo de fractura de cadera/vertebral con uso prolongado",
+      "ade_mechanism_es": "Aclorhidria → reducción de absorción de calcio y vitamina B12 → hiperparatiroidismo secundario + resorción ósea; también disminución de magnesio (CC026)",
+      "recommended_first_action_es": "Reevaluar indicación de IBP: considerar reducción escalonada a la dosis mínima efectiva o cambio a antagonista H2. Si se requiere IBP a largo plazo, asegurar aporte adecuado de calcio/vitamina D y considerar DEXA."
     },
     {
       "id": "CC040",
       "name_en": "Antidepressant (TCA/SNRI) → Weight Gain → Antidiabetic / Lipid-lowering",
-      "index_drug_classes": ["Tricyclic antidepressant", "SNRI"],
-      "index_drug_examples": ["amitriptyline", "nortriptyline", "mirtazapine", "paroxetine", "venlafaxine", "duloxetine"],
+      "index_drug_classes": [
+        "Tricyclic antidepressant",
+        "SNRI"
+      ],
+      "index_drug_examples": [
+        "amitriptyline",
+        "nortriptyline",
+        "mirtazapine",
+        "paroxetine",
+        "venlafaxine",
+        "duloxetine"
+      ],
       "ade_mechanism_en": "H1 antihistamine blockade + enhanced appetite via serotonin/noradrenaline effects → weight gain → metabolic consequences",
       "ade_en": "Weight gain, impaired glucose tolerance, new-onset type 2 diabetes",
       "cascade_drug_class": "Antidiabetic / Lipid-lowering",
-      "cascade_drug_examples": ["metformin", "sitagliptin", "atorvastatin", "rosuvastatin"],
+      "cascade_drug_examples": [
+        "metformin",
+        "sitagliptin",
+        "atorvastatin",
+        "rosuvastatin"
+      ],
       "confidence": "medium",
       "age_sensitivity": "medium",
-      "risk_focus": ["metabolic", "cardiovascular"],
+      "risk_focus": [
+        "metabolic",
+        "cardiovascular"
+      ],
       "differential_hints": [
         "INSTI-associated weight gain in PLHIV contributing synergistically (VIH003)",
         "Corticosteroid co-administration as additional metabolic driver",
@@ -987,7 +1904,13 @@
       "time_window_days_min": 60,
       "time_window_days_max": 365,
       "recommended_first_action_en": "Consider switching to weight-neutral or weight-reducing antidepressant (bupropion, fluoxetine) before adding antidiabetic or lipid-lowering agent. Monitor weight, glucose and lipids at 3 and 6 months.",
-      "references": ["Serretti A, Mandelli L. J Clin Psychiatry 2010"]
+      "references": [
+        "Serretti A, Mandelli L. J Clin Psychiatry 2010"
+      ],
+      "name_es": "Antidepresivo (ATC/ISRN) → Aumento de peso → Antidiabético / Hipolipemiante",
+      "ade_es": "Aumento de peso, alteración de la tolerancia a la glucosa, diabetes tipo 2 de nueva aparición",
+      "ade_mechanism_es": "Bloqueo antihistamínico H1 + aumento del apetito por efectos serotoninérgicos/noradrenérgicos → aumento de peso → consecuencias metabólicas",
+      "recommended_first_action_es": "Considerar cambio a antidepresivo neutro o reductor de peso (bupropión, fluoxetina) antes de añadir antidiabético o hipolipemiante. Monitorizar peso, glucosa y lípidos a los 3 y 6 meses."
     }
   ]
 }
