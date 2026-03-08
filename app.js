@@ -192,38 +192,25 @@ function runKBValidation() {
    * A single validation pass covers both needs — no second validateKBStrict call. */
   var opResult = validateKBOperational(kbData);
 
-  /* Build per-field editorial notes from the operational fallback report.
-   * Each entry shows count + a <details> block listing affected cascade IDs. */
-  var editorialItems = [];
   var byField    = opResult.fallbackByField    || {};
   var byFieldIds = opResult.fallbackByFieldIds || {};
-  Object.keys(byField).sort().forEach(function (field) {
+  var hasFallback = opResult.fallbackCascadeCount > 0;
+
+  /* i18n detail rows — shown only inside the expandable panel, never in the headline */
+  var i18nDetailItems = Object.keys(byField).sort().map(function (field) {
     var count = byField[field];
     var ids   = byFieldIds[field] || [];
-    var idList = escHtml(ids.join(', '));
-    editorialItems.push(
-      '<li>Missing translation <code>' + escHtml(field) + '</code>: ' + count + ' cascade(s)' +
-      ' — add translations or leave for EN\u2192ES fallback.' +
-      (ids.length ? '<details style="display:inline-block;margin-left:.5rem">' +
-        '<summary style="cursor:pointer;font-size:.75rem;color:#7d6608">Show IDs (' + ids.length + ')</summary>' +
-        '<span style="font-family:monospace;font-size:.72rem;word-break:break-all">' + idList + '</span>' +
-        '</details>' : '') +
-      '</li>'
-    );
+    return '<li><code>' + escHtml(field) + '</code>: ' + count + ' cascade(s) using EN fallback' +
+      (ids.length ? ' \u2014 <span style="font-family:monospace;font-size:.72rem;word-break:break-all">' +
+        escHtml(ids.join(', ')) + '</span>' : '') +
+      '</li>';
   });
-  if (opResult.fallbackCascadeCount > 0) {
-    editorialItems.push(
-      '<li>i18n: ' + opResult.fallbackCascadeCount + ' cascade(s), ' +
-      opResult.fallbackFieldCount + ' field fill(s) using EN\u2192ES fallback' +
-      ' \u2014 translations not yet provided in KB source files.</li>'
-    );
-  }
 
-  /* Structural warnings from operational (e.g. differential_hints < 3) */
+  /* Structural warnings from the operational pass (e.g. differential_hints < 3).
+   * These are genuine quality issues, not translation gaps — kept separate. */
   var structuralItems = opResult.warnings.map(function (w) {
     return '<li>' + escHtml(w) + '</li>';
   });
-  var allItems = structuralItems.concat(editorialItems);
 
   var banner = document.getElementById('kb-validation-banner');
   if (!banner) {
@@ -235,7 +222,21 @@ function runKBValidation() {
   }
 
   if (!opResult.ok && opResult.errors.length > 0) {
-    /* Blocking error panel */
+    /* ── Red blocking banner — structural / missing-EN errors ── */
+    var redDetail =
+      '<strong>Errors:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+        opResult.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
+      '</ul>' +
+      (structuralItems.length ?
+        '<strong>Warnings:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+          structuralItems.join('') + '</ul>' : '') +
+      /* i18n note inside error detail, not as a separate banner */
+      (hasFallback ?
+        '<details style="margin-top:.5rem"><summary style="cursor:pointer;font-size:.75rem;">' +
+          'Show translation details (' + opResult.fallbackCascadeCount + ' cascade(s), ' +
+          opResult.fallbackFieldCount + ' field(s))</summary>' +
+          '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' + i18nDetailItems.join('') + '</ul>' +
+        '</details>' : '');
     banner.innerHTML =
       '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
         '<strong>&#9888; KB load error \u2014 ' + opResult.errors.length + ' schema error(s) detected. Some features may be unavailable.</strong>' +
@@ -243,25 +244,49 @@ function runKBValidation() {
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">View errors</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fadbd8;color:#922b21;padding:.6rem 1rem;border-bottom:2px solid #c0392b;">' +
-        '<strong>Errors:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
-          opResult.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
-        '</ul>' +
-        (allItems.length ? '<strong>Warnings / editorial:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
-          allItems.join('') + '</ul>' : '') +
+        redDetail +
       '</div>';
-  } else if (allItems.length > 0) {
-    /* Non-blocking warning panel (structural + editorial + i18n notes) */
+
+  } else if (hasFallback || structuralItems.length > 0) {
+    /* ── Amber non-blocking banner ──
+     * i18n gaps (fallback active) → single summary headline, no per-field clutter.
+     * Structural notices (non-i18n) → listed normally if present.            */
+
+    /* Headline: i18n summary takes priority; structural count appended if both present */
+    var headlineText = hasFallback
+      ? 'Language: mixed (EN fallback active) \u2014 ' +
+        opResult.fallbackCascadeCount + ' cascade(s), ' + opResult.fallbackFieldCount + ' field(s).'
+      : 'KB notices (' + structuralItems.length + ')';
+
+    /* Detail panel: structural warnings first, then i18n per-field breakdown */
+    var amberDetailParts = [];
+    if (structuralItems.length > 0) {
+      amberDetailParts.push(
+        '<strong style="display:block;margin-bottom:.2rem">Structural notices:</strong>' +
+        '<ul style="margin:.2rem 0 .5rem 1.2rem;padding:0;">' + structuralItems.join('') + '</ul>'
+      );
+    }
+    if (hasFallback) {
+      amberDetailParts.push(
+        '<ul style="margin:.2rem 0 0 1.2rem;padding:0;">' + i18nDetailItems.join('') + '</ul>'
+      );
+    }
+
+    var detailBtnLabel = hasFallback ? 'Show translation details' : 'View notices';
+
     banner.innerHTML =
       '<div style="background:#f39c12;color:#fff;padding:.4rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
-        '<span>&#9888; KB notices (' + allItems.length + ')</span>' +
+        '<span>&#9888; ' + headlineText + '</span>' +
         '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
-          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">click to view</button>' +
+          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">' +
+          escHtml(detailBtnLabel) + '</button>' +
         '<button onclick="this.parentElement.parentElement.style.display=\'none\'" ' +
           'style="margin-left:auto;background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;" title="Dismiss">&times;</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fef9e7;color:#7d6608;padding:.5rem 1rem;border-bottom:2px solid #f39c12;">' +
-        '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' + allItems.join('') + '</ul>' +
+        amberDetailParts.join('') +
       '</div>';
+
   } else {
     banner.innerHTML = '';
   }
