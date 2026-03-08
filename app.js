@@ -1692,6 +1692,7 @@ const STEP_CONTENT = {
       /* ── Clinical summary ── */
       var summary = r.clinical_summary || {
         total_cascades: r.cascade_count,
+        plausible_cascades: 0,
         high_priority_cascades: 0,
         top_interventions: [],
         validation_warning: 'Este informe requiere validación clínica-farmacéutica.'
@@ -1721,6 +1722,17 @@ const STEP_CONTENT = {
           '</p>'
         );
       } else {
+        function sortForDisplay(items) {
+          return items.slice().sort(function (a, b) {
+            var byPriority = priorityRank(b.pharmacy_priority_level) - priorityRank(a.pharmacy_priority_level);
+            if (byPriority !== 0) return byPriority;
+            var aLevel = a.finding_level === 'plausible_cascade' ? 1 : 0;
+            var bLevel = b.finding_level === 'plausible_cascade' ? 1 : 0;
+            if (bLevel !== aLevel) return bLevel - aLevel;
+            return confidenceRank(b.confidence) - confidenceRank(a.confidence);
+          });
+        }
+
         function levelBadge(c) {
           var map = {
             plausible_cascade: { bg: '#1e8449', fg: '#fff' },
@@ -1746,6 +1758,8 @@ const STEP_CONTENT = {
                   '</div>' +
                 '</div>' +
                 '<div style="margin-top:.55rem;font-size:.83rem;"><strong>Secuencia farmacol&oacute;gica:</strong> ' + escHtml(c.sequence) + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Nivel de hallazgo:</strong> ' + escHtml(c.finding_label || 'Señal') + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Prioridad farmac&eacute;utica:</strong> ' + escHtml(c.pharmacy_priority || 'Baja prioridad') + '</div>' +
                 '<div style="margin-top:.35rem;font-size:.82rem;"><strong>Qué lo apoya:</strong> ' + escHtml(c.support_summary || '—') + '</div>' +
                 '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Qué falta:</strong> ' + escHtml(c.missing_summary || '—') + '</div>' +
                 '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Nivel asignado:</strong> ' + escHtml(c.level_reason || '—') + '</div>' +
@@ -1759,18 +1773,20 @@ const STEP_CONTENT = {
                 '</div>' +
                 '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;"><strong>Intervenci&oacute;n farmac&eacute;utica sugerida:</strong> ' +
                   escHtml(c.suggested_intervention || c.clinical_recommendation || '—') + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;color:#1f4f2a;"><strong>Recomendación cl&iacute;nica breve:</strong> ' +
+                  escHtml(c.clinical_recommendation || c.suggested_intervention || '—') + '</div>' +
                 '<div style="margin-top:.35rem;font-size:.8rem;color:#666;"><strong>Qu&eacute; falta para mayor certeza:</strong> ' + escHtml(c.certainty_gap || '—') + '</div>' +
               '</div>'
             );
           }).join('');
         }
 
-        var plausible = r.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; });
-        var preliminary = r.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; });
+        var plausible = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; }));
+        var preliminary = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; }));
         cascadeContent =
-          '<div style="margin-bottom:.8rem;"><strong>1) Cascadas terap&eacute;uticas plausibles (' + plausible.length + ')</strong></div>' +
+          '<div style="margin-bottom:.8rem;padding:.45rem .6rem;background:#eaf7ef;border:1px solid #b7dfc3;border-radius:5px;"><strong>1) Cascadas terap&eacute;uticas plausibles (' + plausible.length + ')</strong></div>' +
           (plausible.length ? renderCards(plausible) : '<p style="font-size:.82rem;color:#7f8c8d;">Sin cascadas plausibles en esta nota.</p>') +
-          '<div style="margin:.9rem 0 .8rem;"><strong>2) Se&ntilde;ales farmacol&oacute;gicas preliminares (' + preliminary.length + ')</strong></div>' +
+          '<div style="margin:.9rem 0 .8rem;padding:.45rem .6rem;background:#f3f4f6;border:1px solid #d6d9dd;border-radius:5px;"><strong>2) Se&ntilde;ales farmacol&oacute;gicas preliminares (' + preliminary.length + ')</strong></div>' +
           (preliminary.length ? renderCards(preliminary) : '<p style="font-size:.82rem;color:#7f8c8d;">Sin señales preliminares activas.</p>');
       }
 
@@ -1848,6 +1864,7 @@ const STEP_CONTENT = {
           section('Resumen cl&iacute;nico',
             '<div style="font-size:.84rem;line-height:1.45;">' +
               '<div><strong>Total de hallazgos detectados:</strong> ' + summary.total_cascades + '</div>' +
+              '<div><strong>Cascadas plausibles:</strong> ' + (summary.plausible_cascades || 0) + '</div>' +
               '<div><strong>Cascadas de alta prioridad:</strong> ' + summary.high_priority_cascades + '</div>' +
               '<div style="margin-top:.4rem;"><strong>Principales intervenciones sugeridas:</strong></div>' +
               summaryInterventions +
@@ -2218,14 +2235,15 @@ function buildReport() {
   });
 
   cascades.sort(function (a, b) {
+    var byPriority = priorityRank(b.pharmacy_priority_level) - priorityRank(a.pharmacy_priority_level);
+    if (byPriority !== 0) return byPriority;
     var aLevel = a.finding_level === 'plausible_cascade' ? 1 : 0;
     var bLevel = b.finding_level === 'plausible_cascade' ? 1 : 0;
     if (bLevel !== aLevel) return bLevel - aLevel;
-    var byPriority = priorityRank(b.pharmacy_priority_level) - priorityRank(a.pharmacy_priority_level);
-    if (byPriority !== 0) return byPriority;
     return confidenceRank(b.confidence) - confidenceRank(a.confidence);
   });
 
+  var plausibleCount = cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; }).length;
   var highPriorityCount = cascades.filter(function (c) { return c.pharmacy_priority_level === 'alta'; }).length;
   var topInterventions = [];
   var seenInterventions = {};
@@ -2254,6 +2272,7 @@ function buildReport() {
     cascades:           cascades,
     clinical_summary: {
       total_cascades: detected.length,
+      plausible_cascades: plausibleCount,
       high_priority_cascades: highPriorityCount,
       top_interventions: topInterventions.slice(0, 3),
       validation_warning: 'Este informe requiere validación clínica-farmacéutica antes de cualquier cambio terapéutico.'
@@ -2270,6 +2289,8 @@ function formatReportForClinicalRecord(report) {
   lines.push('');
   lines.push('Resumen:');
   lines.push('- Cascadas detectadas: ' + report.cascade_count);
+  lines.push('- Cascadas plausibles: ' + (report.clinical_summary && report.clinical_summary.plausible_cascades ? report.clinical_summary.plausible_cascades : 0));
+  lines.push('- Cascadas de alta prioridad: ' + (report.clinical_summary && report.clinical_summary.high_priority_cascades ? report.clinical_summary.high_priority_cascades : 0));
   lines.push('- Medicamentos detectados: ' + (report.drugs_detected.join(', ') || 'Ninguno'));
   lines.push('- Grupos farmacológicos: ' + (report.drug_classes.join(', ') || 'No clasificados'));
   lines.push('');
@@ -2277,13 +2298,39 @@ function formatReportForClinicalRecord(report) {
   if (!report.cascades.length) {
     lines.push('No se han detectado cascadas terapéuticas con los datos actuales.');
   } else {
-    lines.push('Cascadas terapéuticas:');
-    report.cascades.forEach(function (c, idx) {
+    var plausible = report.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; });
+    var preliminary = report.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; });
+    lines.push('Cascadas terapéuticas plausibles (' + plausible.length + '):');
+    plausible.forEach(function (c, idx) {
       lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
       lines.push('   - Secuencia: ' + c.sequence);
+      lines.push('   - Nivel de hallazgo: ' + c.finding_level);
+      lines.push('   - Prioridad farmacéutica: ' + c.pharmacy_priority);
       lines.push('   - Estado de verificación: ' + c.verification_status);
-      lines.push('   - Prioridad: ' + c.pharmacy_priority);
-      lines.push('   - Recomendación: ' + (c.suggested_intervention || c.clinical_recommendation || 'Sin recomendación específica'));
+      lines.push('   - Evidencia a favor: ' + (c.support_summary || 'Sin apoyo clínico adicional detectado.'));
+      lines.push('   - Qué falta para confirmar: ' + (c.missing_summary || 'Sin brechas críticas detectadas.'));
+      lines.push('   - Recomendación clínica breve: ' + (c.clinical_recommendation || c.suggested_intervention || 'Sin recomendación específica'));
+    });
+
+    lines.push('');
+    lines.push('Señales farmacológicas preliminares (' + preliminary.length + '):');
+    preliminary.forEach(function (c, idx) {
+      lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
+      lines.push('   - Secuencia: ' + c.sequence);
+      lines.push('   - Nivel de hallazgo: ' + c.finding_level);
+      lines.push('   - Prioridad farmacéutica: ' + c.pharmacy_priority);
+      lines.push('   - Estado de verificación: ' + c.verification_status);
+      lines.push('   - Evidencia a favor: ' + (c.support_summary || 'Sin apoyo clínico adicional detectado.'));
+      lines.push('   - Qué falta para confirmar: ' + (c.missing_summary || 'Sin brechas críticas detectadas.'));
+      lines.push('   - Recomendación clínica breve: ' + (c.clinical_recommendation || c.suggested_intervention || 'Sin recomendación específica'));
+    });
+  }
+
+  if (report.clinical_summary && report.clinical_summary.top_interventions && report.clinical_summary.top_interventions.length) {
+    lines.push('');
+    lines.push('Principales acciones sugeridas:');
+    report.clinical_summary.top_interventions.forEach(function (action, idx) {
+      lines.push('  ' + (idx + 1) + ') ' + action);
     });
   }
 
