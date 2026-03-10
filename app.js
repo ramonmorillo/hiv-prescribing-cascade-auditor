@@ -1128,6 +1128,37 @@ function findCascadeEntry(cascadeId) {
   return null;
 }
 
+/**
+ * Find the KB cascade entry for any signal type.
+ * For drug_drug signals: exact ID lookup (existing behaviour).
+ * For symptom_bridge signals: the cascade_id is a synthetic key
+ * (e.g. "SYM001:pregabalin:furosemide") that won't match any KB entry
+ * directly, so we search for an entry whose index_drug_examples contains
+ * the signal's index_drug AND whose cascade_drug_examples contains the
+ * signal's cascade_drug.
+ */
+function findCascadeEntryForSignal(signal) {
+  if (signal.signal_type !== 'symptom_bridge') {
+    return findCascadeEntry(signal.cascade_id);
+  }
+  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
+  var vihCascades  = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
+  var all = [].concat(coreCascades, vihCascades);
+  var normIndex   = normalizeDrugText(signal.index_drug);
+  var normCascade = normalizeDrugText(signal.cascade_drug);
+  for (var i = 0; i < all.length; i++) {
+    var kbEntry = all[i];
+    var idxMatch = getIndexExamples(kbEntry).some(function (d) {
+      return normalizeDrugText(d) === normIndex;
+    });
+    var casMatch = getCascadeExamples(kbEntry).some(function (d) {
+      return normalizeDrugText(d) === normCascade;
+    });
+    if (idxMatch && casMatch) return kbEntry;
+  }
+  return null;
+}
+
 /* ============================================================
    Step 5 — clinician classification handler
    Called via inline onclick: classifyCascade(id, value)
@@ -2362,7 +2393,10 @@ function buildSignalExplanation(signal) {
 }
 
 function buildClinicalInterpretation(signal, entry) {
-  if (entry && entry.clinical_note_en) return entry.clinical_note_en;
+  if (entry && entry.clinical_note_es)             return entry.clinical_note_es;
+  if (entry && entry.recommended_first_action_es)  return entry.recommended_first_action_es;
+  if (entry && entry.clinical_note_en)             return entry.clinical_note_en;
+  if (entry && entry.recommended_first_action_en)  return entry.recommended_first_action_en;
   if (signal.clinical_hint) return signal.clinical_hint;
   return 'Posible cascada terapéutica a confirmar con revisión clínica individualizada.';
 }
@@ -2389,9 +2423,10 @@ function buildReport() {
   });
 
   var cascades = detected.map(function (c) {
-    var entry = findCascadeEntry(c.cascade_id);
+    var entry = findCascadeEntryForSignal(c);
     var rec   = entry
-      ? (entry.recommended_first_action_en || entry.clinical_note_en || '')
+      ? (entry.recommended_first_action_es || entry.clinical_note_es ||
+         entry.recommended_first_action_en || entry.clinical_note_en || '')
       : (c.clinical_hint || '');
     var evidence = buildEvidenceProfile(c, rec, state.clinicalNote);
     var priority = derivePharmacyPriority(c, rec, evidence);
@@ -2401,9 +2436,18 @@ function buildReport() {
       buildSignalExplanation(c)
     ].concat(priority.reasons, evidence.supports);
 
+    /* Resolve display id/name from the matched KB entry when available.
+     * This is critical for symptom_bridge signals whose synthetic cascade_id
+     * (e.g. "SYM001:pregabalin:furosemide") does not correspond to any KB
+     * entry — the true KB cascade (e.g. CC027) must be surfaced instead. */
+    var displayId   = (entry && entry.id) ? entry.id : c.cascade_id;
+    var displayName = entry
+      ? (entry.name_es || entry.name_en || c.cascade_name)
+      : c.cascade_name;
+
     return {
-      cascade_id:              c.cascade_id,
-      cascade_name:            c.cascade_name,
+      cascade_id:              displayId,
+      cascade_name:            displayName,
       index_drug:              c.index_drug,
       cascade_drug:            c.cascade_drug,
       confidence:              c.confidence,
