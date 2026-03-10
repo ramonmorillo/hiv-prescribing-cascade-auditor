@@ -537,11 +537,20 @@ function resolveDrugMentions(noteText) {
   var resolver = getDrugResolver();
   if (!resolver.variantPattern) return [];
 
+  /* Normalization: apply the same pipeline used when building the resolver
+   * (NFC + diacritic stripping + punctuation simplification + lowercase).
+   * This lets "Amlodipino" match the stored variant "amlodipino" without
+   * needing case-sensitive entries for every capitalisation variant. */
   var normalized = normalizeDrugText(noteText);
   var mentions = [];
   var seen = {};
   var match;
 
+  /* Dictionary matching: the compiled regex tests every known variant (from
+   * KB cascade examples, manual aliases, and drug_dictionary.json) against
+   * the normalised note in one pass.  Each match's captured group [2] is the
+   * exact variant string; byVariant maps it to the canonical English INN and
+   * therapeutic class. */
   while ((match = resolver.variantPattern.exec(normalized)) !== null) {
     var variant = (match[2] || '').trim();
     if (!variant) continue;
@@ -549,13 +558,14 @@ function resolveDrugMentions(noteText) {
     var meta = resolver.byVariant[variant];
     if (!meta) continue;
 
+    /* Deduplicate: same canonical at the same offset is only reported once. */
     var dedupeKey = meta.canonical + '::' + match.index;
     if (seen[dedupeKey]) continue;
     seen[dedupeKey] = true;
 
     mentions.push({
-      mention: variant,
-      canonical: meta.canonical,
+      mention: variant,        /* surface form found in note */
+      canonical: meta.canonical, /* normalised generic INN passed to cascade engine */
       drug_class: meta.drug_class || '',
       match_type: meta.match_type || 'normalized',
       confidence: meta.confidence || 'medium',
@@ -1289,7 +1299,18 @@ const STEP_CONTENT = {
         );
       }
 
-      /* ── Drug extraction ── */
+      /* ── Drug extraction ──────────────────────────────────────────────────
+       * 1. extractDrugs() calls resolveDrugMentions(), which:
+       *    a) applies normalizeDrugText() to the free-text note (strips
+       *       diacritics, lowercases, collapses punctuation), and
+       *    b) runs the compiled variant-regex built by buildDrugResolver()
+       *       against the normalised text.  The regex covers KB cascade
+       *       drug examples, manual aliases (AZT, TDF …) and all entries
+       *       from kb/drug_dictionary.json (Spanish INNs, brand names, etc.)
+       * 2. Each matched surface form is looked up in resolver.byVariant to
+       *    retrieve its canonical English INN (e.g. "amlodipino" → "amlodipine").
+       * 3. Unique canonical names are returned for display and forwarded to
+       *    the cascade detection engine. */
       var drugs      = extractDrugs(state.clinicalNote);
       var normalized = normalizeDrugs(drugs);
       var classLookup = {};
