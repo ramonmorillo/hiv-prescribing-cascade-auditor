@@ -1,0 +1,939 @@
+{
+  "version": "1.0.0",
+  "description": "Drug name normalization dictionary for prescribing cascade detection. Maps spelling variants, Spanish INNs, and common brand names to a canonical English generic name.",
+  "last_updated": "2026-03-10",
+  "entries": [
+    {
+      "canonical": "amlodipine",
+      "drug_class": "Calcium Channel Blocker",
+      "variants": [
+        "amlodipino",
+        "amlodipina",
+        "amlodipino besilato",
+        "norvasc",
+        "amlodipin",
+        "amlodipín"
+      ]
+    },
+    {
+      "canonical": "furosemide",
+      "drug_class": "Loop Diuretic",
+      "variants": [
+        "furosemida",
+        "frusemide",
+        "frusemida",
+        "lasix",
+        "furosemid"
+      ]
+    },
+    {
+      "canonical": "pregabalin",
+      "drug_class": "Gabapentinoid",
+      "variants": [
+        "pregabalina",
+        "lyrica",
+        "pregabalin"
+      ]
+    },
+    {
+      "canonical": "gabapentin",
+      "drug_class": "Gabapentinoid",
+      "variants": [
+        "gabapentina",
+        "neurontin",
+        "gabapentín",
+        "gabapentin"
+      ]
+    },
+    {
+      "canonical": "sertraline",
+      "drug_class": "SSRI",
+      "variants": [
+        "sertralina",
+        "zoloft",
+        "sertralína",
+        "sertralín"
+      ]
+    },
+    {
+      "canonical": "citalopram",
+      "drug_class": "SSRI",
+      "variants": [
+        "citalopram",
+        "citaloprams",
+        "celexa",
+        "cipramil"
+      ]
+    },
+    {
+      "canonical": "escitalopram",
+      "drug_class": "SSRI",
+      "variants": [
+        "escitalopram",
+        "lexapro",
+        "cipralex",
+        "escitaloprams"
+      ]
+    },
+    {
+      "canonical": "fluoxetine",
+      "drug_class": "SSRI",
+      "variants": [
+        "fluoxetina",
+        "prozac",
+        "fluoxetine",
+        "fluoxetín"
+      ]
+    },
+    {
+      "canonical": "paroxetine",
+      "drug_class": "SSRI",
+      "variants": [
+        "paroxetina",
+        "paxil",
+        "seroxat",
+        "paroxetín"
+      ]
+    },
+    {
+      "canonical": "oxybutynin",
+      "drug_class": "Anticholinergic / Bladder Relaxant",
+      "variants": [
+        "oxibutinina",
+        "oxibutinín",
+        "oxybutynin",
+        "ditropan",
+        "oxitrol",
+        "oxibutinina cloruro"
+      ]
+    },
+    {
+      "canonical": "tolterodine",
+      "drug_class": "Anticholinergic / Bladder Relaxant",
+      "variants": [
+        "tolterodina",
+        "tolterodine",
+        "detrol",
+        "detrusitol"
+      ]
+    },
+    {
+      "canonical": "solifenacin",
+      "drug_class": "Anticholinergic / Bladder Relaxant",
+      "variants": [
+        "solifenacina",
+        "solifenacin",
+        "vesicare",
+        "vesicar"
+      ]
+    },
+    {
+      "canonical": "donepezil",
+      "drug_class": "Cholinesterase Inhibitor",
+      "variants": [
+        "donepezilo",
+        "donepezil",
+        "aricept",
+        "donepezilo clorhidrato"
+      ]
+    },
+    {
+      "canonical": "rivastigmine",
+      "drug_class": "Cholinesterase Inhibitor",
+      "variants": [
+        "rivastigmina",
+        "rivastigmine",
+        "exelon",
+        "prometax",
+        "rivastigmín"
+      ]
+    },
+    {
+      "canonical": "galantamine",
+      "drug_class": "Cholinesterase Inhibitor",
+      "variants": [
+        "galantamina",
+        "galantamine",
+        "razadyne",
+        "reminyl",
+        "galantamín"
+      ]
+    },
+    {
+      "canonical": "morphine",
+      "drug_class": "Opioid",
+      "variants": [
+        "morfina",
+        "morphine",
+        "mst continus",
+        "oramorph",
+        "morfin",
+        "morfina sulfato",
+        "morphine sulfate"
+      ]
+    },
+    {
+      "canonical": "oxycodone",
+      "drug_class": "Opioid",
+      "variants": [
+        "oxicodona",
+        "oxycodone",
+        "oxycontin",
+        "targin",
+        "oxinorm"
+      ]
+    },
+    {
+      "canonical": "fentanyl",
+      "drug_class": "Opioid",
+      "variants": [
+        "fentanilo",
+        "fentanil",
+        "fentanyl",
+        "durogesic",
+        "actiq",
+        "fentanilo parche"
+      ]
+    },
+    {
+      "canonical": "tramadol",
+      "drug_class": "Opioid",
+      "variants": [
+        "tramadol",
+        "tramal",
+        "ultram",
+        "tramadol clorhidrato"
+      ]
+    },
+    {
+      "canonical": "codeine",
+      "drug_class": "Opioid",
+      "variants": [
+        "codeina",
+        "codeína",
+        "codeine",
+        "codenin"
+      ]
+    },
+    {
+      "canonical": "lactulose",
+      "drug_class": "Laxative / Osmotic",
+      "variants": [
+        "lactulosa",
+        "lactulose",
+        "duphalac",
+        "laevolac",
+        "lactulosa oral"
+      ]
+    },
+    {
+      "canonical": "macrogol",
+      "drug_class": "Laxative / Osmotic",
+      "variants": [
+        "macrogol",
+        "polietilenglicol",
+        "polyethylene glycol",
+        "movicol",
+        "forlax",
+        "peg"
+      ]
+    },
+    {
+      "canonical": "metformin",
+      "drug_class": "Biguanide / Antidiabetic",
+      "variants": [
+        "metformina",
+        "metformin",
+        "glucophage",
+        "dianben",
+        "metformín"
+      ]
+    },
+    {
+      "canonical": "enalapril",
+      "drug_class": "ACE Inhibitor",
+      "variants": [
+        "enalapril",
+        "enalaprilato",
+        "renitec",
+        "vasotec",
+        "enalapril maleato"
+      ]
+    },
+    {
+      "canonical": "lisinopril",
+      "drug_class": "ACE Inhibitor",
+      "variants": [
+        "lisinopril",
+        "zestril",
+        "prinivil",
+        "lisinopril dihidrato"
+      ]
+    },
+    {
+      "canonical": "ramipril",
+      "drug_class": "ACE Inhibitor",
+      "variants": [
+        "ramipril",
+        "altace",
+        "tritace",
+        "ramipril capsulas"
+      ]
+    },
+    {
+      "canonical": "captopril",
+      "drug_class": "ACE Inhibitor",
+      "variants": [
+        "captopril",
+        "capoten",
+        "captopril comprimidos"
+      ]
+    },
+    {
+      "canonical": "losartan",
+      "drug_class": "ARB / Angiotensin Receptor Blocker",
+      "variants": [
+        "losartan",
+        "losartán",
+        "cozaar",
+        "lortaan",
+        "losartan potasico",
+        "losartan potásico"
+      ]
+    },
+    {
+      "canonical": "valsartan",
+      "drug_class": "ARB / Angiotensin Receptor Blocker",
+      "variants": [
+        "valsartan",
+        "valsartán",
+        "diovan",
+        "vals"
+      ]
+    },
+    {
+      "canonical": "irbesartan",
+      "drug_class": "ARB / Angiotensin Receptor Blocker",
+      "variants": [
+        "irbesartan",
+        "irbesartán",
+        "aprovel",
+        "avapro"
+      ]
+    },
+    {
+      "canonical": "olmesartan",
+      "drug_class": "ARB / Angiotensin Receptor Blocker",
+      "variants": [
+        "olmesartan",
+        "olmesartán",
+        "olmetec",
+        "benicar"
+      ]
+    },
+    {
+      "canonical": "omeprazole",
+      "drug_class": "PPI / Proton Pump Inhibitor",
+      "variants": [
+        "omeprazol",
+        "omeprazole",
+        "prilosec",
+        "losec",
+        "omeprazole magnesico"
+      ]
+    },
+    {
+      "canonical": "pantoprazole",
+      "drug_class": "PPI / Proton Pump Inhibitor",
+      "variants": [
+        "pantoprazol",
+        "pantoprazole",
+        "pantocal",
+        "protonix",
+        "pantoprazol sodico",
+        "pantoprazol sódico"
+      ]
+    },
+    {
+      "canonical": "esomeprazole",
+      "drug_class": "PPI / Proton Pump Inhibitor",
+      "variants": [
+        "esomeprazol",
+        "esomeprazole",
+        "nexium",
+        "nexiam"
+      ]
+    },
+    {
+      "canonical": "lansoprazole",
+      "drug_class": "PPI / Proton Pump Inhibitor",
+      "variants": [
+        "lansoprazol",
+        "lansoprazole",
+        "ogastro",
+        "prevacid",
+        "lanzoprazol"
+      ]
+    },
+    {
+      "canonical": "hydrochlorothiazide",
+      "drug_class": "Thiazide Diuretic",
+      "variants": [
+        "hidroclorotiazida",
+        "hydrochlorothiazide",
+        "hctz",
+        "esidrex",
+        "microzide"
+      ]
+    },
+    {
+      "canonical": "chlorthalidone",
+      "drug_class": "Thiazide-like Diuretic",
+      "variants": [
+        "clortalidona",
+        "chlorthalidone",
+        "hygroton",
+        "hygroton"
+      ]
+    },
+    {
+      "canonical": "indapamide",
+      "drug_class": "Thiazide-like Diuretic",
+      "variants": [
+        "indapamida",
+        "indapamide",
+        "natrilix",
+        "fludex",
+        "indapamid"
+      ]
+    },
+    {
+      "canonical": "torasemide",
+      "drug_class": "Loop Diuretic",
+      "variants": [
+        "torasemida",
+        "torasemide",
+        "torsemide",
+        "demadex",
+        "sutril"
+      ]
+    },
+    {
+      "canonical": "spironolactone",
+      "drug_class": "Potassium-sparing Diuretic",
+      "variants": [
+        "espironolactona",
+        "spironolactone",
+        "aldactone",
+        "spiron"
+      ]
+    },
+    {
+      "canonical": "bisoprolol",
+      "drug_class": "Beta Blocker",
+      "variants": [
+        "bisoprolol",
+        "emconcor",
+        "bisoprololo",
+        "zebeta",
+        "bisoprolol fumarato"
+      ]
+    },
+    {
+      "canonical": "atenolol",
+      "drug_class": "Beta Blocker",
+      "variants": [
+        "atenolol",
+        "tenormin",
+        "atenololo"
+      ]
+    },
+    {
+      "canonical": "metoprolol",
+      "drug_class": "Beta Blocker",
+      "variants": [
+        "metoprolol",
+        "lopressor",
+        "betaloc",
+        "metoprolol tartrato",
+        "metoprolol succinato"
+      ]
+    },
+    {
+      "canonical": "ibuprofen",
+      "drug_class": "NSAID",
+      "variants": [
+        "ibuprofeno",
+        "ibuprofen",
+        "nurofen",
+        "advil",
+        "motrin"
+      ]
+    },
+    {
+      "canonical": "naproxen",
+      "drug_class": "NSAID",
+      "variants": [
+        "naproxeno",
+        "naproxen",
+        "naprosyn",
+        "aleve",
+        "naproxeno sodico",
+        "naproxeno sódico"
+      ]
+    },
+    {
+      "canonical": "diclofenac",
+      "drug_class": "NSAID",
+      "variants": [
+        "diclofenaco",
+        "diclofenac",
+        "voltaren",
+        "diclofenaco sodico",
+        "diclofenaco sódico"
+      ]
+    },
+    {
+      "canonical": "meloxicam",
+      "drug_class": "NSAID",
+      "variants": [
+        "meloxicam",
+        "mobic",
+        "movalis"
+      ]
+    },
+    {
+      "canonical": "celecoxib",
+      "drug_class": "NSAID / COX-2 Inhibitor",
+      "variants": [
+        "celecoxib",
+        "celebrex",
+        "celebra"
+      ]
+    },
+    {
+      "canonical": "aspirin",
+      "drug_class": "NSAID / Antiplatelet",
+      "variants": [
+        "aspirina",
+        "aspirin",
+        "acido acetilsalicilico",
+        "ácido acetilsalicílico",
+        "aas",
+        "asa",
+        "bayer aspirin",
+        "acetylsalicylic acid"
+      ]
+    },
+    {
+      "canonical": "allopurinol",
+      "drug_class": "Xanthine Oxidase Inhibitor / Gout",
+      "variants": [
+        "alopurinol",
+        "allopurinol",
+        "zyloric",
+        "lopurin"
+      ]
+    },
+    {
+      "canonical": "colchicine",
+      "drug_class": "Gout Treatment",
+      "variants": [
+        "colchicina",
+        "colchicine",
+        "colcrys",
+        "colchis"
+      ]
+    },
+    {
+      "canonical": "alendronate",
+      "drug_class": "Bisphosphonate",
+      "variants": [
+        "alendronato",
+        "alendronate",
+        "fosamax",
+        "alendronico"
+      ]
+    },
+    {
+      "canonical": "risedronate",
+      "drug_class": "Bisphosphonate",
+      "variants": [
+        "risedronato",
+        "risedronate",
+        "actonel",
+        "acrel"
+      ]
+    },
+    {
+      "canonical": "simvastatin",
+      "drug_class": "Statin",
+      "variants": [
+        "simvastatina",
+        "simvastatin",
+        "zocor",
+        "simvacor"
+      ]
+    },
+    {
+      "canonical": "atorvastatin",
+      "drug_class": "Statin",
+      "variants": [
+        "atorvastatina",
+        "atorvastatin",
+        "lipitor",
+        "atorlip"
+      ]
+    },
+    {
+      "canonical": "rosuvastatin",
+      "drug_class": "Statin",
+      "variants": [
+        "rosuvastatina",
+        "rosuvastatin",
+        "crestor",
+        "provisacor"
+      ]
+    },
+    {
+      "canonical": "levothyroxine",
+      "drug_class": "Thyroid Hormone",
+      "variants": [
+        "levotiroxina",
+        "levothyroxine",
+        "eutirox",
+        "synthroid",
+        "levotiroxina sodica",
+        "levotiroxina sódica"
+      ]
+    },
+    {
+      "canonical": "amitriptyline",
+      "drug_class": "Tricyclic Antidepressant",
+      "variants": [
+        "amitriptilina",
+        "amitriptyline",
+        "tryptizol",
+        "elavil"
+      ]
+    },
+    {
+      "canonical": "venlafaxine",
+      "drug_class": "SNRI / Antidepressant",
+      "variants": [
+        "venlafaxina",
+        "venlafaxine",
+        "effexor",
+        "vandral"
+      ]
+    },
+    {
+      "canonical": "duloxetine",
+      "drug_class": "SNRI / Antidepressant",
+      "variants": [
+        "duloxetina",
+        "duloxetine",
+        "cymbalta",
+        "duloxetín"
+      ]
+    },
+    {
+      "canonical": "mirtazapine",
+      "drug_class": "Antidepressant / NaSSA",
+      "variants": [
+        "mirtazapina",
+        "mirtazapine",
+        "remeron",
+        "rexer",
+        "mirtazapin"
+      ]
+    },
+    {
+      "canonical": "haloperidol",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "haloperidol",
+        "haldol",
+        "serenase"
+      ]
+    },
+    {
+      "canonical": "quetiapine",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "quetiapina",
+        "quetiapine",
+        "seroquel",
+        "quentiax"
+      ]
+    },
+    {
+      "canonical": "risperidone",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "risperidona",
+        "risperidone",
+        "risperdal",
+        "risperidón"
+      ]
+    },
+    {
+      "canonical": "olanzapine",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "olanzapina",
+        "olanzapine",
+        "zyprexa",
+        "olanzapín"
+      ]
+    },
+    {
+      "canonical": "zopiclone",
+      "drug_class": "Hypnotic / Z-drug",
+      "variants": [
+        "zopiclona",
+        "zopiclone",
+        "imovane",
+        "zimovane",
+        "zopiclon"
+      ]
+    },
+    {
+      "canonical": "zolpidem",
+      "drug_class": "Hypnotic / Z-drug",
+      "variants": [
+        "zolpidem",
+        "stilnox",
+        "ambien",
+        "zolpidem tartrato"
+      ]
+    },
+    {
+      "canonical": "lorazepam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "lorazepam",
+        "orfidal",
+        "ativan",
+        "lorazepam oral"
+      ]
+    },
+    {
+      "canonical": "diazepam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "diazepam",
+        "valium",
+        "diazepan"
+      ]
+    },
+    {
+      "canonical": "alprazolam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "alprazolam",
+        "xanax",
+        "trankimazin"
+      ]
+    },
+    {
+      "canonical": "metoclopramide",
+      "drug_class": "Antiemetic / Prokinetic",
+      "variants": [
+        "metoclopramida",
+        "metoclopramide",
+        "primperan",
+        "reglan"
+      ]
+    },
+    {
+      "canonical": "ondansetron",
+      "drug_class": "Antiemetic / 5-HT3 Antagonist",
+      "variants": [
+        "ondansetron",
+        "ondansetrón",
+        "zofran",
+        "ondansetron clorhidrato"
+      ]
+    },
+    {
+      "canonical": "loperamide",
+      "drug_class": "Antidiarrheal",
+      "variants": [
+        "loperamida",
+        "loperamide",
+        "imodium",
+        "loperamide clorhidrato"
+      ]
+    },
+    {
+      "canonical": "trihexyphenidyl",
+      "drug_class": "Anticholinergic / Antiparkinsonian",
+      "variants": [
+        "trihexifenidilo",
+        "trihexyphenidyl",
+        "artane",
+        "trihexifenidil"
+      ]
+    },
+    {
+      "canonical": "biperiden",
+      "drug_class": "Anticholinergic / Antiparkinsonian",
+      "variants": [
+        "biperideno",
+        "biperiden",
+        "akineton",
+        "biperiden clorhidrato"
+      ]
+    },
+    {
+      "canonical": "prednisone",
+      "drug_class": "Corticosteroid",
+      "variants": [
+        "prednisona",
+        "prednisone",
+        "deltasone",
+        "meticorten"
+      ]
+    },
+    {
+      "canonical": "methylprednisolone",
+      "drug_class": "Corticosteroid",
+      "variants": [
+        "metilprednisolona",
+        "methylprednisolone",
+        "medrol",
+        "urbason"
+      ]
+    },
+    {
+      "canonical": "dexamethasone",
+      "drug_class": "Corticosteroid",
+      "variants": [
+        "dexametasona",
+        "dexamethasone",
+        "decadron",
+        "fortecortin"
+      ]
+    },
+    {
+      "canonical": "insulin",
+      "drug_class": "Antidiabetic / Insulin",
+      "variants": [
+        "insulina",
+        "insulin",
+        "insulina glargina",
+        "insulin glargine",
+        "toujeo",
+        "lantus",
+        "insulina lispro",
+        "insulina aspart"
+      ]
+    },
+    {
+      "canonical": "glibenclamide",
+      "drug_class": "Sulfonylurea / Antidiabetic",
+      "variants": [
+        "glibenclamida",
+        "glibenclamide",
+        "glyburide",
+        "daonil",
+        "euglucon"
+      ]
+    },
+    {
+      "canonical": "gliclazide",
+      "drug_class": "Sulfonylurea / Antidiabetic",
+      "variants": [
+        "gliclazida",
+        "gliclazide",
+        "diamicron",
+        "glicazida"
+      ]
+    },
+    {
+      "canonical": "empagliflozin",
+      "drug_class": "SGLT2 Inhibitor / Antidiabetic",
+      "variants": [
+        "empagliflozina",
+        "empagliflozin",
+        "jardiance"
+      ]
+    },
+    {
+      "canonical": "dapagliflozin",
+      "drug_class": "SGLT2 Inhibitor / Antidiabetic",
+      "variants": [
+        "dapagliflozina",
+        "dapagliflozin",
+        "forxiga",
+        "farxiga"
+      ]
+    },
+    {
+      "canonical": "warfarin",
+      "drug_class": "Anticoagulant / Vitamin K Antagonist",
+      "variants": [
+        "warfarina",
+        "warfarin",
+        "acenocoumarol",
+        "acenocumarol",
+        "sintrom",
+        "coumadin"
+      ]
+    },
+    {
+      "canonical": "apixaban",
+      "drug_class": "Anticoagulant / DOAC",
+      "variants": [
+        "apixaban",
+        "eliquis",
+        "apixabán"
+      ]
+    },
+    {
+      "canonical": "rivaroxaban",
+      "drug_class": "Anticoagulant / DOAC",
+      "variants": [
+        "rivaroxaban",
+        "xarelto",
+        "rivaroxabán"
+      ]
+    },
+    {
+      "canonical": "calcium carbonate",
+      "drug_class": "Calcium Supplement",
+      "variants": [
+        "carbonato calcico",
+        "carbonato cálcico",
+        "calcium carbonate",
+        "calcio carbonato",
+        "calcichew",
+        "caltrate"
+      ]
+    },
+    {
+      "canonical": "vitamin d",
+      "drug_class": "Vitamin / Supplement",
+      "variants": [
+        "vitamina d",
+        "vitamina d3",
+        "vitamin d",
+        "vitamin d3",
+        "colecalciferol",
+        "cholecalciferol",
+        "calcifediol"
+      ]
+    },
+    {
+      "canonical": "potassium chloride",
+      "drug_class": "Electrolyte Supplement",
+      "variants": [
+        "cloruro potasico",
+        "cloruro potásico",
+        "potassium chloride",
+        "potassium chloride oral"
+      ]
+    }
+  ]
+}
