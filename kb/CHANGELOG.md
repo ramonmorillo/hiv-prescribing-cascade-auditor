@@ -1,5 +1,38 @@
 # Knowledge Base Changelog
 
+## Version 2.0.0 — 2026-03-10
+
+**KB validation run: `kb_validator.js` against `kb/dev/kb_core_cascades.json` (v2.0.0, last_updated 2026-03-04)**
+
+### `validateKBStrict` — FAIL
+
+- **ok:** false
+- **Errors (68):** All 40 cascades missing `ade_es`; CC013–CC040 also missing `name_es`.
+- **Warnings:** none
+- **Conclusion:** Expected for a KB where Spanish translations are not yet explicitly authored. Strict mode flags all missing `*_es` fields as errors with no automatic fallback.
+
+### `validateKBOperational` — PASS
+
+- **ok:** true
+- **Errors:** none
+- **Warnings:** none
+- **Fallback summary — EN→ES auto-fill applied to 40/40 cascades (148 total field fills):**
+
+| Field                        | Cascades filled |
+|------------------------------|-----------------|
+| `ade_es`                     | 40              |
+| `ade_mechanism_es`           | 40              |
+| `recommended_first_action_es`| 40              |
+| `name_es`                    | 28              |
+
+- **Conclusion:** KB is structurally sound and operationally valid. All required fields are present in English; the operational validator auto-fills Spanish fields from English counterparts. No structural or type errors detected.
+
+### Action items
+
+- Spanish translations (`name_es`, `ade_es`, `ade_mechanism_es`, `recommended_first_action_es`) should be explicitly authored for all cascades to pass `validateKBStrict` before promotion to production.
+
+---
+
 ## Version 0.3-dev — 2026-03-03
 
 **DEV KB updated: version 0.3-dev — schema unified + KB validator**
