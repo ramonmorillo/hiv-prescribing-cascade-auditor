@@ -103,7 +103,10 @@ async function loadKB(track) {
     coreCascades:      folder + '/kb_core_cascades.json',
     vihModifiers:      folder + '/kb_vih_modifiers.json',
     ddiWatchlist:      folder + '/ddi_watchlist.json',
-    symptomDictionary: folder + '/kb_symptoms.json'
+    symptomDictionary: folder + '/kb_symptoms.json',
+    /* Shared drug name dictionary — lives at kb/ root, not inside a track
+     * subfolder, because variant/brand-name mappings are track-independent. */
+    drugDictionary:    'kb/drug_dictionary.json'
   };
 
   /* cache:'no-cache' sends a conditional GET on each load — the browser still
@@ -489,6 +492,25 @@ function buildDrugResolver() {
     var canonical = MANUAL_ALIASES[alias];
     var canonicalMeta = resolver.byVariant[normalizeDrugText(canonical)] || null;
     addVariant(alias, canonical, canonicalMeta ? canonicalMeta.drug_class : '', 'alias', 'medium');
+  });
+
+  /* ── Drug dictionary (kb/drug_dictionary.json) ──────────────────────────
+   * Each entry declares a canonical English INN and a list of variants that
+   * should resolve to it: Spanish INNs (e.g. "amlodipino"), alternate
+   * spellings, and common brand names.  Normalisation is applied to every
+   * variant so that diacritics or mixed-case in free text still match.
+   * Entries are added at 'high' confidence so they take priority over the
+   * 'medium' combo-split matches produced from cascade examples above. */
+  var dictEntries = (state.kb.drugDictionary && state.kb.drugDictionary.entries) || [];
+  dictEntries.forEach(function (entry) {
+    if (!entry.canonical) return;
+    var drugClass = entry.drug_class || '';
+    /* Register the canonical name itself so it is always found */
+    addVariant(entry.canonical, entry.canonical, drugClass, 'dict', 'high');
+    /* Register each declared variant → canonical */
+    (entry.variants || []).forEach(function (variant) {
+      if (variant) addVariant(variant, entry.canonical, drugClass, 'dict', 'high');
+    });
   });
 
   var escaped = Object.keys(resolver.byVariant)
