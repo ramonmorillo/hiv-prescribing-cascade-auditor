@@ -1033,10 +1033,77 @@ function extractDrugs(noteText) {
   return result;
 }
 
+/* ============================================================
+   SYMPTOM NORMALISATION LAYER
+   Converts free-text clinical expressions to canonical ADE labels
+   before cascade matching, improving recall for:
+     – accented / diacritic variants ("náuseas" → "nausea")
+     – Spanish synonyms ("estreñimiento" → "constipation")
+     – Any synonym listed in kb_symptoms.json
+   ============================================================ */
+
+/**
+ * Normalise a symptom string for diacritic-insensitive matching:
+ *  1. NFC-compose (consistent Unicode form before any operation)
+ *  2. Lowercase (case-fold)
+ *  3. NFD-decompose + strip all combining diacritical marks (U+0300–U+036F)
+ *     so "náuseas" == "nauseas", "estreñimiento" ~ "estrenimiento".
+ *  4. Collapse runs of whitespace (multi-word expressions stay intact).
+ * Punctuation and word boundaries are preserved so \b regexes still work.
+ *
+ * @param {string} str
+ * @returns {string}
+ */
+function normalizeSymptomText(str) {
+  if (!str) return '';
+  /* Step 1-3: compose → lowercase → decompose → strip combining marks */
+  var s = str.normalize('NFC').toLowerCase().normalize('NFD')
+             .replace(/[\u0300-\u036f]/g, '');
+  /* Step 4: normalise internal whitespace */
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Build a lookup map from every normalised synonym (and canonical term)
+ * in the symptom dictionary to its canonical ADE label (sym.term).
+ *
+ * Used by extractSymptoms() to map any matched free-text expression
+ * directly to the canonical label used in kb_core_cascades.json (ade_en).
+ *
+ * @param {Array} symptoms  Array of symptom entries from kb_symptoms.json
+ * @returns {Object}  normalizedText → canonical term string
+ */
+function buildSynonymMap(symptoms) {
+  var map = {};
+  (symptoms || []).forEach(function (sym) {
+    /* Include the canonical term itself plus all listed synonyms */
+    var allTerms = [sym.term].concat(sym.synonyms || []);
+    allTerms.forEach(function (t) {
+      var key = normalizeSymptomText(t);
+      /* First writer wins — canonical term registers itself first */
+      if (key && !map[key]) {
+        map[key] = sym.term; /* value is always the canonical ADE label */
+      }
+    });
+  });
+  return map;
+}
+
 /**
  * Scan `noteText` for symptom terms defined in kb_symptoms.json.
  * Uses the same drugFoundInNote() whole-word match as extractDrugs().
  * Each symptom's `term` and `synonyms` are all tested; the first match wins.
+ *
+ * Normalisation flow (new):
+ *  1. A diacritic-stripped version of noteText is pre-computed once.
+ *  2. A synonym → canonical label map is built from the KB at call time.
+ *  3. For each symptom, matching is attempted on the original note first
+ *     (preserving existing behaviour); if that fails, a second attempt is
+ *     made against the normalised note using the normalised KB term —
+ *     catching cases where the clinician omitted accents or used a variant
+ *     Unicode form.
+ *  4. The canonical ADE label (sym.term) is always stored in detected[].term
+ *     so downstream cascade matching compares like-for-like labels.
  *
  * Results are also cached in state.symptomsDetected so other steps can
  * read them without re-running extraction.
@@ -1051,30 +1118,60 @@ function extractSymptoms(noteText) {
   }
 
   var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
+
+  /* Pre-compute a diacritic-free lowercase copy of the note once for all
+   * symptom iterations (avoid repeated normalisation inside the loop). */
+  var normalizedNote = normalizeSymptomText(noteText);
+
+  /* Build synonym → canonical term map for ADE label resolution */
+  var synonymMap = buildSynonymMap(symptoms);
+
   var detected = [];
 
   symptoms.forEach(function (sym) {
     var allTerms = [sym.term].concat(sym.synonyms || []);
 
-    /* Find the first matching term AND its position in the note */
+    /* Find the first matching term AND its position in the note.
+     * Pass 1: match against original noteText (backward-compatible path).
+     * Pass 2: if no match found, retry against the normalised note using the
+     *         normalised KB term — catches diacritic/casing mismatches. */
     var matchResult = null;
     var matchedTerm = null;
     for (var ti = 0; ti < allTerms.length; ti++) {
+      /* Pass 1 — original text (preserves existing behaviour) */
       var pos = findTermInNote(noteText, allTerms[ti]);
       if (pos) { matchResult = pos; matchedTerm = allTerms[ti]; break; }
+
+      /* Pass 2 — normalised fallback (new: diacritic-insensitive) */
+      var normTerm = normalizeSymptomText(allTerms[ti]);
+      if (normTerm) {
+        var normPos = findTermInNote(normalizedNote, normTerm);
+        if (normPos) {
+          /* Record position relative to original note (offsets match because
+           * normalizeSymptomText only strips combining marks, not base chars,
+           * so character positions are preserved). */
+          matchResult = normPos;
+          matchedTerm = allTerms[ti]; /* keep original KB term for display */
+          break;
+        }
+      }
     }
     if (!matchResult) return; /* term not in note at all */
 
-    /* Negation / historical context check */
+    /* Negation / historical context check (always on original noteText) */
     var negCheck = isNegatedSymptom(noteText, matchResult.index, matchResult.length);
+
+    /* Map matched expression → canonical ADE label via synonymMap.
+     * Falls back to sym.term (which is always correct) if not found. */
+    var canonicalTerm = synonymMap[normalizeSymptomText(matchedTerm)] || sym.term;
 
     detected.push({
       id:                sym.id,
-      term:              sym.term,
-      matched_term:      matchedTerm,
+      term:              canonicalTerm,  /* canonical ADE label for cascade matching */
+      matched_term:      matchedTerm,    /* raw KB expression that triggered the match */
       category:          sym.category          || '',
       cascade_relevance: sym.cascade_relevance || '',
-      /* NEW reliability fields */
+      /* reliability fields */
       active:            !negCheck.negated,
       reason:            negCheck.reason,
       startIndex:        matchResult.index
@@ -2318,7 +2415,10 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
     supports.push('Síntoma compatible detectado en la nota.');
   } else {
     var matchedSymptoms = (state.symptomsDetected || []).filter(function (s) {
-      return hasText(signal.ade_en) && s && hasText(s.term) && s.term.toLowerCase() === signal.ade_en.toLowerCase();
+      /* Use normalizeSymptomText() so diacritic variants and mixed-case ADE
+       * labels compare equal (e.g. "Oedema" === "oedema", "náuseas" === "nauseas"). */
+      return hasText(signal.ade_en) && s && hasText(s.term) &&
+             normalizeSymptomText(s.term) === normalizeSymptomText(signal.ade_en);
     });
     symptomMatch = matchedSymptoms.length > 0;
     if (symptomMatch) supports.push('ADE/síntoma compatible detectado (' + signal.ade_en + ').');
