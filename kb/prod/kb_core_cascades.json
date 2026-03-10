@@ -1948,11 +1948,8 @@
         "lower limb edema"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC042",
@@ -1993,11 +1990,8 @@
         "non-productive cough"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC043",
@@ -2037,11 +2031,8 @@
         "dysphoria"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC044",
@@ -2079,11 +2070,8 @@
         "male sexual dysfunction"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC045",
@@ -2122,11 +2110,8 @@
         "gouty arthritis"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC046",
@@ -2163,11 +2148,8 @@
         "electrolyte imbalance"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC047",
@@ -2204,11 +2186,8 @@
         "worsening glycemic control"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC048",
@@ -2239,11 +2218,8 @@
         "thyroid failure"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC049",
@@ -2281,11 +2257,8 @@
         "falls"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC050",
@@ -2326,11 +2299,8 @@
         "statin-induced muscle symptoms"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC051",
@@ -2370,11 +2340,8 @@
         "syndrome of inappropriate ADH secretion"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC052",
@@ -2416,11 +2383,8 @@
         "pseudoparkinsonism"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC053",
@@ -2457,11 +2421,8 @@
         "amenorrhea"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC054",
@@ -2501,11 +2462,8 @@
         "inability to sit still"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC055",
@@ -2537,11 +2495,8 @@
         "thyroid failure"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC056",
@@ -2578,11 +2533,8 @@
         "lithium-induced NDI"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC057",
@@ -2617,11 +2569,8 @@
         "action tremor"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC058",
@@ -2660,11 +2609,8 @@
         "sleep bruxism"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC059",
@@ -2700,11 +2646,8 @@
         "GI intolerance"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC060",
@@ -2741,11 +2684,8 @@
         "levodopa GI side effects"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC061",
@@ -2788,11 +2728,8 @@
         "resistant hypertension"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC062",
@@ -2831,11 +2768,8 @@
         "fluid retention"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC063",
@@ -2876,11 +2810,8 @@
         "glucose intolerance"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC064",
@@ -2919,11 +2850,8 @@
         "mineralocorticoid-mediated hypertension"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC065",
@@ -2962,11 +2890,8 @@
         "esophageal irritation"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC066",
@@ -3006,11 +2931,8 @@
         "insulin resistance"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC067",
@@ -3045,11 +2967,8 @@
         "lower limb edema"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC068",
@@ -3089,11 +3008,8 @@
         "hypomagnesaemia"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC069",
@@ -3131,11 +3047,8 @@
         "motor slowing"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC070",
@@ -3180,11 +3093,8 @@
         "slow transit constipation"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC071",
@@ -3221,11 +3131,8 @@
         "uncontrolled hypertension"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC072",
@@ -3264,11 +3171,8 @@
         "elevated LDL cholesterol"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC073",
@@ -3304,11 +3208,8 @@
         "renal tubular acidosis"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC074",
@@ -3343,11 +3244,8 @@
         "nightmares"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC075",
@@ -3387,11 +3285,8 @@
         "insulin resistance"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC076",
@@ -3427,11 +3322,8 @@
         "elevated blood pressure"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC077",
@@ -3467,11 +3359,8 @@
         "hyperglycemia post-transplant"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC078",
@@ -3505,11 +3394,8 @@
         "elevated serum uric acid"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC079",
@@ -3546,11 +3432,8 @@
         "renal magnesium wasting"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC080",
@@ -3586,11 +3469,8 @@
         "electrolyte disturbance"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC081",
@@ -3629,11 +3509,8 @@
         "Achilles tendinopathy"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC082",
@@ -3673,11 +3550,8 @@
         "anorgasmia"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC083",
@@ -3713,11 +3587,8 @@
         "falls"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC084",
@@ -3753,11 +3624,8 @@
         "excessive saliva"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC085",
@@ -3793,11 +3661,8 @@
         "paralytic ileus"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC086",
@@ -3836,11 +3701,8 @@
         "early morning awakening"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC087",
@@ -3879,11 +3741,8 @@
         "mood elevation"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC088",
@@ -3921,11 +3780,8 @@
         "drug-induced headache"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC089",
@@ -3958,11 +3814,8 @@
         "megaloblastic anemia"
       ],
       "appropriateness": "context_dependent",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     },
     {
       "id": "CC090",
@@ -3999,11 +3852,8 @@
         "bowel dysfunction"
       ],
       "appropriateness": "often_inappropriate",
-      "time_window_days_min": null,
-      "time_window_days_max": null,
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null,
-      "references": null
+      "recommended_first_action_es": null
     }
   ]
 }
