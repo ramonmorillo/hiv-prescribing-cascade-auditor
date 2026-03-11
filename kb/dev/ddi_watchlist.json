@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Drug-drug interaction watchlist relevant to prescribing cascades in PLHIV",
-  "last_updated": "2025-01-01",
+  "last_updated": "2026-03-10",
   "severity_levels": {
     "CONTRAINDICATED": "Do not use together; risk of severe/fatal adverse event",
     "MAJOR": "Potentially life-threatening or requiring major management change",
