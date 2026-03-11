@@ -38,6 +38,579 @@ function getLocalizedField(obj, baseField, lang) {
   return '';
 }
 
+/* ============================================================
+   UI STRING DICTIONARY — centralized i18n for all UI/system text
+   KB content uses getLocalizedField(); UI text uses tUI().
+   ============================================================ */
+const UI_STRINGS = {
+  es: {
+    /* Navigation */
+    step_counter:     function (n) { return 'Paso ' + n + ' de 6'; },
+    btn_prev:         '&#8592; Anterior',
+    btn_next:         'Siguiente &#8594;',
+    btn_finish:       '&#10003; Finalizar',
+
+    /* Step nav labels */
+    nav_step1: 'Datos',
+    nav_step2: 'Medicaci&oacute;n',
+    nav_step3: 'Clasificaci&oacute;n',
+    nav_step4: 'Cascadas',
+    nav_step5: 'Plan',
+    nav_step6: 'Informe',
+
+    /* Step titles */
+    step1_title: '&#128203; Paso 1 &mdash; Datos del caso',
+    step2_title: '&#128138; Paso 2 &mdash; Medicaci&oacute;n y problemas activos',
+    step3_title: '&#128230; Paso 3 &mdash; Clasificaci&oacute;n farmacol&oacute;gica',
+    step4_title: '&#128269; Paso 4 &mdash; Posibles cascadas terap&eacute;uticas',
+    step5_title: '&#128221; Paso 5 &mdash; Verificaci&oacute;n cl&iacute;nica',
+    step6_title: '&#128196; Paso 6 &mdash; Plan farmacoterap&eacute;utico e informe',
+
+    /* Onboarding */
+    onboarding_title:       'C&oacute;mo funciona el auditor &mdash; en 3 pasos',
+    onboarding_step1_title: 'Introduzca la nota cl&iacute;nica',
+    onboarding_step1_body:  'Pegue la nota cl&iacute;nica seudonimizada del paciente. El auditor extraer&aacute; autom&aacute;ticamente los medicamentos y problemas activos.',
+    onboarding_step2_title: 'El auditor detecta posibles cascadas',
+    onboarding_step2_body:  'Cruza los f&aacute;rmacos con la base de conocimiento: identifica si alg&uacute;n medicamento puede ser consecuencia de un efecto adverso de otro.',
+    onboarding_step3_title: 'Obtenga un plan farmacoterap&eacute;utico',
+    onboarding_step3_body:  'Clasifique cada hallazgo, a&ntilde;ada sus notas cl&iacute;nicas y exporte un informe estructurado para el equipo asistencial.',
+    onboarding_hint:        '&#8594; Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.',
+    onboarding_demo_btn:    '&#9654; Probar demo',
+
+    /* Step 1 form */
+    note_label:       'Nota cl&iacute;nica del caso',
+    note_placeholder: 'Pegue aqu&iacute; la nota cl&iacute;nica seudonimizada&hellip;',
+    note_hint:        'Sin identificadores reales de paciente. Los datos permanecen &uacute;nicamente en este navegador.',
+
+    /* Common warnings */
+    kb_unavailable_title:  '&#9888; Base de conocimiento no disponible.',
+    kb_unavailable_detail: 'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.',
+    note_empty_title:          '&#9888; Nota cl&iacute;nica vac&iacute;a.',
+    note_empty_detail:         'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.',
+    note_empty_detail_report:  'Introduzca la nota cl&iacute;nica en el Paso 1 para generar el informe.',
+
+    /* Step 2 */
+    drugs_section_label:           'Medicamentos detectados',
+    no_drugs_title:                '&#10003; Sin medicamentos identificados.',
+    no_drugs_detail:               'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.',
+    drugs_detected:                function (n) { return '<strong>' + n + ' medicamento' + (n === 1 ? '' : 's') + ' detectado' + (n === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.'; },
+    symptoms_dict_missing:         'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>',
+    symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong>',
+    symptoms_dict_unavailable_detail: 'Recargue la p&aacute;gina o compruebe el estado KB.',
+    symptoms_zero_label:           'Problemas activos detectados (0)',
+    no_symptoms:                   '&#10003;&nbsp;No se han detectado problemas cl&iacute;nicos en la nota.',
+    symptoms_count:                function (a, i) { return 'Problemas detectados (' + a + ' activo' + (a === 1 ? '' : 's') + (i ? ', ' + i + ' no activo' + (i === 1 ? '' : 's') : '') + ')'; },
+    inactive_mentions:             'Menciones no activas (negadas o hist&oacute;ricas):',
+    none:                          'Ninguno',
+    detection_warning:             '&#9888;&nbsp;La detecci&oacute;n es por palabras clave. Nombres comerciales, abreviaturas y t&eacute;rminos no incluidos en la KB pueden no identificarse.',
+
+    /* Step 3 */
+    drug_class_none:   'sin clasificar',
+    col_drug:          'Medicamento',
+    col_class:         'Grupo farmacol&oacute;gico',
+    class_summary:     function (drugs, mapped, unmapped) {
+      return '<strong>' + drugs + ' medicamento' + (drugs === 1 ? '' : 's') +
+        ' &rarr; ' + mapped + ' grupo' + (mapped === 1 ? '' : 's') + ' farmacol&oacute;gico' + (mapped === 1 ? '' : 's') +
+        ' identificado' + (mapped === 1 ? '' : 's') + (unmapped ? ', ' + unmapped + ' sin clasificar' : '') + '.</strong>';
+    },
+    no_drugs_to_classify:        '&#10003; Sin medicamentos a clasificar.',
+    no_drugs_to_classify_detail: 'No se detectaron medicamentos en la nota cl&iacute;nica (Paso 2).',
+
+    /* Step 4 */
+    kb_ready:             '<strong>Base de conocimiento lista.</strong>',
+    kb_ready_detail:      function (c, v, d) { return c + ' patrones de cascada &middot; ' + v + ' modificadores VIH &middot; ' + d + ' interacciones DDI.'; },
+    no_cascades_title:    '&#10003; Sin se&ntilde;ales de cascada detectadas.',
+    no_cascades_detail:   'No se han identificado patrones de cascada terap&eacute;utica en la nota cl&iacute;nica.',
+    conf_high:            'alto',
+    conf_medium:          'medio',
+    conf_low:             'bajo',
+    appr_often_inappropriate: 'frecuentemente inapropiado',
+    appr_often_appropriate:   'frecuentemente apropiado',
+    appr_context_dependent:   'dependiente del contexto',
+    via_symptom:          'v&iacute;a s&iacute;ntoma',
+    risk_label:           'Riesgo:',
+    ddi_alert:            '&#9888; Alerta de interacci&oacute;n:',
+    clinical_action:      '&#128203; Acci&oacute;n cl&iacute;nica:',
+    detection_reason:     '&#128269; Motivo de detecci&oacute;n:',
+    cascade_count:        function (n) { return '&#128204;&nbsp;' + n + (n === 1 ? ' posible cascada terap&eacute;utica detectada' : ' posibles cascadas terap&eacute;uticas detectadas'); },
+    pharmacist_only_warning: '&#9888;&nbsp;Solo para revisi&oacute;n farmac&eacute;utica y cl&iacute;nica. No sustituye el juicio cl&iacute;nico profesional.',
+
+    /* Step 5 */
+    clinical_review_label: 'Revisi&oacute;n cl&iacute;nica:',
+    tally_confirmed:       function (n) { return n + ' confirmada' + (n === 1 ? '' : 's'); },
+    tally_possible:        function (n) { return n + ' posible' + (n === 1 ? '' : 's'); },
+    tally_discarded:       function (n) { return n + ' descartada' + (n === 1 ? '' : 's'); },
+    tally_unreviewed:      function (n) { return n + ' sin revisar'; },
+    all_reviewed:          '&#10003; Todas revisadas',
+    recommended_action:    '&#128203; Acci&oacute;n recomendada:',
+    consider_also:         '&#128270; Considerar tambi&eacute;n:',
+    classify_label:        'Clasificar:',
+    btn_confirmed:         '&#10003;&nbsp;Cascada confirmada',
+    btn_possible:          '&#63;&nbsp;Cascada posible',
+    btn_discard:           '&#10005;&nbsp;Descartar',
+    review_warning:        '&#9888;&nbsp;Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.',
+    no_cascades_step5:        '&#10003; Sin se&ntilde;ales de cascada.',
+    no_cascades_step5_detail: 'No se identificaron patrones de cascada terap&eacute;utica &mdash; no se requiere plan de actuaci&oacute;n.',
+
+    /* Step 6 — report display */
+    report_title:           '&#128196;&nbsp;Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas',
+    section_case_data:      'Datos del caso y auditor&iacute;a',
+    label_patient_id:       'ID de paciente',
+    label_generated:        'Generado',
+    label_kb_version:       'Versi&oacute;n KB',
+    not_set:                'No establecido',
+    section_drugs:          function (n) { return 'Medicamentos detectados (' + n + ')'; },
+    section_classes:        function (n) { return 'Grupos farmacol&oacute;gicos (' + n + ')'; },
+    none_detected:          'Ninguno detectado',
+    not_classified:         'No clasificados',
+    inferred_drugs:         function (n) { return '&#9432;&nbsp;' + n + ' medicamento(s) inferido(s) a partir de las cascadas detectadas.'; },
+    section_summary:        'Resumen cl&iacute;nico',
+    total_findings:         'Total de hallazgos detectados:',
+    label_plausible:        'Cascadas plausibles:',
+    label_high_priority:    'Cascadas de alta prioridad:',
+    main_interventions:     'Principales intervenciones sugeridas:',
+    no_dominant_interventions: 'No hay intervenciones dominantes con los datos actuales.',
+    section_findings:       function (n) { return 'Hallazgos farmacoterap&eacute;uticos (' + n + ')'; },
+    no_cascades_report:     '&#10003;&nbsp;Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.',
+
+    /* Verification status badges */
+    ver_confirmed:   'Confirmada',
+    ver_possible:    'Posible',
+    ver_not_cascade: 'Descartada',
+    ver_unreviewed:  'Sin revisar',
+
+    /* Priority badges */
+    prio_high:   'Alta prioridad',
+    prio_medium: 'Prioridad intermedia',
+    prio_low:    'Baja prioridad',
+
+    /* Finding level */
+    level_plausible_label:   'Cascada terap&eacute;utica plausible',
+    level_preliminary_label: 'Se&ntilde;al farmacol&oacute;gica preliminar',
+
+    /* Report card field labels */
+    tech_id:                  'ID t&eacute;cnico:',
+    pharmacological_sequence: 'Secuencia farmacol&oacute;gica:',
+    finding_level_lbl:        'Nivel de hallazgo:',
+    pharmacy_priority_lbl:    'Prioridad farmac&eacute;utica:',
+    what_supports:            'Qu&eacute; lo apoya:',
+    what_missing:             'Qu&eacute; falta:',
+    level_assigned:           'Nivel asignado:',
+    clinical_interpretation_lbl: 'Interpretaci&oacute;n cl&iacute;nica:',
+    trigger_signal:           'Se&ntilde;al activadora:',
+    factors_in_favor:         'Factores a favor',
+    factors_to_verify:        'Factores a verificar',
+    suggested_intervention_lbl: 'Intervenci&oacute;n farmac&eacute;utica sugerida:',
+    brief_recommendation_lbl: 'Recomendaci&oacute;n cl&iacute;nica breve:',
+    certainty_gap_lbl:        'Qu&eacute; falta para mayor certeza:',
+
+    /* Cascade group headings */
+    plausible_group:   function (n) { return '1) Cascadas terap&eacute;uticas plausibles (' + n + ')'; },
+    no_plausible:      'Sin cascadas plausibles en esta nota.',
+    preliminary_group: function (n) { return '2) Se&ntilde;ales farmacol&oacute;gicas preliminares (' + n + ')'; },
+    no_preliminary:    'Sin se&ntilde;ales preliminares activas.',
+
+    /* Export buttons */
+    btn_copy_record:  '&#128203;&nbsp;Copiar para historia cl&iacute;nica',
+    btn_save_pdf:     '&#128438;&nbsp;Guardar como PDF',
+    btn_export_json:  '&#8681;&nbsp;Exportar JSON',
+    btn_export_csv:   '&#8681;&nbsp;Exportar CSV',
+    decision_support_warning: '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. No es un producto sanitario (MDR). No utilizar con identificadores reales de pacientes fuera de un contexto de investigaci&oacute;n seudonimizado.',
+
+    /* Toast messages */
+    toast_storage_full:        'Almacenamiento lleno &mdash; el autoguardado ha fallado. Exporte el caso ahora para no perder datos.',
+    toast_report_copied:       'Informe copiado al portapapeles.',
+    toast_report_copy_failed:  'No se pudo generar el informe para copiar.',
+    toast_clipboard_failed:    'No se pudo copiar autom&aacute;ticamente. Use Exportar JSON/CSV o Guardar como PDF.',
+    toast_print_hint:          'Use &laquo;Guardar como PDF&raquo; en el di&aacute;logo de impresi&oacute;n.',
+    toast_demo_loaded:         'Caso demo cargado &mdash; avance por los pasos para ver las cascadas detectadas.',
+    toast_case_exported:       'Caso exportado correctamente.',
+    toast_case_imported:       'Caso importado correctamente.',
+    toast_import_type_error:   'Importaci&oacute;n fallida: el archivo debe ser un .json exportado por esta aplicaci&oacute;n.',
+    toast_import_failed:       function (msg) { return 'Importaci&oacute;n fallida: ' + msg; },
+    toast_file_read_error:     'No se pudo leer el archivo seleccionado.',
+    toast_export_failed:       function (msg) { return 'Error al exportar: ' + msg; },
+    toast_report_exported:     function (fmt) { return 'Informe exportado (' + fmt + ').'; },
+    toast_kb_not_loaded:       'KB no cargada a&uacute;n &mdash; espere a que termine de cargarse antes de exportar.',
+    toast_kb_validator_missing:'Validador KB no cargado &mdash; no se puede generar la exportaci&oacute;n operacional.',
+
+    /* Confirm dialogs */
+    confirm_load_demo: '\u00BFCargar el caso demo? Los datos actuales ser\u00E1n reemplazados.',
+    confirm_delete_all: '\u00BFEliminar TODOS los datos locales? Esta acci\u00F3n no se puede deshacer.',
+    confirm_new_case:   '\u00BFIniciar un nuevo caso? Los datos no guardados se perder\u00E1n.',
+
+    /* Plain-text report (clinical record copy) */
+    report_header:       'INFORME FARMACOTERAP\u00C9UTICO \u2014 AUDITOR\u00CDA DE CASCADAS',
+    report_patient:      'Paciente: ',
+    report_not_set:      'No establecido',
+    report_date:         'Fecha informe: ',
+    report_kb:           'KB: ',
+    report_summary:      'Resumen:',
+    report_total:        '- Cascadas detectadas: ',
+    report_plausible_count: '- Cascadas plausibles: ',
+    report_high_prio:    '- Cascadas de alta prioridad: ',
+    report_drugs_list:   '- Medicamentos detectados: ',
+    report_none:         'Ninguno',
+    report_classes_list: '- Grupos farmacol\u00F3gicos: ',
+    report_not_classified: 'No clasificados',
+    report_no_cascades:  'No se han detectado cascadas terap\u00E9uticas con los datos actuales.',
+    report_plausible_section:    function (n) { return 'Cascadas terap\u00E9uticas plausibles (' + n + '):'; },
+    report_preliminary_section:  function (n) { return 'Se\u00F1ales farmacol\u00F3gicas preliminares (' + n + '):'; },
+    report_seq:          '   - Secuencia: ',
+    report_finding:      '   - Nivel de hallazgo: ',
+    report_prio:         '   - Prioridad farmac\u00E9utica: ',
+    report_verif:        '   - Estado de verificaci\u00F3n: ',
+    report_evidence:     '   - Evidencia a favor: ',
+    report_missing_conf: '   - Qu\u00E9 falta para confirmar: ',
+    report_rec:          '   - Recomendaci\u00F3n cl\u00EDnica breve: ',
+    report_no_rec:       'Sin recomendaci\u00F3n espec\u00EDfica',
+    report_no_support:   'Sin apoyo cl\u00EDnico adicional detectado.',
+    report_no_gaps:      'Sin brechas cr\u00EDticas detectadas.',
+    report_actions:      'Principales acciones sugeridas:',
+    report_warning:      'Advertencia: Requiere validaci\u00F3n cl\u00EDnica-farmac\u00E9utica antes de cualquier cambio terap\u00E9utico.',
+
+    /* Narrative / buildReport strings */
+    seq_potential_ade:        'posible EAM',
+    temporality_no_data:      'Sin pista temporal alrededor de los f\u00E1rmacos detectados.',
+    temporality_supportive:   'Temporalidad compatible (inicio/cambio terap\u00E9utico detectado).',
+    temporality_weak:         'Temporalidad d\u00E9bil por posible uso cr\u00F3nico/preexistente.',
+    temporality_unknown:      'Temporalidad no demostrada en la nota.',
+    symptom_detected:         'S\u00EDntoma compatible detectado en la nota.',
+    ade_detected:             function (term) { return 'ADE/s\u00EDntoma compatible detectado (' + term + ').'; },
+    kb_has_recommendation:    'KB aporta una recomendaci\u00F3n/intervenci\u00F3n cl\u00EDnica.',
+    explicit_kb_evidence:     'Existe evidencia farmacol\u00F3gica expl\u00EDcita en KB (p. ej., alerta DDI).',
+    missing_clinical_support: 'Falta soporte cl\u00EDnico adicional para elevarla a cascada plausible.',
+    level_plausible_reason:   'Clasificada como plausible por soporte cl\u00EDnico detectable.',
+    level_preliminary_reason: 'Permanece preliminar: co-ocurrencia farmacol\u00F3gica sin soporte cl\u00EDnico suficiente.',
+    default_interpretation:   'Posible cascada terap\u00E9utica a confirmar con revisi\u00F3n cl\u00EDnica individualizada.',
+    no_kb_intervention:       'No hay intervenci\u00F3n espec\u00EDfica en KB; revisar indicaci\u00F3n, balance beneficio-riesgo y alternativas.',
+    certainty_gap_text:       'Para aumentar certeza: confirmar temporalidad, causalidad alternativa y respuesta tras ajustes terap\u00E9uticos.',
+    no_support_summary:       'Sin apoyo cl\u00EDnico adicional detectado.',
+    no_missing_summary:       'Sin brechas cr\u00EDticas detectadas.',
+    validation_warning:       'Este informe requiere validaci\u00F3n cl\u00EDnica-farmac\u00E9utica antes de cualquier cambio terap\u00E9utico.',
+
+    /* Priority reasons */
+    prio_reason_probability:    function (conf) { return 'Probabilidad ' + conf + '.'; },
+    prio_reason_symptom_bridge: 'Puente sint\u00F3mico con evidencia cl\u00EDnica directa.',
+    prio_reason_pharmacological:'Se\u00F1al farmacol\u00F3gica de especificidad variable.',
+    prio_reason_actionable:     'Existe intervenci\u00F3n farmac\u00E9utica accionable.',
+    prio_reason_less_defined:   'Intervenci\u00F3n menos definida con los datos actuales.',
+    prio_reason_no_clinical:    'Penalizaci\u00F3n: se\u00F1al sin soporte cl\u00EDnico adicional.',
+    prio_reason_temp_good:      'Temporalidad compatible suma prioridad.',
+    prio_reason_temp_weak:      'Temporalidad d\u00E9bil reduce prioridad.',
+    prio_reason_no_temporal:    'Sin soporte temporal claro: prioridad penalizada.',
+    prio_reason_nonspecific:    'Penalizaci\u00F3n adicional: s\u00EDntoma inespec\u00EDfico sin soporte temporal/causal claro.',
+
+    /* Verification items */
+    verif_chronology:    'Cronolog\u00EDa cl\u00EDnica precisa: inicio del f\u00E1rmaco \u00EDndice, aparici\u00F3n del s\u00EDntoma/EAM e inicio del f\u00E1rmaco de cascada.',
+    verif_indication:    'Indicaci\u00F3n primaria del f\u00E1rmaco de cascada: confirmar si fue prescrito para tratar el posible EAM y no por una enfermedad independiente.',
+    verif_evolution:     'Evoluci\u00F3n tras ajustes terap\u00E9uticos (dechallenge/rechallenge cuando sea cl\u00EDnicamente seguro).',
+    verif_symptom_active:'Validar si el s\u00EDntoma estaba activo (no negado) y su gravedad actual en la entrevista cl\u00EDnica.',
+    verif_no_ade:        'Falta EAM expl\u00EDcito en la nota: revisar historia cl\u00EDnica para documentar manifestaci\u00F3n adversa concreta.',
+
+    /* Signal explanation */
+    signal_bridge_base:       'Se activ\u00F3 por coincidencia de f\u00E1rmaco causal + s\u00EDntoma detectado + f\u00E1rmaco usado para tratar ese s\u00EDntoma.',
+    signal_bridge_incomplete: ' Temporalidad incompleta en el texto actual.',
+    signal_drug_drug:         'Se activ\u00F3 por presencia simult\u00E1nea de f\u00E1rmaco \u00EDndice y f\u00E1rmaco de cascada compatibles con el patr\u00F3n de la KB.',
+
+    /* Unknown step */
+    unknown_step: 'Paso desconocido.'
+  },
+
+  en: {
+    /* Navigation */
+    step_counter:     function (n) { return 'Step ' + n + ' of 6'; },
+    btn_prev:         '&#8592; Previous',
+    btn_next:         'Next &#8594;',
+    btn_finish:       '&#10003; Finish',
+
+    /* Step nav labels */
+    nav_step1: 'Data',
+    nav_step2: 'Medication',
+    nav_step3: 'Classification',
+    nav_step4: 'Cascades',
+    nav_step5: 'Plan',
+    nav_step6: 'Report',
+
+    /* Step titles */
+    step1_title: '&#128203; Step 1 &mdash; Case Data',
+    step2_title: '&#128138; Step 2 &mdash; Medications &amp; Active Problems',
+    step3_title: '&#128230; Step 3 &mdash; Pharmacological Classification',
+    step4_title: '&#128269; Step 4 &mdash; Possible Therapeutic Cascades',
+    step5_title: '&#128221; Step 5 &mdash; Clinical Verification',
+    step6_title: '&#128196; Step 6 &mdash; Pharmacotherapy Plan &amp; Report',
+
+    /* Onboarding */
+    onboarding_title:       'How the auditor works &mdash; in 3 steps',
+    onboarding_step1_title: 'Enter the clinical note',
+    onboarding_step1_body:  'Paste the pseudonymised patient clinical note. The auditor will automatically extract medications and active problems.',
+    onboarding_step2_title: 'The auditor detects possible cascades',
+    onboarding_step2_body:  'It cross-references drugs against the knowledge base: identifies whether any medication may be a consequence of an adverse effect of another.',
+    onboarding_step3_title: 'Get a pharmacotherapy plan',
+    onboarding_step3_body:  'Classify each finding, add your clinical notes, and export a structured report for the care team.',
+    onboarding_hint:        '&#8594; Try the demo case &mdash; an HIV patient on ART with an antihypertensive causing oedema treated with a diuretic.',
+    onboarding_demo_btn:    '&#9654; Try demo',
+
+    /* Step 1 form */
+    note_label:       'Clinical note',
+    note_placeholder: 'Paste the pseudonymised clinical note here&hellip;',
+    note_hint:        'No real patient identifiers. Data is stored only in this browser.',
+
+    /* Common warnings */
+    kb_unavailable_title:  '&#9888; Knowledge base unavailable.',
+    kb_unavailable_detail: 'Check KB status in the footer and reload if necessary.',
+    note_empty_title:          '&#9888; Clinical note is empty.',
+    note_empty_detail:         'Enter the clinical note in Step 1 before continuing.',
+    note_empty_detail_report:  'Enter the clinical note in Step 1 to generate the report.',
+
+    /* Step 2 */
+    drugs_section_label:           'Detected medications',
+    no_drugs_title:                '&#10003; No medications identified.',
+    no_drugs_detail:               'The note may use brand names, abbreviations or drugs not included in the current KB.',
+    drugs_detected:                function (n) { return '<strong>' + n + ' medication' + (n === 1 ? '' : 's') + ' detected</strong> in the clinical note.'; },
+    symptoms_dict_missing:         'Active problems &mdash; <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>',
+    symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Symptom dictionary unavailable.</strong>',
+    symptoms_dict_unavailable_detail: 'Reload the page or check KB status.',
+    symptoms_zero_label:           'Active problems detected (0)',
+    no_symptoms:                   '&#10003;&nbsp;No clinical problems detected in the note.',
+    symptoms_count:                function (a, i) { return 'Problems detected (' + a + ' active' + (i ? ', ' + i + ' inactive' : '') + ')'; },
+    inactive_mentions:             'Inactive mentions (negated or historical):',
+    none:                          'None',
+    detection_warning:             '&#9888;&nbsp;Detection is keyword-based. Brand names, abbreviations and terms not in the KB may not be identified.',
+
+    /* Step 3 */
+    drug_class_none:   'unclassified',
+    col_drug:          'Medication',
+    col_class:         'Pharmacological group',
+    class_summary:     function (drugs, mapped, unmapped) {
+      return '<strong>' + drugs + ' medication' + (drugs === 1 ? '' : 's') +
+        ' &rarr; ' + mapped + ' pharmacological group' + (mapped === 1 ? '' : 's') + ' identified' +
+        (unmapped ? ', ' + unmapped + ' unclassified' : '') + '.</strong>';
+    },
+    no_drugs_to_classify:        '&#10003; No medications to classify.',
+    no_drugs_to_classify_detail: 'No medications were detected in the clinical note (Step 2).',
+
+    /* Step 4 */
+    kb_ready:             '<strong>Knowledge base ready.</strong>',
+    kb_ready_detail:      function (c, v, d) { return c + ' cascade patterns &middot; ' + v + ' HIV modifiers &middot; ' + d + ' DDI interactions.'; },
+    no_cascades_title:    '&#10003; No cascade signals detected.',
+    no_cascades_detail:   'No therapeutic cascade patterns identified in the clinical note.',
+    conf_high:            'high',
+    conf_medium:          'medium',
+    conf_low:             'low',
+    appr_often_inappropriate: 'often inappropriate',
+    appr_often_appropriate:   'often appropriate',
+    appr_context_dependent:   'context-dependent',
+    via_symptom:          'via symptom',
+    risk_label:           'Risk:',
+    ddi_alert:            '&#9888; Interaction alert:',
+    clinical_action:      '&#128203; Clinical action:',
+    detection_reason:     '&#128269; Detection reason:',
+    cascade_count:        function (n) { return '&#128204;&nbsp;' + n + ' possible therapeutic cascade' + (n === 1 ? '' : 's') + ' detected'; },
+    pharmacist_only_warning: '&#9888;&nbsp;For pharmaceutical and clinical review only. Does not replace professional clinical judgement.',
+
+    /* Step 5 */
+    clinical_review_label: 'Clinical review:',
+    tally_confirmed:       function (n) { return n + ' confirmed'; },
+    tally_possible:        function (n) { return n + ' possible'; },
+    tally_discarded:       function (n) { return n + ' discarded'; },
+    tally_unreviewed:      function (n) { return n + ' unreviewed'; },
+    all_reviewed:          '&#10003; All reviewed',
+    recommended_action:    '&#128203; Recommended action:',
+    consider_also:         '&#128270; Also consider:',
+    classify_label:        'Classify:',
+    btn_confirmed:         '&#10003;&nbsp;Confirmed cascade',
+    btn_possible:          '&#63;&nbsp;Possible cascade',
+    btn_discard:           '&#10005;&nbsp;Discard',
+    review_warning:        '&#9888;&nbsp;Review and classify each signal. For pharmaceutical and clinical use only.',
+    no_cascades_step5:        '&#10003; No cascade signals.',
+    no_cascades_step5_detail: 'No therapeutic cascade patterns identified &mdash; no action plan required.',
+
+    /* Step 6 — report display */
+    report_title:           '&#128196;&nbsp;Therapeutic Cascade Audit Report',
+    section_case_data:      'Case data &amp; audit',
+    label_patient_id:       'Patient ID',
+    label_generated:        'Generated',
+    label_kb_version:       'KB version',
+    not_set:                'Not set',
+    section_drugs:          function (n) { return 'Medications detected (' + n + ')'; },
+    section_classes:        function (n) { return 'Pharmacological groups (' + n + ')'; },
+    none_detected:          'None detected',
+    not_classified:         'Not classified',
+    inferred_drugs:         function (n) { return '&#9432;&nbsp;' + n + ' drug(s) inferred from detected cascades.'; },
+    section_summary:        'Clinical summary',
+    total_findings:         'Total findings detected:',
+    label_plausible:        'Plausible cascades:',
+    label_high_priority:    'High-priority cascades:',
+    main_interventions:     'Main suggested interventions:',
+    no_dominant_interventions: 'No dominant interventions with current data.',
+    section_findings:       function (n) { return 'Pharmacotherapy findings (' + n + ')'; },
+    no_cascades_report:     '&#10003;&nbsp;No therapeutic cascade signals detected.',
+
+    /* Verification status badges */
+    ver_confirmed:   'Confirmed',
+    ver_possible:    'Possible',
+    ver_not_cascade: 'Discarded',
+    ver_unreviewed:  'Unreviewed',
+
+    /* Priority badges */
+    prio_high:   'High priority',
+    prio_medium: 'Intermediate priority',
+    prio_low:    'Low priority',
+
+    /* Finding level */
+    level_plausible_label:   'Plausible therapeutic cascade',
+    level_preliminary_label: 'Preliminary pharmacological signal',
+
+    /* Report card field labels */
+    tech_id:                  'Technical ID:',
+    pharmacological_sequence: 'Pharmacological sequence:',
+    finding_level_lbl:        'Finding level:',
+    pharmacy_priority_lbl:    'Pharmacy priority:',
+    what_supports:            'What supports it:',
+    what_missing:             'What is missing:',
+    level_assigned:           'Level assigned:',
+    clinical_interpretation_lbl: 'Clinical interpretation:',
+    trigger_signal:           'Trigger signal:',
+    factors_in_favor:         'Factors in favour',
+    factors_to_verify:        'Factors to verify',
+    suggested_intervention_lbl: 'Suggested pharmaceutical intervention:',
+    brief_recommendation_lbl: 'Brief clinical recommendation:',
+    certainty_gap_lbl:        'What is needed for greater certainty:',
+
+    /* Cascade group headings */
+    plausible_group:   function (n) { return '1) Plausible therapeutic cascades (' + n + ')'; },
+    no_plausible:      'No plausible cascades in this note.',
+    preliminary_group: function (n) { return '2) Preliminary pharmacological signals (' + n + ')'; },
+    no_preliminary:    'No active preliminary signals.',
+
+    /* Export buttons */
+    btn_copy_record:  '&#128203;&nbsp;Copy to medical record',
+    btn_save_pdf:     '&#128438;&nbsp;Save as PDF',
+    btn_export_json:  '&#8681;&nbsp;Export JSON',
+    btn_export_csv:   '&#8681;&nbsp;Export CSV',
+    decision_support_warning: '&#9888;&nbsp;Decision support only. Not a medical device (MDR). Do not use with real patient identifiers outside a pseudonymised research context.',
+
+    /* Toast messages */
+    toast_storage_full:        'Storage full &mdash; auto-save failed. Export your case now to avoid data loss.',
+    toast_report_copied:       'Report copied to clipboard.',
+    toast_report_copy_failed:  'Could not generate the report for copying.',
+    toast_clipboard_failed:    'Could not copy automatically. Use Export JSON/CSV or Save as PDF.',
+    toast_print_hint:          'Use \u201CSave as PDF\u201D in the print dialog.',
+    toast_demo_loaded:         'Demo case loaded &mdash; go through the steps to see the detected cascades.',
+    toast_case_exported:       'Case exported successfully.',
+    toast_case_imported:       'Case imported successfully.',
+    toast_import_type_error:   'Import failed: file must be a .json export from this application.',
+    toast_import_failed:       function (msg) { return 'Import failed: ' + msg; },
+    toast_file_read_error:     'Could not read the selected file.',
+    toast_export_failed:       function (msg) { return 'Export failed: ' + msg; },
+    toast_report_exported:     function (fmt) { return 'Report exported (' + fmt + ').'; },
+    toast_kb_not_loaded:       'KB not loaded yet \u2014 wait for the KB to finish loading before exporting.',
+    toast_kb_validator_missing:'KB validator not loaded \u2014 cannot build operational export.',
+
+    /* Confirm dialogs */
+    confirm_load_demo:  'Load the demo case? Current data will be replaced.',
+    confirm_delete_all: 'Delete ALL local data? This cannot be undone.',
+    confirm_new_case:   'Start a new case? Unsaved data will be lost.',
+
+    /* Plain-text report (clinical record copy) */
+    report_header:       'PHARMACOTHERAPY REPORT \u2014 CASCADE AUDIT',
+    report_patient:      'Patient: ',
+    report_not_set:      'Not set',
+    report_date:         'Report date: ',
+    report_kb:           'KB: ',
+    report_summary:      'Summary:',
+    report_total:        '- Cascades detected: ',
+    report_plausible_count: '- Plausible cascades: ',
+    report_high_prio:    '- High-priority cascades: ',
+    report_drugs_list:   '- Medications detected: ',
+    report_none:         'None',
+    report_classes_list: '- Pharmacological groups: ',
+    report_not_classified: 'Not classified',
+    report_no_cascades:  'No therapeutic cascades detected with current data.',
+    report_plausible_section:    function (n) { return 'Plausible therapeutic cascades (' + n + '):'; },
+    report_preliminary_section:  function (n) { return 'Preliminary pharmacological signals (' + n + '):'; },
+    report_seq:          '   - Sequence: ',
+    report_finding:      '   - Finding level: ',
+    report_prio:         '   - Pharmacy priority: ',
+    report_verif:        '   - Verification status: ',
+    report_evidence:     '   - Evidence in favour: ',
+    report_missing_conf: '   - What is missing to confirm: ',
+    report_rec:          '   - Brief clinical recommendation: ',
+    report_no_rec:       'No specific recommendation',
+    report_no_support:   'No additional clinical support detected.',
+    report_no_gaps:      'No critical gaps detected.',
+    report_actions:      'Main suggested actions:',
+    report_warning:      'Warning: Requires clinical-pharmacist validation before any therapeutic change.',
+
+    /* Narrative / buildReport strings */
+    seq_potential_ade:        'potential ADE',
+    temporality_no_data:      'No temporal data around the detected drugs.',
+    temporality_supportive:   'Compatible temporality (drug start / therapeutic change detected).',
+    temporality_weak:         'Weak temporality \u2014 possible chronic or pre-existing use.',
+    temporality_unknown:      'Temporality not demonstrated in the note.',
+    symptom_detected:         'Compatible symptom detected in the note.',
+    ade_detected:             function (term) { return 'Compatible ADE/symptom detected (' + term + ').'; },
+    kb_has_recommendation:    'KB provides a clinical recommendation/intervention.',
+    explicit_kb_evidence:     'Explicit pharmacological evidence in KB (e.g. DDI alert).',
+    missing_clinical_support: 'Additional clinical support needed to elevate to plausible cascade.',
+    level_plausible_reason:   'Classified as plausible due to detectable clinical support.',
+    level_preliminary_reason: 'Remains preliminary: pharmacological co-occurrence without sufficient clinical support.',
+    default_interpretation:   'Possible therapeutic cascade to confirm with individualised clinical review.',
+    no_kb_intervention:       'No specific KB intervention; review indication, benefit-risk balance and alternatives.',
+    certainty_gap_text:       'To increase certainty: confirm temporality, alternative causality and response after therapeutic adjustments.',
+    no_support_summary:       'No additional clinical support detected.',
+    no_missing_summary:       'No critical gaps detected.',
+    validation_warning:       'This report requires clinical-pharmacist validation before any therapeutic change.',
+
+    /* Priority reasons */
+    prio_reason_probability:    function (conf) { return 'Probability: ' + conf + '.'; },
+    prio_reason_symptom_bridge: 'Symptom bridge with direct clinical evidence.',
+    prio_reason_pharmacological:'Pharmacological signal of variable specificity.',
+    prio_reason_actionable:     'Actionable pharmaceutical intervention exists.',
+    prio_reason_less_defined:   'Intervention less defined with current data.',
+    prio_reason_no_clinical:    'Penalty: signal without additional clinical support.',
+    prio_reason_temp_good:      'Compatible temporality adds priority.',
+    prio_reason_temp_weak:      'Weak temporality reduces priority.',
+    prio_reason_no_temporal:    'No clear temporal support: priority penalised.',
+    prio_reason_nonspecific:    'Additional penalty: non-specific symptom without clear temporal/causal support.',
+
+    /* Verification items */
+    verif_chronology:    'Precise clinical timeline: start of index drug, onset of symptom/ADE and start of cascade drug.',
+    verif_indication:    'Primary indication of cascade drug: confirm whether it was prescribed to treat the possible ADE rather than an independent condition.',
+    verif_evolution:     'Evolution after therapeutic adjustments (dechallenge/rechallenge when clinically safe).',
+    verif_symptom_active:'Validate whether the symptom was active (not negated) and its current severity in the clinical interview.',
+    verif_no_ade:        'Missing explicit ADE in the note: review medical history to document the specific adverse manifestation.',
+
+    /* Signal explanation */
+    signal_bridge_base:       'Triggered by coincidence of causal drug + detected symptom + drug used to treat that symptom.',
+    signal_bridge_incomplete: ' Incomplete temporality in the current text.',
+    signal_drug_drug:         'Triggered by simultaneous presence of index drug and cascade drug compatible with the KB pattern.',
+
+    /* Unknown step */
+    unknown_step: 'Unknown step.'
+  }
+};
+
+/**
+ * Look up a UI string for the current language.
+ * Falls back to Spanish (default language) if key is missing in EN dictionary.
+ * Supports function-valued entries: extra arguments are forwarded to the function.
+ *
+ * @param {string} key
+ * @param {...*}   args  Optional arguments forwarded to function-valued entries
+ * @returns {string}
+ */
+function tUI(key) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var dict = UI_STRINGS[currentLanguage] || UI_STRINGS.es;
+  var val  = dict[key];
+  /* Fallback to Spanish when key missing in EN dict */
+  if (val === undefined) val = UI_STRINGS.es[key];
+  if (typeof val === 'function') return val.apply(null, args);
+  return val !== undefined ? String(val) : key;
+}
+
 /* ── State ── */
 const state = {
   step: 1,
@@ -75,7 +648,7 @@ function saveState() {
     /* QuotaExceededError means browser storage is full — surface this to the user
      * so they know their work is at risk, rather than losing it silently. */
     if (err && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-      showToast('Storage full — auto-save failed. Export your case now to avoid data loss.', 'error');
+      showToast(tUI('toast_storage_full'), 'error');
     }
   }
 }
@@ -357,7 +930,7 @@ function stripI18nMarkers(kbData) {
  * Source KB: unmodified — what you see is exactly what is in the JSON files. */
 function exportKBBundle() {
   if (!state.kb.coreCascades && !state.kb.vihModifiers && !state.kb.ddiWatchlist) {
-    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
+    showToast(tUI('toast_kb_not_loaded'), 'warning');
     return;
   }
   var bundle = {
@@ -378,11 +951,11 @@ function exportKBBundle() {
  * NOT modified; add translations there to make them permanent.             */
 function exportKBBundleOperational() {
   if (!state.kb.coreCascades) {
-    showToast('KB not loaded yet — wait for the KB to finish loading before exporting.', 'warning');
+    showToast(tUI('toast_kb_not_loaded'), 'warning');
     return;
   }
   if (typeof buildOperationalKB !== 'function') {
-    showToast('KB validator not loaded — cannot build operational export.', 'error');
+    showToast(tUI('toast_kb_validator_missing'), 'error');
     return;
   }
   var built = buildOperationalKB(state.kb.coreCascades);
@@ -420,7 +993,7 @@ function downloadJSON(obj, filename) {
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   } catch (err) {
     console.error('[Export] downloadJSON failed:', err);
-    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+    showToast(tUI('toast_export_failed', err.message || 'unknown error'), 'error');
   }
 }
 
@@ -1350,7 +1923,7 @@ window.classifyCascade = function (cascadeId, value) {
    ============================================================ */
 const STEP_CONTENT = {
   1: {
-    title: '&#128203; Paso 1 &mdash; Datos del caso',
+    title: function () { return tUI('step1_title'); },
     body: function () {
       var onboarding = '';
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
@@ -1358,34 +1931,34 @@ const STEP_CONTENT = {
           '<div class="onboarding-panel" id="onboarding-panel">' +
             '<div class="onboarding-header">' +
               '<span class="onboarding-icon">&#128301;</span>' +
-              '<strong>C&oacute;mo funciona el auditor &mdash; en 3 pasos</strong>' +
+              '<strong>' + tUI('onboarding_title') + '</strong>' +
             '</div>' +
             '<div class="onboarding-steps">' +
               '<div class="onboarding-step">' +
                 '<span class="onboarding-step-num">1</span>' +
                 '<div class="onboarding-step-body">' +
-                  '<strong>Introduzca la nota cl&iacute;nica</strong>' +
-                  '<p>Pegue la nota cl&iacute;nica seudonimizada del paciente. El auditor extraer&aacute; autom&aacute;ticamente los medicamentos y problemas activos.</p>' +
+                  '<strong>' + tUI('onboarding_step1_title') + '</strong>' +
+                  '<p>' + tUI('onboarding_step1_body') + '</p>' +
                 '</div>' +
               '</div>' +
               '<div class="onboarding-step">' +
                 '<span class="onboarding-step-num">2</span>' +
                 '<div class="onboarding-step-body">' +
-                  '<strong>El auditor detecta posibles cascadas</strong>' +
-                  '<p>Cruza los f&aacute;rmacos con la base de conocimiento: identifica si alg&uacute;n medicamento puede ser consecuencia de un efecto adverso de otro.</p>' +
+                  '<strong>' + tUI('onboarding_step2_title') + '</strong>' +
+                  '<p>' + tUI('onboarding_step2_body') + '</p>' +
                 '</div>' +
               '</div>' +
               '<div class="onboarding-step">' +
                 '<span class="onboarding-step-num">3</span>' +
                 '<div class="onboarding-step-body">' +
-                  '<strong>Obtenga un plan farmacoterap&eacute;utico</strong>' +
-                  '<p>Clasifique cada hallazgo, a&ntilde;ada sus notas cl&iacute;nicas y exporte un informe estructurado para el equipo asistencial.</p>' +
+                  '<strong>' + tUI('onboarding_step3_title') + '</strong>' +
+                  '<p>' + tUI('onboarding_step3_body') + '</p>' +
                 '</div>' +
               '</div>' +
             '</div>' +
             '<div class="onboarding-actions">' +
-              '<span class="onboarding-hint">&#8594; Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.</span>' +
-              '<button class="btn btn-outline btn-sm" onclick="loadDemoCase()" type="button">&#9654; Probar demo</button>' +
+              '<span class="onboarding-hint">' + tUI('onboarding_hint') + '</span>' +
+              '<button class="btn btn-outline btn-sm" onclick="loadDemoCase()" type="button">' + tUI('onboarding_demo_btn') + '</button>' +
             '</div>' +
           '</div>'
         );
@@ -1393,12 +1966,12 @@ const STEP_CONTENT = {
       return (
         onboarding +
         '<div class="form-group">' +
-          '<label class="form-label" for="note-input">Nota cl&iacute;nica del caso / Clinical note</label>' +
+          '<label class="form-label" for="note-input">' + tUI('note_label') + '</label>' +
           '<textarea id="note-input" class="textarea-clinical" ' +
-            'placeholder="Pegue aqu&iacute; la nota cl&iacute;nica seudonimizada&hellip;">' +
+            'placeholder="' + tUI('note_placeholder') + '">' +
             escHtml(state.clinicalNote) +
           '</textarea>' +
-          '<div class="form-hint">Sin identificadores reales de paciente. Los datos permanecen &uacute;nicamente en este navegador.</div>' +
+          '<div class="form-hint">' + tUI('note_hint') + '</div>' +
         '</div>'
       );
     },
@@ -1415,22 +1988,22 @@ const STEP_CONTENT = {
     }
   },
   2: {
-    title: '&#128138; Paso 2 &mdash; Medicaci&oacute;n y problemas activos',
+    title: function () { return tUI('step2_title'); },
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
-            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
+            '<strong>' + tUI('kb_unavailable_title') + '</strong> ' +
+            tUI('kb_unavailable_detail') +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
-            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
+            '<strong>' + tUI('note_empty_title') + '</strong> ' +
+            tUI('note_empty_detail') +
           '</div>'
         );
       }
@@ -1456,8 +2029,8 @@ const STEP_CONTENT = {
       if (drugs.length === 0) {
         drugSection = (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; Sin medicamentos identificados.</strong> ' +
-            'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.' +
+            '<strong>' + tUI('no_drugs_title') + '</strong> ' +
+            tUI('no_drugs_detail') +
           '</div>'
         );
       } else {
@@ -1477,8 +2050,7 @@ const STEP_CONTENT = {
         }).join('');
         drugSection = (
           '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
-            '<strong>' + drugs.length + ' medicamento' + (drugs.length === 1 ? '' : 's') +
-            ' detectado' + (drugs.length === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.' +
+            tUI('drugs_detected', drugs.length) +
           '</div>' +
           '<div style="padding:.2rem 0 .65rem;">' + drugTags + '</div>'
         );
@@ -1491,26 +2063,25 @@ const STEP_CONTENT = {
       var symCountLabel;
       var symptomSection;
       if (!state.kb.symptomDictionary) {
-        symCountLabel = 'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>';
+        symCountLabel = tUI('symptoms_dict_missing');
         symptomSection = (
           '<div class="callout callout-warning" style="font-size:.84rem;">' +
-            '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong> ' +
-            'Recargue la p&aacute;gina o compruebe el estado KB.' +
+            tUI('symptoms_dict_unavailable_title') + ' ' +
+            tUI('symptoms_dict_unavailable_detail') +
           '</div>'
         );
       } else if (symptoms.length === 0) {
-        symCountLabel = 'Problemas activos detectados (0)';
+        symCountLabel = tUI('symptoms_zero_label');
         symptomSection = (
           '<div class="callout callout-success">' +
-            '&#10003;&nbsp;No se han detectado problemas cl&iacute;nicos en la nota.' +
+            tUI('no_symptoms') +
           '</div>'
         );
       } else {
         /* Split into active vs non-active (negated / historical) */
         var activeSyms   = symptoms.filter(function (s) { return s.active !== false; });
         var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
-        symCountLabel = 'Problemas detectados (' + activeSyms.length + ' activo' + (activeSyms.length === 1 ? '' : 's') +
-          (inactiveSyms.length ? ', ' + inactiveSyms.length + ' no activo' + (inactiveSyms.length === 1 ? '' : 's') : '') + ')';
+        symCountLabel = tUI('symptoms_count', activeSyms.length, inactiveSyms.length);
 
         /* Category → colour mapping */
         var catColor = {
@@ -1554,15 +2125,14 @@ const STEP_CONTENT = {
 
         var inactiveRow = inactiveSyms.length
           ? '<div style="margin-top:.45rem;">' +
-              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">Menciones no activas ' +
-                '(negadas o hist&oacute;ricas):</span>' +
+              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">' + tUI('inactive_mentions') + '</span>' +
               symTagsInactive +
             '</div>'
           : '';
 
         symptomSection = (
           '<div style="padding:.2rem 0 .65rem;">' +
-            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">Ninguno</span>') +
+            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">' + tUI('none') + '</span>') +
             inactiveRow +
           '</div>'
         );
@@ -1572,35 +2142,35 @@ const STEP_CONTENT = {
 
       return (
         '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
-          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">Medicamentos detectados</div>' +
+          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + tUI('drugs_section_label') + '</div>' +
         drugSection +
         divider +
         '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
           'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + symCountLabel + '</div>' +
         symptomSection +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
-          '&#9888;&nbsp;La detecci&oacute;n es por palabras clave. Nombres comerciales, abreviaturas y t&eacute;rminos no incluidos en la KB pueden no identificarse.' +
+          tUI('detection_warning') +
         '</div>'
       );
     }
   },
   3: {
-    title: '&#128230; Paso 3 &mdash; Clasificaci&oacute;n farmacol&oacute;gica',
+    title: function () { return tUI('step3_title'); },
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
-            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
+            '<strong>' + tUI('kb_unavailable_title') + '</strong> ' +
+            tUI('kb_unavailable_detail') +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
-            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
+            '<strong>' + tUI('note_empty_title') + '</strong> ' +
+            tUI('note_empty_detail') +
           '</div>'
         );
       }
@@ -1611,8 +2181,8 @@ const STEP_CONTENT = {
       if (drugs.length === 0) {
         return (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; Sin medicamentos a clasificar.</strong> ' +
-            'No se detectaron medicamentos en la nota cl&iacute;nica (Paso 2).' +
+            '<strong>' + tUI('no_drugs_to_classify') + '</strong> ' +
+            tUI('no_drugs_to_classify_detail') +
           '</div>'
         );
       }
@@ -1624,7 +2194,7 @@ const STEP_CONTENT = {
         var classCell = n.class
           ? '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
               'padding:.18rem .55rem;font-size:.82rem;font-weight:600;">' + escHtml(n.class) + '</span>'
-          : '<span style="color:#999;font-size:.82rem;font-style:italic;">sin clasificar</span>';
+          : '<span style="color:#999;font-size:.82rem;font-style:italic;">' + tUI('drug_class_none') + '</span>';
         return (
           '<tr style="border-bottom:1px solid #eef1f4;">' +
             '<td style="padding:.45rem .6rem;font-size:.88rem;font-weight:600;white-space:nowrap;">' +
@@ -1640,9 +2210,7 @@ const STEP_CONTENT = {
 
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          '<strong>' + drugs.length + ' medicamento' + (drugs.length === 1 ? '' : 's') +
-          ' &rarr; ' + mappedCount + ' grupo' + (mappedCount === 1 ? '' : 's') + ' farmacol&oacute;gico' + (mappedCount === 1 ? '' : 's') + ' identificado' + (mappedCount === 1 ? '' : 's') +
-          (unmappedCount ? ', ' + unmappedCount + ' sin clasificar' : '') + '.</strong>' +
+          tUI('class_summary', drugs.length, mappedCount, unmappedCount) +
         '</div>' +
         '<div style="overflow-x:auto;">' +
           '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
@@ -1650,10 +2218,10 @@ const STEP_CONTENT = {
             '<thead>' +
               '<tr style="background:#f6f8fa;border-bottom:2px solid #d0d7de;">' +
                 '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Medicamento</th>' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">' + tUI('col_drug') + '</th>' +
                 '<th style="padding:.45rem .4rem;width:2rem;"></th>' +
                 '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Grupo farmacol&oacute;gico</th>' +
+                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">' + tUI('col_class') + '</th>' +
               '</tr>' +
             '</thead>' +
             '<tbody>' + rows + '</tbody>' +
@@ -1663,14 +2231,14 @@ const STEP_CONTENT = {
     }
   },
   4: {
-    title: '&#128269; Paso 4 &mdash; Posibles cascadas terap&eacute;uticas',
+    title: function () { return tUI('step4_title'); },
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
-            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
+            '<strong>' + tUI('kb_unavailable_title') + '</strong> ' +
+            tUI('kb_unavailable_detail') +
           '</div>'
         );
       }
@@ -1678,8 +2246,8 @@ const STEP_CONTENT = {
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
-            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
+            '<strong>' + tUI('note_empty_title') + '</strong> ' +
+            tUI('note_empty_detail') +
           '</div>'
         );
       }
@@ -1690,10 +2258,7 @@ const STEP_CONTENT = {
 
       var kbInfo = (
         '<div class="callout callout-info">' +
-          '<strong>Base de conocimiento lista.</strong> ' +
-          cCount + ' patrones de cascada &middot; ' +
-          vCount + ' modificadores VIH &middot; ' +
-          dCount + ' interacciones DDI.' +
+          tUI('kb_ready') + ' ' + tUI('kb_ready_detail', cCount, vCount, dCount) +
         '</div>'
       );
 
@@ -1703,8 +2268,8 @@ const STEP_CONTENT = {
         return (
           kbInfo +
           '<div class="callout callout-success" style="margin-top:.75rem;">' +
-            '<strong>&#10003; Sin se&ntilde;ales de cascada detectadas.</strong> ' +
-            'No se han identificado patrones de cascada terap&eacute;utica en la nota cl&iacute;nica.' +
+            '<strong>' + tUI('no_cascades_title') + '</strong> ' +
+            tUI('no_cascades_detail') +
           '</div>'
         );
       }
@@ -1712,20 +2277,21 @@ const STEP_CONTENT = {
       /* --- Badge helpers ------------------------------------------ */
       var confidenceBadge = function (conf) {
         var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
+        var label = tUI('conf_' + conf) || conf;
         return (
           '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
             'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
             'text-transform:uppercase;letter-spacing:.03em;">' +
-            escHtml(conf) +
+            escHtml(label) +
           '</span>'
         );
       };
 
       var appropriatenessBadge = function (val) {
         if (!val) return '';
-        var label = val === 'often_inappropriate' ? 'often inappropriate'
-                  : val === 'often_appropriate'   ? 'often appropriate'
-                  : 'context-dependent';
+        var label = val === 'often_inappropriate' ? tUI('appr_often_inappropriate')
+                  : val === 'often_appropriate'   ? tUI('appr_often_appropriate')
+                  : tUI('appr_context_dependent');
         var color = val === 'often_inappropriate' ? '#c0392b'
                   : val === 'often_appropriate'   ? '#1e8449'
                   : '#7f8c8d';
@@ -1774,7 +2340,7 @@ const STEP_CONTENT = {
         /* Risk focus chips */
         var riskTags = c.risk_focus.length
           ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;">' +
-              '<span style="font-size:.72rem;color:#888;">Riesgo:</span>' +
+              '<span style="font-size:.72rem;color:#888;">' + tUI('risk_label') + '</span>' +
               c.risk_focus.map(function (r) {
                 return '<span style="font-size:.72rem;background:#f0f0f0;border-radius:3px;' +
                   'padding:.08rem .38rem;color:#555;">' + escHtml(r) + '</span>';
@@ -1787,7 +2353,7 @@ const STEP_CONTENT = {
           ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
               'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(ddiDisplay) +
+              '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiDisplay) +
             '</div>'
           : '';
 
@@ -1796,7 +2362,7 @@ const STEP_CONTENT = {
           ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
               'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#128203; Acci&oacute;n clínica:</strong>&nbsp;' + escHtml(hintDisplay) +
+              '<strong>' + tUI('clinical_action') + '</strong>&nbsp;' + escHtml(hintDisplay) +
             '</div>'
           : '';
 
@@ -1807,7 +2373,7 @@ const STEP_CONTENT = {
             '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;' +
               'border-left:3px solid #aab7b8;padding:.3rem .6rem;background:#f4f6f7;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#128269; Motivo de detecci&oacute;n:</strong>&nbsp;' +
+              '<strong>' + tUI('detection_reason') + '</strong>&nbsp;' +
               escHtml(c.rationale.explanation) +
             '</div>'
           );
@@ -1827,7 +2393,7 @@ const STEP_CONTENT = {
                 (c.signal_type === 'symptom_bridge'
                   ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;' +
                       'border:1px solid #a569bd;border-radius:3px;padding:.08rem .38rem;' +
-                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">v&iacute;a s&iacute;ntoma</span>'
+                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' + tUI('via_symptom') + '</span>'
                   : '') +
               '</span>' +
               '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
@@ -1844,34 +2410,33 @@ const STEP_CONTENT = {
         kbInfo +
         '<div style="margin-top:1rem;">' +
           '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
-            '&#128204;&nbsp;' + detected.length +
-            (detected.length === 1 ? ' posible cascada terap&eacute;utica detectada' : ' posibles cascadas terap&eacute;uticas detectadas') +
+            tUI('cascade_count', detected.length) +
           '</h3>' +
           rows.join('') +
         '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
-          '&#9888;&nbsp;Solo para revisi&oacute;n farmac&eacute;utica y cl&iacute;nica. No sustituye el juicio cl&iacute;nico profesional.' +
+          tUI('pharmacist_only_warning') +
         '</div>'
       );
     }
   },
   5: {
-    title: '&#128221; Paso 5 &mdash; Verificaci&oacute;n cl&iacute;nica',
+    title: function () { return tUI('step5_title'); },
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
-            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
+            '<strong>' + tUI('kb_unavailable_title') + '</strong> ' +
+            tUI('kb_unavailable_detail') +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
-            'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.' +
+            '<strong>' + tUI('note_empty_title') + '</strong> ' +
+            tUI('note_empty_detail') +
           '</div>'
         );
       }
@@ -1881,8 +2446,8 @@ const STEP_CONTENT = {
       if (detected.length === 0) {
         return (
           '<div class="callout callout-success">' +
-            '<strong>&#10003; Sin se&ntilde;ales de cascada.</strong> ' +
-            'No se identificaron patrones de cascada terap&eacute;utica &mdash; no se requiere plan de actuaci&oacute;n.' +
+            '<strong>' + tUI('no_cascades_step5') + '</strong> ' +
+            tUI('no_cascades_step5_detail') +
           '</div>'
         );
       }
@@ -1898,16 +2463,16 @@ const STEP_CONTENT = {
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;' +
           'padding:.65rem .9rem;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;' +
           'font-size:.83rem;align-items:center;">' +
-          '<span style="color:#555;font-weight:600;margin-right:.2rem;">Revisi&oacute;n cl&iacute;nica:</span>' +
+          '<span style="color:#555;font-weight:600;margin-right:.2rem;">' + tUI('clinical_review_label') + '</span>' +
           '<span style="background:#1e8449;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nConfirmed + ' confirmada' + (nConfirmed === 1 ? '' : 's') + '</span>' +
+            tUI('tally_confirmed', nConfirmed) + '</span>' +
           '<span style="background:#e67e22;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nPossible + ' posible' + (nPossible === 1 ? '' : 's') + '</span>' +
+            tUI('tally_possible', nPossible) + '</span>' +
           '<span style="background:#7f8c8d;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            nNot + ' descartada' + (nNot === 1 ? '' : 's') + '</span>' +
+            tUI('tally_discarded', nNot) + '</span>' +
           (nUnreviewed > 0
-            ? '<span style="color:#888;margin-left:.15rem;">' + nUnreviewed + ' sin revisar</span>'
-            : '<span style="color:#1e8449;margin-left:.15rem;">&#10003; Todas revisadas</span>') +
+            ? '<span style="color:#888;margin-left:.15rem;">' + tUI('tally_unreviewed', nUnreviewed) + '</span>'
+            : '<span style="color:#1e8449;margin-left:.15rem;">' + tUI('all_reviewed') + '</span>') +
         '</div>'
       );
 
@@ -1928,7 +2493,7 @@ const STEP_CONTENT = {
         var confBadge   = (
           '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + confColor + ';' +
             'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
-            'text-transform:uppercase;">' + escHtml(c.confidence) + '</span>'
+            'text-transform:uppercase;">' + escHtml(tUI('conf_' + c.confidence) || c.confidence) + '</span>'
         );
 
         /* Resolve localized display name and ADE for Step 5 */
@@ -1960,7 +2525,7 @@ const STEP_CONTENT = {
         var ddiHtml = ddiWarning
           ? '<div style="background:#fdedec;border-left:3px solid #e74c3c;padding:.4rem .7rem;' +
               'margin-top:.45rem;font-size:.82rem;color:#922b21;border-radius:0 3px 3px 0;">' +
-              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(ddiWarning) +
+              '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiWarning) +
             '</div>'
           : '';
 
@@ -1968,15 +2533,15 @@ const STEP_CONTENT = {
         var actionHtml = actionText
           ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.4rem .7rem;' +
               'margin-top:.45rem;font-size:.82rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
-              '<strong>&#128203; Acci&oacute;n recomendada:</strong>&nbsp;' + escHtml(actionText) +
+              '<strong>' + tUI('recommended_action') + '</strong>&nbsp;' + escHtml(actionText) +
             '</div>'
           : '';
 
         /* Differential hints */
         var diffHtml = diffHints.length
           ? '<div style="margin-top:.45rem;font-size:.81rem;color:#555;">' +
-              '<strong>&#128270; Considerar tambi&eacute;n:</strong>&nbsp;' +
-              escHtml(diffHints.join(' &bull; ')) +
+              '<strong>' + tUI('consider_also') + '</strong>&nbsp;' +
+              escHtml(diffHints.join(' \u2022 ')) +
             '</div>'
           : '';
 
@@ -2001,10 +2566,10 @@ const STEP_CONTENT = {
 
         var classButtons = (
           '<div style="display:flex;gap:.45rem;margin-top:.7rem;flex-wrap:wrap;align-items:center;">' +
-            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">Clasificar:</span>' +
-            classBtn('confirmed',   '&#10003;&nbsp;Cascada confirmada', '#1e8449', '#fff') +
-            classBtn('possible',    '&#63;&nbsp;Cascada posible',       '#e67e22', '#fff') +
-            classBtn('not_cascade', '&#10005;&nbsp;Descartar',          '#7f8c8d', '#fff') +
+            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">' + tUI('classify_label') + '</span>' +
+            classBtn('confirmed',   tUI('btn_confirmed'), '#1e8449', '#fff') +
+            classBtn('possible',    tUI('btn_possible'),  '#e67e22', '#fff') +
+            classBtn('not_cascade', tUI('btn_discard'),   '#7f8c8d', '#fff') +
           '</div>'
         );
 
@@ -2034,7 +2599,7 @@ const STEP_CONTENT = {
 
       return (
         '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.84rem;">' +
-          '&#9888;&nbsp;Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.' +
+          tUI('review_warning') +
         '</div>' +
         tallyHtml +
         rows.join('')
@@ -2042,22 +2607,22 @@ const STEP_CONTENT = {
     }
   },
   6: {
-    title: '&#128196; Paso 6 &mdash; Plan farmacoterap&eacute;utico e informe',
+    title: function () { return tUI('step6_title'); },
     body: function () {
       var kbReady = state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist;
       if (!kbReady) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Base de conocimiento no disponible.</strong> ' +
-            'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.' +
+            '<strong>' + tUI('kb_unavailable_title') + '</strong> ' +
+            tUI('kb_unavailable_detail') +
           '</div>'
         );
       }
       if (!state.clinicalNote || !state.clinicalNote.trim()) {
         return (
           '<div class="callout callout-warning">' +
-            '<strong>&#9888; Nota cl&iacute;nica vac&iacute;a.</strong> ' +
-            'Introduzca la nota cl&iacute;nica en el Paso 1 para generar el informe.' +
+            '<strong>' + tUI('note_empty_title') + '</strong> ' +
+            tUI('note_empty_detail_report') +
           '</div>'
         );
       }
@@ -2079,7 +2644,7 @@ const STEP_CONTENT = {
 
       /* ── Drug chips ── */
       function chips(arr, bg, border, color) {
-        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">Ninguno detectado</em>';
+        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>';
         return arr.map(function (d) {
           return (
             '<span style="display:inline-block;background:' + bg + ';border:1px solid ' + border + ';' +
@@ -2092,10 +2657,10 @@ const STEP_CONTENT = {
       /* ── Verification status badge ── */
       function verBadge(status) {
         var map = {
-          confirmed:   { bg: '#1e8449', fg: '#fff', label: 'Confirmada'    },
-          possible:    { bg: '#e67e22', fg: '#fff', label: 'Posible'       },
-          not_cascade: { bg: '#bdc3c7', fg: '#555', label: 'Descartada'    },
-          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: 'Sin revisar'   }
+          confirmed:   { bg: '#1e8449', fg: '#fff', label: tUI('ver_confirmed')   },
+          possible:    { bg: '#e67e22', fg: '#fff', label: tUI('ver_possible')     },
+          not_cascade: { bg: '#bdc3c7', fg: '#555', label: tUI('ver_not_cascade') },
+          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: tUI('ver_unreviewed')  }
         };
         var s = map[status] || map.unreviewed;
         return (
@@ -2111,30 +2676,31 @@ const STEP_CONTENT = {
         plausible_cascades: 0,
         high_priority_cascades: 0,
         top_interventions: [],
-        validation_warning: 'Este informe requiere validación clínica-farmacéutica.'
+        validation_warning: tUI('validation_warning')
       };
 
-      function priorityBadge(priority) {
+      function priorityBadge(priorityLevel) {
         var map = {
-          'Alta prioridad': { bg: '#b71c1c', fg: '#fff' },
-          'Prioridad intermedia': { bg: '#ef6c00', fg: '#fff' },
-          'Baja prioridad': { bg: '#546e7a', fg: '#fff' }
+          alta:       { bg: '#b71c1c', fg: '#fff', label: tUI('prio_high')   },
+          intermedia: { bg: '#ef6c00', fg: '#fff', label: tUI('prio_medium') },
+          baja:       { bg: '#546e7a', fg: '#fff', label: tUI('prio_low')    }
         };
-        var p = map[priority] || map['Baja prioridad'];
+        var p = map[priorityLevel] || map.baja;
         return '<span style="font-size:.74rem;font-weight:700;background:' + p.bg + ';color:' + p.fg + ';' +
-          'border-radius:4px;padding:.16rem .5rem;white-space:nowrap;">' + escHtml(priority) + '</span>';
+          'border-radius:4px;padding:.16rem .5rem;white-space:nowrap;">' + escHtml(p.label) + '</span>';
       }
 
       function confidenceBadge(conf) {
+        var label = tUI('conf_' + conf) || conf;
         return '<span style="font-size:.74rem;font-weight:700;color:#fff;border-radius:4px;padding:.16rem .5rem;' +
-          'background:' + (conf === 'high' ? '#1e8449' : conf === 'medium' ? '#e67e22' : '#7f8c8d') + ';">' + escHtml(conf) + '</span>';
+          'background:' + (conf === 'high' ? '#1e8449' : conf === 'medium' ? '#e67e22' : '#7f8c8d') + ';">' + escHtml(label) + '</span>';
       }
 
       var cascadeContent;
       if (r.cascades.length === 0) {
         cascadeContent = (
           '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' +
-            '&#10003;&nbsp;Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.' +
+            tUI('no_cascades_report') +
           '</p>'
         );
       } else {
@@ -2151,47 +2717,51 @@ const STEP_CONTENT = {
 
         function levelBadge(c) {
           var map = {
-            plausible_cascade: { bg: '#1e8449', fg: '#fff' },
+            plausible_cascade:  { bg: '#1e8449', fg: '#fff' },
             preliminary_signal: { bg: '#7f8c8d', fg: '#fff' }
           };
           var s = map[c.finding_level] || map.preliminary_signal;
-          return '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';border-radius:4px;padding:.14rem .45rem;">' + escHtml(c.finding_label || 'Señal') + '</span>';
+          var label = c.finding_level === 'plausible_cascade' ? tUI('level_plausible_label') : tUI('level_preliminary_label');
+          return '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';border-radius:4px;padding:.14rem .45rem;">' + escHtml(label) + '</span>';
         }
 
         function renderCards(items) {
           return items.map(function (c) {
-            var factorsInFavor = (c.factors_in_favor || []).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
+            var factorsInFavor  = (c.factors_in_favor  || []).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
             var factorsToVerify = (c.factors_to_verify || []).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
+            var levelLabel = c.finding_level === 'plausible_cascade' ? tUI('level_plausible_label') : tUI('level_preliminary_label');
+            var prioLabel  = c.pharmacy_priority_level === 'alta' ? tUI('prio_high')
+                           : c.pharmacy_priority_level === 'intermedia' ? tUI('prio_medium') : tUI('prio_low');
             return (
               '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.9rem 1rem;margin:.75rem 0;background:#fff;">' +
                 '<div style="display:flex;justify-content:space-between;gap:.45rem;align-items:flex-start;flex-wrap:wrap;">' +
                   '<div>' +
                     '<div style="font-weight:700;color:#2c3e50;">' + escHtml(c.cascade_name) + '</div>' +
-                    '<div style="font-size:.75rem;color:#8a8a8a;margin-top:.2rem;">ID t&eacute;cnico: ' + escHtml(c.cascade_id) + '</div>' +
+                    '<div style="font-size:.75rem;color:#8a8a8a;margin-top:.2rem;">' + tUI('tech_id') + ' ' + escHtml(c.cascade_id) + '</div>' +
                   '</div>' +
                   '<div style="display:flex;gap:.35rem;flex-wrap:wrap;">' +
-                    levelBadge(c) + priorityBadge(c.pharmacy_priority) + confidenceBadge(c.confidence) + verBadge(c.verification_status) +
+                    levelBadge(c) + priorityBadge(c.pharmacy_priority_level) + confidenceBadge(c.confidence) + verBadge(c.verification_status) +
                   '</div>' +
                 '</div>' +
-                '<div style="margin-top:.55rem;font-size:.83rem;"><strong>Secuencia farmacol&oacute;gica:</strong> ' + escHtml(c.sequence) + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Nivel de hallazgo:</strong> ' + escHtml(c.finding_label || 'Señal') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Prioridad farmac&eacute;utica:</strong> ' + escHtml(c.pharmacy_priority || 'Baja prioridad') + '</div>' +
-                '<div style="margin-top:.35rem;font-size:.82rem;"><strong>Qué lo apoya:</strong> ' + escHtml(c.support_summary || '—') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Qué falta:</strong> ' + escHtml(c.missing_summary || '—') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>Nivel asignado:</strong> ' + escHtml(c.level_reason || '—') + '</div>' +
-                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>Interpretaci&oacute;n cl&iacute;nica:</strong> ' + escHtml(c.clinical_interpretation || '—') + '</div>' +
-                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>Se&ntilde;al activadora:</strong> ' + escHtml(c.trigger_explanation || '—') + '</div>' +
+                '<div style="margin-top:.55rem;font-size:.83rem;"><strong>' + tUI('pharmacological_sequence') + '</strong> ' + escHtml(c.sequence) + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('finding_level_lbl') + '</strong> ' + escHtml(levelLabel) + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('pharmacy_priority_lbl') + '</strong> ' + escHtml(prioLabel) + '</div>' +
+                '<div style="margin-top:.35rem;font-size:.82rem;"><strong>' + tUI('what_supports') + '</strong> ' + escHtml(c.support_summary || '\u2014') + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('what_missing') + '</strong> ' + escHtml(c.missing_summary || '\u2014') + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('level_assigned') + '</strong> ' + escHtml(c.level_reason || '\u2014') + '</div>' +
+                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>' + tUI('clinical_interpretation_lbl') + '</strong> ' + escHtml(c.clinical_interpretation || '\u2014') + '</div>' +
+                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>' + tUI('trigger_signal') + '</strong> ' + escHtml(c.trigger_explanation || '\u2014') + '</div>' +
                 '<div style="margin-top:.45rem;font-size:.82rem;">' +
-                  '<strong>Factores a favor</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsInFavor + '</ul>' +
+                  '<strong>' + tUI('factors_in_favor') + '</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsInFavor + '</ul>' +
                 '</div>' +
                 '<div style="margin-top:.32rem;font-size:.82rem;">' +
-                  '<strong>Factores a verificar</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsToVerify + '</ul>' +
+                  '<strong>' + tUI('factors_to_verify') + '</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsToVerify + '</ul>' +
                 '</div>' +
-                '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;"><strong>Intervenci&oacute;n farmac&eacute;utica sugerida:</strong> ' +
-                  escHtml(c.suggested_intervention || c.clinical_recommendation || '—') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;color:#1f4f2a;"><strong>Recomendación cl&iacute;nica breve:</strong> ' +
-                  escHtml(c.clinical_recommendation || c.suggested_intervention || '—') + '</div>' +
-                '<div style="margin-top:.35rem;font-size:.8rem;color:#666;"><strong>Qu&eacute; falta para mayor certeza:</strong> ' + escHtml(c.certainty_gap || '—') + '</div>' +
+                '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;"><strong>' + tUI('suggested_intervention_lbl') + '</strong> ' +
+                  escHtml(c.suggested_intervention || c.clinical_recommendation || '\u2014') + '</div>' +
+                '<div style="margin-top:.3rem;font-size:.82rem;color:#1f4f2a;"><strong>' + tUI('brief_recommendation_lbl') + '</strong> ' +
+                  escHtml(c.clinical_recommendation || c.suggested_intervention || '\u2014') + '</div>' +
+                '<div style="margin-top:.35rem;font-size:.8rem;color:#666;"><strong>' + tUI('certainty_gap_lbl') + '</strong> ' + escHtml(c.certainty_gap || '\u2014') + '</div>' +
               '</div>'
             );
           }).join('');
@@ -2200,39 +2770,39 @@ const STEP_CONTENT = {
         var plausible = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; }));
         var preliminary = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; }));
         cascadeContent =
-          '<div style="margin-bottom:.8rem;padding:.45rem .6rem;background:#eaf7ef;border:1px solid #b7dfc3;border-radius:5px;"><strong>1) Cascadas terap&eacute;uticas plausibles (' + plausible.length + ')</strong></div>' +
-          (plausible.length ? renderCards(plausible) : '<p style="font-size:.82rem;color:#7f8c8d;">Sin cascadas plausibles en esta nota.</p>') +
-          '<div style="margin:.9rem 0 .8rem;padding:.45rem .6rem;background:#f3f4f6;border:1px solid #d6d9dd;border-radius:5px;"><strong>2) Se&ntilde;ales farmacol&oacute;gicas preliminares (' + preliminary.length + ')</strong></div>' +
-          (preliminary.length ? renderCards(preliminary) : '<p style="font-size:.82rem;color:#7f8c8d;">Sin señales preliminares activas.</p>');
+          '<div style="margin-bottom:.8rem;padding:.45rem .6rem;background:#eaf7ef;border:1px solid #b7dfc3;border-radius:5px;"><strong>' + tUI('plausible_group', plausible.length) + '</strong></div>' +
+          (plausible.length ? renderCards(plausible) : '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_plausible') + '</p>') +
+          '<div style="margin:.9rem 0 .8rem;padding:.45rem .6rem;background:#f3f4f6;border:1px solid #d6d9dd;border-radius:5px;"><strong>' + tUI('preliminary_group', preliminary.length) + '</strong></div>' +
+          (preliminary.length ? renderCards(preliminary) : '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_preliminary') + '</p>');
       }
 
       var summaryInterventions = (summary.top_interventions || []).length
         ? '<ul style="margin:.35rem 0 0 1rem;">' +
             summary.top_interventions.map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('') +
           '</ul>'
-        : '<p style="margin:.35rem 0 0;color:#6b7280;font-size:.82rem;">No hay intervenciones dominantes con los datos actuales.</p>';
+        : '<p style="margin:.35rem 0 0;color:#6b7280;font-size:.82rem;">' + tUI('no_dominant_interventions') + '</p>';
       /* ── Export buttons ── */
       var exportRow = (
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
           '<button onclick="copyReportForClinicalRecord()" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#34495e;color:#fff;border:none;font-weight:600;">' +
-            '&#128203;&nbsp;Copiar para historia cl&iacute;nica' +
+            tUI('btn_copy_record') +
           '</button>' +
           '<button onclick="printReportAsPDF()" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#8e44ad;color:#fff;border:none;font-weight:600;">' +
-            '&#128438;&nbsp;Guardar como PDF' +
+            tUI('btn_save_pdf') +
           '</button>' +
           '<button onclick="exportReport(\'json\')" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
-            '&#8681;&nbsp;Exportar JSON' +
+            tUI('btn_export_json') +
           '</button>' +
           '<button onclick="exportReport(\'csv\')" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
-            '&#8681;&nbsp;Exportar CSV' +
+            tUI('btn_export_csv') +
           '</button>' +
         '</div>'
       );
@@ -2242,57 +2812,56 @@ const STEP_CONTENT = {
           'padding:1.15rem 1.3rem;">' +
 
           '<h3 style="margin:0 0 1rem;font-size:1rem;color:#2c3e50;">' +
-            '&#128196;&nbsp;Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas' +
+            tUI('report_title') +
           '</h3>' +
 
-          section('Datos del caso y auditor&iacute;a',
+          section(tUI('section_case_data'),
             '<table style="font-size:.87rem;border-collapse:collapse;width:auto;">' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">ID de paciente</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_patient_id') + '</td>' +
                   '<td style="padding:.28rem 0;font-weight:700;">' +
-                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">No establecido</em>') +
+                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">' + tUI('not_set') + '</em>') +
                   '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Generado</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_generated') + '</td>' +
                   '<td style="padding:.28rem 0;">' + escHtml(now) + '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">Versi&oacute;n KB</td>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_kb_version') + '</td>' +
                   '<td style="padding:.28rem 0;">' +
                     escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
                   '</td></tr>' +
             '</table>'
           ) +
 
-          section('Medicamentos detectados (' + r.drugs_detected.length + ')',
+          section(tUI('section_drugs', r.drugs_detected.length),
             (r.drugs_detected.length
               ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + r.drugs_detected.map(function (d) { return '<li>' + escHtml(d) + '</li>'; }).join('') + '</ul>'
-              : '<em style="color:#aaa;font-size:.85rem;">Ninguno detectado</em>') +
+              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>') +
             (r.diagnostics && r.diagnostics.inferredDrugsFromCascades
               ? '<p style="margin:.4rem 0 0;font-size:.75rem;color:#7f8c8d;">' +
-                  '&#9432;&nbsp;' + r.diagnostics.inferredDrugCount + ' medicamento(s) inferido(s) a partir de las cascadas detectadas.' +
+                  tUI('inferred_drugs', r.diagnostics.inferredDrugCount) +
                 '</p>'
               : '')
           ) +
 
-          section('Grupos farmacol&oacute;gicos (' + r.drug_classes.length + ')',
+          section(tUI('section_classes', r.drug_classes.length),
             (r.drug_classes.length
               ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + r.drug_classes.map(function (g) { return '<li>' + escHtml(g) + '</li>'; }).join('') + '</ul>'
-              : '<em style="color:#aaa;font-size:.85rem;">No clasificados</em>')
+              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('not_classified') + '</em>')
           ) +
 
-          section('Resumen cl&iacute;nico',
+          section(tUI('section_summary'),
             '<div style="font-size:.84rem;line-height:1.45;">' +
-              '<div><strong>Total de hallazgos detectados:</strong> ' + summary.total_cascades + '</div>' +
-              '<div><strong>Cascadas plausibles:</strong> ' + (summary.plausible_cascades || 0) + '</div>' +
-              '<div><strong>Cascadas de alta prioridad:</strong> ' + summary.high_priority_cascades + '</div>' +
-              '<div style="margin-top:.4rem;"><strong>Principales intervenciones sugeridas:</strong></div>' +
+              '<div><strong>' + tUI('total_findings') + '</strong> ' + summary.total_cascades + '</div>' +
+              '<div><strong>' + tUI('label_plausible') + '</strong> ' + (summary.plausible_cascades || 0) + '</div>' +
+              '<div><strong>' + tUI('label_high_priority') + '</strong> ' + summary.high_priority_cascades + '</div>' +
+              '<div style="margin-top:.4rem;"><strong>' + tUI('main_interventions') + '</strong></div>' +
               summaryInterventions +
               '<div class="callout callout-warning" style="margin-top:.5rem;font-size:.8rem;">&#9888;&nbsp;' + escHtml(summary.validation_warning) + '</div>' +
             '</div>'
           ) +
 
-          section('Hallazgos farmacoterap&eacute;uticos (' + r.cascade_count + ')', cascadeContent) +
+          section(tUI('section_findings', r.cascade_count), cascadeContent) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
-            '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. No es un producto sanitario (MDR). ' +
-            'No utilizar con identificadores reales de pacientes fuera de un contexto de investigaci&oacute;n seudonimizado.' +
+            tUI('decision_support_warning') +
           '</div>' +
 
           exportRow +
@@ -2320,12 +2889,13 @@ function renderStepContent(step) {
 
   var cfg = STEP_CONTENT[step];
   if (!cfg) {
-    container.innerHTML = '<div class="loading-placeholder">Unknown step.</div>';
+    container.innerHTML = '<div class="loading-placeholder">' + tUI('unknown_step') + '</div>';
     return;
   }
 
+  var titleText = typeof cfg.title === 'function' ? cfg.title() : cfg.title;
   container.innerHTML =
-    '<div class="step-header"><h2>' + cfg.title + '</h2></div>' +
+    '<div class="step-header"><h2>' + titleText + '</h2></div>' +
     '<div class="step-section">' + cfg.body() + '</div>';
 
   if (typeof cfg.onMount === 'function') {
@@ -2346,9 +2916,12 @@ function updateNavButtons(step) {
   var prev    = document.getElementById('btn-prev');
   var next    = document.getElementById('btn-next');
   var counter = document.getElementById('step-counter');
-  if (prev)    prev.disabled = step === 1;
-  if (next)    next.innerHTML = step === 6 ? '&#10003; Finalizar' : 'Siguiente &#8594;';
-  if (counter) counter.textContent = 'Paso ' + step + ' de 6';
+  if (prev) {
+    prev.disabled  = step === 1;
+    prev.innerHTML = tUI('btn_prev');
+  }
+  if (next)    next.innerHTML = step === 6 ? tUI('btn_finish') : tUI('btn_next');
+  if (counter) counter.textContent = tUI('step_counter', step);
 }
 
 /* ============================================================
@@ -2374,10 +2947,10 @@ function exportJSON() {
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    showToast('Case exported successfully.', 'success');
+    showToast(tUI('toast_case_exported'), 'success');
   } catch (err) {
     console.error('[Export] exportJSON failed:', err);
-    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+    showToast(tUI('toast_export_failed', err.message || 'unknown error'), 'error');
   }
 }
 
@@ -2435,13 +3008,13 @@ function isNonspecificSymptom(symptomTerm) {
 
 function detectDrugPairTemporality(noteText, signal) {
   if (!hasText(noteText) || !signal) {
-    return { status: 'unknown', detail: 'Sin datos temporales suficientes.' };
+    return { status: 'unknown', detail: tUI('temporality_no_data') };
   }
 
   var idxPos = signal.index_drug ? findTermInNote(noteText, signal.index_drug) : null;
   var casPos = signal.cascade_drug ? findTermInNote(noteText, signal.cascade_drug) : null;
   if (!idxPos && !casPos) {
-    return { status: 'unknown', detail: 'Sin pista temporal alrededor de los fármacos detectados.' };
+    return { status: 'unknown', detail: tUI('temporality_no_data') };
   }
 
   var idxCue = idxPos ? detectTimeCues(noteText, idxPos.index) : {};
@@ -2449,9 +3022,9 @@ function detectDrugPairTemporality(noteText, signal) {
   var supportive = !!(idxCue.drugStartHint || casCue.treatmentAddedHint || idxCue.treatmentAddedHint);
   var chronic = !!(idxCue.chronicHint || casCue.chronicHint);
 
-  if (supportive) return { status: 'supportive', detail: 'Temporalidad compatible (inicio/cambio terapéutico detectado).' };
-  if (chronic) return { status: 'weak', detail: 'Temporalidad débil por posible uso crónico/preexistente.' };
-  return { status: 'unknown', detail: 'Temporalidad no demostrada en la nota.' };
+  if (supportive) return { status: 'supportive', detail: tUI('temporality_supportive') };
+  if (chronic)    return { status: 'weak',        detail: tUI('temporality_weak')       };
+  return            { status: 'unknown',           detail: tUI('temporality_unknown')   };
 }
 
 function buildEvidenceProfile(signal, recommendationText, noteText) {
@@ -2463,7 +3036,7 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
   var explicitEvidence = hasText(signal.ddi_warning);
 
   if (signal.signal_type === 'symptom_bridge') {
-    supports.push('Síntoma compatible detectado en la nota.');
+    supports.push(tUI('symptom_detected'));
   } else {
     var matchedSymptoms = (state.symptomsDetected || []).filter(function (s) {
       /* Use normalizeSymptomText() so diacritic variants and mixed-case ADE
@@ -2472,27 +3045,26 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
              normalizeSymptomText(s.term) === normalizeSymptomText(signal.ade_en);
     });
     symptomMatch = matchedSymptoms.length > 0;
-    if (symptomMatch) supports.push('ADE/síntoma compatible detectado (' + signal.ade_en + ').');
+    if (symptomMatch) supports.push(tUI('ade_detected', signal.ade_en));
   }
 
   if (temporality.status === 'supportive') supports.push(temporality.detail);
   else missing.push(temporality.detail);
 
-  if (explicitKbIntervention) supports.push('KB aporta una recomendación/intervención clínica.');
-  if (explicitEvidence) supports.push('Existe evidencia farmacológica explícita en KB (p. ej., alerta DDI).');
+  if (explicitKbIntervention) supports.push(tUI('kb_has_recommendation'));
+  if (explicitEvidence)       supports.push(tUI('explicit_kb_evidence'));
 
   var noteDrivenSupport = symptomMatch || temporality.status === 'supportive' || explicitEvidence;
   var hasClinicalSupport = signal.signal_type === 'symptom_bridge' || noteDrivenSupport;
   if (signal.signal_type === 'drug_drug' && !hasClinicalSupport) {
-    missing.push('Falta soporte clínico adicional para elevarla a cascada plausible.');
+    missing.push(tUI('missing_clinical_support'));
   }
 
+  var isPreliminary = signal.signal_type === 'drug_drug' && !hasClinicalSupport;
   return {
-    level: signal.signal_type === 'drug_drug' && !hasClinicalSupport ? 'preliminary_signal' : 'plausible_cascade',
-    label: signal.signal_type === 'drug_drug' && !hasClinicalSupport ? 'Señal farmacológica preliminar' : 'Cascada terapéutica plausible',
-    levelReason: signal.signal_type === 'drug_drug' && !hasClinicalSupport
-      ? 'Permanece preliminar: co-ocurrencia farmacológica sin soporte clínico suficiente.'
-      : 'Clasificada como plausible por soporte clínico detectable.',
+    level:       isPreliminary ? 'preliminary_signal' : 'plausible_cascade',
+    label:       isPreliminary ? tUI('level_preliminary_label') : tUI('level_plausible_label'),
+    levelReason: isPreliminary ? tUI('level_preliminary_reason') : tUI('level_plausible_reason'),
     supports: supports,
     missing: missing,
     hasClinicalSupport: hasClinicalSupport,
@@ -2506,40 +3078,40 @@ function derivePharmacyPriority(signal, recommendationText, evidence) {
 
   var confScore = confidenceRank(signal.confidence);
   score += confScore;
-  reasons.push('Probabilidad ' + (signal.confidence || 'low') + '.');
+  reasons.push(tUI('prio_reason_probability', signal.confidence || 'low'));
 
   var specificityScore = signal.signal_type === 'symptom_bridge' ? 2 : 1;
   if (signal.signal_type === 'drug_drug' && hasText(signal.ade_en)) specificityScore += 1;
   score += specificityScore;
   reasons.push(
     signal.signal_type === 'symptom_bridge'
-      ? 'Puente sintomático con evidencia clínica directa.'
-      : 'Señal farmacológica de especificidad variable.'
+      ? tUI('prio_reason_symptom_bridge')
+      : tUI('prio_reason_pharmacological')
   );
 
   var hasClearIntervention = !!(recommendationText && recommendationText.trim()) ||
     signal.appropriateness === 'often_inappropriate';
   if (hasClearIntervention) {
     score += 1;
-    reasons.push('Existe intervención farmacéutica accionable.');
+    reasons.push(tUI('prio_reason_actionable'));
   } else {
-    reasons.push('Intervención menos definida con los datos actuales.');
+    reasons.push(tUI('prio_reason_less_defined'));
   }
 
   if (evidence) {
     if (!evidence.hasClinicalSupport) {
       score -= 2;
-      reasons.push('Penalización: señal sin soporte clínico adicional.');
+      reasons.push(tUI('prio_reason_no_clinical'));
     }
     if (evidence.temporality.status === 'supportive') {
       score += 1;
-      reasons.push('Temporalidad compatible suma prioridad.');
+      reasons.push(tUI('prio_reason_temp_good'));
     } else if (evidence.temporality.status === 'weak') {
       score -= 1;
-      reasons.push('Temporalidad débil reduce prioridad.');
+      reasons.push(tUI('prio_reason_temp_weak'));
     } else {
       score -= 1;
-      reasons.push('Sin soporte temporal claro: prioridad penalizada.');
+      reasons.push(tUI('prio_reason_no_temporal'));
     }
   }
 
@@ -2549,27 +3121,27 @@ function derivePharmacyPriority(signal, recommendationText, evidence) {
 
   if (signal.signal_type === 'symptom_bridge' && isNonspecificSymptom(signal.ade_en) && !hasAdditionalSupport) {
     score -= 1;
-    reasons.push('Penalización adicional: síntoma inespecífico sin soporte temporal/causal claro.');
+    reasons.push(tUI('prio_reason_nonspecific'));
   }
 
-  if (score >= 6) return { level: 'alta', label: 'Alta prioridad', score: score, reasons: reasons };
-  if (score >= 4) return { level: 'intermedia', label: 'Prioridad intermedia', score: score, reasons: reasons };
-  return { level: 'baja', label: 'Baja prioridad', score: score, reasons: reasons };
+  if (score >= 6) return { level: 'alta',       label: tUI('prio_high'),   score: score, reasons: reasons };
+  if (score >= 4) return { level: 'intermedia',  label: tUI('prio_medium'), score: score, reasons: reasons };
+  return             { level: 'baja',            label: tUI('prio_low'),    score: score, reasons: reasons };
 }
 
 function buildVerificationItems(signal) {
   var items = [
-    'Cronología clínica precisa: inicio del fármaco índice, aparición del síntoma/EAM e inicio del fármaco de cascada.',
-    'Indicación primaria del fármaco de cascada: confirmar si fue prescrito para tratar el posible EAM y no por una enfermedad independiente.',
-    'Evolución tras ajustes terapéuticos (dechallenge/rechallenge cuando sea clínicamente seguro).'
+    tUI('verif_chronology'),
+    tUI('verif_indication'),
+    tUI('verif_evolution')
   ];
 
   if (signal.signal_type === 'symptom_bridge') {
-    items.push('Validar si el síntoma estaba activo (no negado) y su gravedad actual en la entrevista clínica.');
+    items.push(tUI('verif_symptom_active'));
   }
 
   if (!signal.ade_en) {
-    items.push('Falta EAM explícito en la nota: revisar historia clínica para documentar manifestación adversa concreta.');
+    items.push(tUI('verif_no_ade'));
   }
 
   return items;
@@ -2579,11 +3151,11 @@ function buildSignalExplanation(signal) {
   if (signal.signal_type === 'symptom_bridge') {
     var temporal = signal.rationale && signal.rationale.explanation
       ? ' ' + signal.rationale.explanation
-      : ' Temporalidad incompleta en el texto actual.';
-    return 'Se activó por coincidencia de fármaco causal + síntoma detectado + fármaco usado para tratar ese síntoma.' + temporal;
+      : tUI('signal_bridge_incomplete');
+    return tUI('signal_bridge_base') + temporal;
   }
 
-  return 'Se activó por presencia simultánea de fármaco índice y fármaco de cascada compatibles con el patrón de la KB.';
+  return tUI('signal_drug_drug');
 }
 
 function buildClinicalInterpretation(signal, entry) {
@@ -2593,7 +3165,7 @@ function buildClinicalInterpretation(signal, entry) {
   if (clinNote)  return clinNote;
   if (recAction) return recAction;
   if (signal.clinical_hint) return signal.clinical_hint;
-  return 'Posible cascada terapéutica a confirmar con revisión clínica individualizada.';
+  return tUI('default_interpretation');
 }
 
 /* ── buildReport ──────────────────────────────────────────────────────────
@@ -2628,7 +3200,7 @@ function buildReport() {
     var clinicalInterpretation = buildClinicalInterpretation(c, entry);
     var adeDisplay = (currentLanguage === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
     var factorsInFavor = [
-      'Secuencia detectada: ' + c.index_drug + ' → ' + (adeDisplay || 'posible EAM') + ' → ' + c.cascade_drug + '.',
+      'Secuencia detectada: ' + c.index_drug + ' \u2192 ' + (adeDisplay || tUI('seq_potential_ade')) + ' \u2192 ' + c.cascade_drug + '.',
       buildSignalExplanation(c)
     ].concat(priority.reasons, evidence.supports);
 
@@ -2651,19 +3223,19 @@ function buildReport() {
       ade_display:             adeDisplay,
       clinical_recommendation: rec,
       verification_status:     state.cascadeClassifications[c.cascade_id] || 'unreviewed',
-      sequence:                c.index_drug + ' → ' + (adeDisplay || 'EAM potencial') + ' → ' + c.cascade_drug,
+      sequence:                c.index_drug + ' \u2192 ' + (adeDisplay || tUI('seq_potential_ade')) + ' \u2192 ' + c.cascade_drug,
       clinical_interpretation: clinicalInterpretation,
       factors_in_favor:        factorsInFavor,
       factors_to_verify:       buildVerificationItems(c).concat(evidence.missing),
-      suggested_intervention:  rec || 'No hay intervención específica en KB; revisar indicación, balance beneficio-riesgo y alternativas.',
+      suggested_intervention:  rec || tUI('no_kb_intervention'),
       pharmacy_priority:       priority.label,
       pharmacy_priority_level: priority.level,
       trigger_explanation:     buildSignalExplanation(c),
-      certainty_gap:           'Para aumentar certeza: confirmar temporalidad, causalidad alternativa y respuesta tras ajustes terapéuticos.',
+      certainty_gap:           tUI('certainty_gap_text'),
       finding_level:           evidence.level,
       finding_label:           evidence.label,
-      support_summary:         evidence.supports.length ? evidence.supports.join(' | ') : 'Sin apoyo clínico adicional detectado.',
-      missing_summary:         evidence.missing.length ? evidence.missing.join(' | ') : 'Sin brechas críticas detectadas.',
+      support_summary:         evidence.supports.length ? evidence.supports.join(' | ') : tUI('no_support_summary'),
+      missing_summary:         evidence.missing.length ? evidence.missing.join(' | ') : tUI('no_missing_summary'),
       level_reason:            evidence.levelReason,
       temporal_support:        evidence.temporality.status
     };
@@ -2710,67 +3282,67 @@ function buildReport() {
       plausible_cascades: plausibleCount,
       high_priority_cascades: highPriorityCount,
       top_interventions: topInterventions.slice(0, 3),
-      validation_warning: 'Este informe requiere validación clínica-farmacéutica antes de cualquier cambio terapéutico.'
+      validation_warning: tUI('validation_warning')
     }
   };
 }
 
 function formatReportForClinicalRecord(report) {
   var lines = [];
-  lines.push('INFORME FARMACOTERAPÉUTICO — AUDITORÍA DE CASCADAS');
-  lines.push('Paciente: ' + (report.patient_id || 'No establecido'));
-  lines.push('Fecha informe: ' + report.generated_at);
-  lines.push('KB: ' + report.kb_mode + (report.kb_version ? ' v' + report.kb_version : ''));
+  lines.push(tUI('report_header'));
+  lines.push(tUI('report_patient') + (report.patient_id || tUI('report_not_set')));
+  lines.push(tUI('report_date') + report.generated_at);
+  lines.push(tUI('report_kb') + report.kb_mode + (report.kb_version ? ' v' + report.kb_version : ''));
   lines.push('');
-  lines.push('Resumen:');
-  lines.push('- Cascadas detectadas: ' + report.cascade_count);
-  lines.push('- Cascadas plausibles: ' + (report.clinical_summary && report.clinical_summary.plausible_cascades ? report.clinical_summary.plausible_cascades : 0));
-  lines.push('- Cascadas de alta prioridad: ' + (report.clinical_summary && report.clinical_summary.high_priority_cascades ? report.clinical_summary.high_priority_cascades : 0));
-  lines.push('- Medicamentos detectados: ' + (report.drugs_detected.join(', ') || 'Ninguno'));
-  lines.push('- Grupos farmacológicos: ' + (report.drug_classes.join(', ') || 'No clasificados'));
+  lines.push(tUI('report_summary'));
+  lines.push(tUI('report_total') + report.cascade_count);
+  lines.push(tUI('report_plausible_count') + (report.clinical_summary && report.clinical_summary.plausible_cascades ? report.clinical_summary.plausible_cascades : 0));
+  lines.push(tUI('report_high_prio') + (report.clinical_summary && report.clinical_summary.high_priority_cascades ? report.clinical_summary.high_priority_cascades : 0));
+  lines.push(tUI('report_drugs_list') + (report.drugs_detected.join(', ') || tUI('report_none')));
+  lines.push(tUI('report_classes_list') + (report.drug_classes.join(', ') || tUI('report_not_classified')));
   lines.push('');
 
   if (!report.cascades.length) {
-    lines.push('No se han detectado cascadas terapéuticas con los datos actuales.');
+    lines.push(tUI('report_no_cascades'));
   } else {
     var plausible = report.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; });
     var preliminary = report.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; });
-    lines.push('Cascadas terapéuticas plausibles (' + plausible.length + '):');
+    lines.push(tUI('report_plausible_section', plausible.length));
     plausible.forEach(function (c, idx) {
       lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
-      lines.push('   - Secuencia: ' + c.sequence);
-      lines.push('   - Nivel de hallazgo: ' + c.finding_level);
-      lines.push('   - Prioridad farmacéutica: ' + c.pharmacy_priority);
-      lines.push('   - Estado de verificación: ' + c.verification_status);
-      lines.push('   - Evidencia a favor: ' + (c.support_summary || 'Sin apoyo clínico adicional detectado.'));
-      lines.push('   - Qué falta para confirmar: ' + (c.missing_summary || 'Sin brechas críticas detectadas.'));
-      lines.push('   - Recomendación clínica breve: ' + (c.clinical_recommendation || c.suggested_intervention || 'Sin recomendación específica'));
+      lines.push(tUI('report_seq') + c.sequence);
+      lines.push(tUI('report_finding') + c.finding_level);
+      lines.push(tUI('report_prio') + c.pharmacy_priority);
+      lines.push(tUI('report_verif') + c.verification_status);
+      lines.push(tUI('report_evidence') + (c.support_summary || tUI('report_no_support')));
+      lines.push(tUI('report_missing_conf') + (c.missing_summary || tUI('report_no_gaps')));
+      lines.push(tUI('report_rec') + (c.clinical_recommendation || c.suggested_intervention || tUI('report_no_rec')));
     });
 
     lines.push('');
-    lines.push('Señales farmacológicas preliminares (' + preliminary.length + '):');
+    lines.push(tUI('report_preliminary_section', preliminary.length));
     preliminary.forEach(function (c, idx) {
       lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
-      lines.push('   - Secuencia: ' + c.sequence);
-      lines.push('   - Nivel de hallazgo: ' + c.finding_level);
-      lines.push('   - Prioridad farmacéutica: ' + c.pharmacy_priority);
-      lines.push('   - Estado de verificación: ' + c.verification_status);
-      lines.push('   - Evidencia a favor: ' + (c.support_summary || 'Sin apoyo clínico adicional detectado.'));
-      lines.push('   - Qué falta para confirmar: ' + (c.missing_summary || 'Sin brechas críticas detectadas.'));
-      lines.push('   - Recomendación clínica breve: ' + (c.clinical_recommendation || c.suggested_intervention || 'Sin recomendación específica'));
+      lines.push(tUI('report_seq') + c.sequence);
+      lines.push(tUI('report_finding') + c.finding_level);
+      lines.push(tUI('report_prio') + c.pharmacy_priority);
+      lines.push(tUI('report_verif') + c.verification_status);
+      lines.push(tUI('report_evidence') + (c.support_summary || tUI('report_no_support')));
+      lines.push(tUI('report_missing_conf') + (c.missing_summary || tUI('report_no_gaps')));
+      lines.push(tUI('report_rec') + (c.clinical_recommendation || c.suggested_intervention || tUI('report_no_rec')));
     });
   }
 
   if (report.clinical_summary && report.clinical_summary.top_interventions && report.clinical_summary.top_interventions.length) {
     lines.push('');
-    lines.push('Principales acciones sugeridas:');
+    lines.push(tUI('report_actions'));
     report.clinical_summary.top_interventions.forEach(function (action, idx) {
       lines.push('  ' + (idx + 1) + ') ' + action);
     });
   }
 
   lines.push('');
-  lines.push('Advertencia: Requiere validación clínica-farmacéutica antes de cualquier cambio terapéutico.');
+  lines.push(tUI('report_warning'));
   return lines.join('\n');
 }
 
@@ -2808,22 +3380,22 @@ window.copyReportForClinicalRecord = function () {
     report = buildReport();
   } catch (err) {
     console.error('[Report] buildReport failed for clipboard export:', err);
-    showToast('No se pudo generar el informe para copiar.', 'error');
+    showToast(tUI('toast_report_copy_failed'), 'error');
     return;
   }
 
   copyTextToClipboard(formatReportForClinicalRecord(report))
     .then(function () {
-      showToast('Informe copiado al portapapeles.', 'success');
+      showToast(tUI('toast_report_copied'), 'success');
     })
     .catch(function (err) {
       console.error('[Clipboard] Could not copy report:', err);
-      showToast('No se pudo copiar automáticamente. Use Exportar JSON/CSV o Guardar como PDF.', 'error');
+      showToast(tUI('toast_clipboard_failed'), 'error');
     });
 };
 
 window.printReportAsPDF = function () {
-  showToast('Use "Guardar como PDF" en el diálogo de impresión.', 'success');
+  showToast(tUI('toast_print_hint'), 'success');
   window.print();
 };
 
@@ -2837,7 +3409,7 @@ window.exportReport = function (format) {
     filename = 'cascade-report-' + (report.patient_id || 'case') + '-' + isoDate();
   } catch (err) {
     console.error('[Export] buildReport failed:', err);
-    showToast('Could not generate report: ' + (err.message || 'unknown error'), 'error');
+    showToast(tUI('toast_export_failed', err.message || 'unknown error'), 'error');
     return;
   }
   var blob, mime;
@@ -2860,7 +3432,7 @@ window.exportReport = function (format) {
       /* Single data row indicating no cascades */
       rows.push([
         csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
-        csvCell(''), csvCell('Sin cascadas detectadas'),
+        csvCell(''), csvCell(tUI('report_no_cascades')),
         csvCell(''), csvCell(''), csvCell(''), csvCell(''),
         csvCell(''), csvCell(''), csvCell(''), csvCell('')
       ].join(','));
@@ -2901,10 +3473,10 @@ window.exportReport = function (format) {
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    showToast('Report exported (' + (format || 'json').toUpperCase() + ').', 'success');
+    showToast(tUI('toast_report_exported', (format || 'json').toUpperCase()), 'success');
   } catch (err) {
     console.error('[Export] exportReport download failed:', err);
-    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+    showToast(tUI('toast_export_failed', err.message || 'unknown error'), 'error');
   }
 };
 
@@ -2914,7 +3486,7 @@ function importCase(file) {
 
   /* Basic file type guard — only accept files with .json extension or application/json MIME */
   if (file.type && file.type !== 'application/json' && !file.name.endsWith('.json')) {
-    showToast('Import failed: file must be a .json export from this application.', 'error');
+    showToast(tUI('toast_import_type_error'), 'error');
     return;
   }
 
@@ -2967,22 +3539,22 @@ function importCase(file) {
 
       saveState();
       goTo(state.step);
-      showToast('Case imported successfully.', 'success');
+      showToast(tUI('toast_case_imported'), 'success');
     } catch (err) {
       console.error('[Import] Could not parse imported file:', err);
-      showToast('Import failed: ' + (err.message || 'invalid file'), 'error');
+      showToast(tUI('toast_import_failed', err.message || 'invalid file'), 'error');
     }
   };
   reader.onerror = function () {
     console.error('[Import] FileReader error while reading import file.');
-    showToast('Could not read the selected file.', 'error');
+    showToast(tUI('toast_file_read_error'), 'error');
   };
   reader.readAsText(file);
 }
 
 /* Delete All Data — clears localStorage and resets the UI */
 function deleteAllData() {
-  if (!confirm('Delete ALL local data? This cannot be undone.')) return;
+  if (!confirm(tUI('confirm_delete_all'))) return;
   clearState();
   var pidEl = document.getElementById('patient-id');
   if (pidEl) pidEl.value = '';
@@ -2991,7 +3563,7 @@ function deleteAllData() {
 
 /* New Case — resets state and starts from step 1 */
 function newCase() {
-  if (state.clinicalNote && !confirm('Start a new case? Unsaved data will be lost.')) return;
+  if (state.clinicalNote && !confirm(tUI('confirm_new_case'))) return;
   clearState();
   var pidEl = document.getElementById('patient-id');
   if (pidEl) pidEl.value = '';
@@ -3003,7 +3575,7 @@ function newCase() {
  * → furosemide (diuretic) prescribed = classic CCB→oedema→diuretic cascade (CC004).
  * Also includes ibuprofen PRN → hypertension context (CC001). */
 function loadDemoCase() {
-  if (state.clinicalNote && !confirm('¿Cargar el caso demo? Los datos actuales serán reemplazados.')) return;
+  if (state.clinicalNote && !confirm(tUI('confirm_load_demo'))) return;
   clearState();
   state.patientId = 'DEMO-001';
   state.clinicalNote = [
@@ -3047,7 +3619,7 @@ function loadDemoCase() {
   var pidEl = document.getElementById('patient-id');
   if (pidEl) pidEl.value = state.patientId;
   goTo(1);
-  showToast('Caso demo cargado — avance por los pasos para ver las cascadas detectadas.', 'info');
+  showToast(tUI('toast_demo_loaded'), 'info');
 }
 
 /* ============================================================
@@ -3520,6 +4092,27 @@ function showToast(message, type) {
 }
 
 /* ============================================================
+   Static UI string updater — refreshes HTML elements that are
+   not part of the dynamically rendered step content when the
+   language changes.
+   ============================================================ */
+function updateStaticUI() {
+  /* Step nav labels */
+  var stepLabels = [
+    [1, 'nav_step1'], [2, 'nav_step2'], [3, 'nav_step3'],
+    [4, 'nav_step4'], [5, 'nav_step5'], [6, 'nav_step6']
+  ];
+  stepLabels.forEach(function (pair) {
+    var btn = document.querySelector('.step-btn[data-step="' + pair[0] + '"] .step-label');
+    if (btn) btn.innerHTML = tUI(pair[1]);
+  });
+
+  /* Demo button in patient bar */
+  var demoBtn = document.getElementById('btn-demo');
+  if (demoBtn) demoBtn.innerHTML = '&#9654; ' + (currentLanguage === 'es' ? 'Probar demo' : 'Try demo');
+}
+
+/* ============================================================
    Event wiring
    ============================================================ */
 function wireEvents() {
@@ -3649,6 +4242,10 @@ function wireEvents() {
       btnLangEn.setAttribute('aria-pressed', String(lang === 'en'));
       btnLangEn.classList.toggle('lang-btn-active', lang === 'en');
     }
+    /* Update static HTML strings (step nav labels, nav buttons) */
+    updateStaticUI();
+    /* Update step counter / prev-next buttons */
+    updateNavButtons(state.step);
     /* Re-render the current step so all text reflects the new language */
     renderStepContent(state.step);
   }
