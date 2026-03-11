@@ -617,7 +617,7 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null },
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
   /* Step 5 clinician classifications, keyed by cascade_id.
@@ -712,6 +712,7 @@ async function loadKB(track) {
     vihModifiers:      folder + '/kb_vih_modifiers.json',
     ddiWatchlist:      folder + '/ddi_watchlist.json',
     symptomDictionary: folder + '/kb_symptoms.json',
+    clinicalModifiers: folder + '/kb_clinical_modifiers.json',
     /* Shared drug name dictionary — lives at kb/ root, not inside a track
      * subfolder, because variant/brand-name mappings are track-independent. */
     drugDictionary:    'kb/drug_dictionary.json'
@@ -1370,6 +1371,86 @@ function getCascadeExamples(cascade) {
 }
 
 /**
+ * Scan `noteText` for clinical context terms defined in kb_clinical_modifiers.json.
+ * Returns an array of matched modifier objects (augmented with the KB entry).
+ *
+ * @param {string} noteText
+ * @returns {Array<Object>} Matched modifier entries from the KB
+ */
+function detectClinicalContextModifiers(noteText) {
+  if (!noteText || !noteText.trim()) return [];
+  var modifiers = (state.kb.clinicalModifiers && state.kb.clinicalModifiers.clinical_modifiers) || [];
+  if (!modifiers.length) return [];
+
+  var normalizedNote = normalizeDrugText(noteText);
+  var matched = [];
+
+  modifiers.forEach(function (mod) {
+    var keywords = [];
+    if (mod.trigger_context) {
+      keywords = keywords.concat(mod.trigger_context.keywords_en || []);
+      keywords = keywords.concat(mod.trigger_context.keywords_es || []);
+    }
+    for (var ki = 0; ki < keywords.length; ki++) {
+      var kw = normalizeDrugText(keywords[ki]);
+      if (kw && normalizedNote.indexOf(kw) !== -1) {
+        matched.push(mod);
+        return; /* one match per modifier is enough */
+      }
+    }
+  });
+
+  return matched;
+}
+
+/**
+ * Post-process detected cascade signals by applying clinical context modifiers.
+ * For each active modifier:
+ *   - Upgrades signal confidence by one level (low→medium, medium→high)
+ *   - Appends a context message to clinical_hint / clinical_hint_es
+ *
+ * @param {Array} signals   Output of detectCascades (before modifier pass)
+ * @param {Array} modifiers Output of detectClinicalContextModifiers
+ * @returns {Array} Signals with updated confidence and appended context messages
+ */
+function applyClinicalModifiers(signals, modifiers) {
+  if (!signals.length || !modifiers.length) return signals;
+
+  var CONFIDENCE_UPGRADE = { 'low': 'medium', 'medium': 'high', 'high': 'high' };
+
+  return signals.map(function (sig) {
+    var upgraded = Object.assign({}, sig);
+    var appendedEn = [];
+    var appendedEs = [];
+
+    modifiers.forEach(function (mod) {
+      if (!mod.effect || !mod.effect.priority_upgrade) return;
+
+      /* Upgrade confidence one level */
+      var current = (upgraded.confidence || 'low').toLowerCase();
+      upgraded.confidence = CONFIDENCE_UPGRADE[current] || current;
+
+      /* Collect context messages */
+      if (mod.message_en) appendedEn.push('[' + mod.name_en + '] ' + mod.message_en);
+      if (mod.message_es) appendedEs.push('[' + mod.name_es + '] ' + mod.message_es);
+
+      /* Tag which modifiers contributed */
+      if (!upgraded.clinical_modifiers) upgraded.clinical_modifiers = [];
+      upgraded.clinical_modifiers.push(mod.id);
+    });
+
+    if (appendedEn.length) {
+      upgraded.clinical_hint = (upgraded.clinical_hint ? upgraded.clinical_hint + ' | ' : '') + appendedEn.join(' | ');
+    }
+    if (appendedEs.length) {
+      upgraded.clinical_hint_es = (upgraded.clinical_hint_es ? upgraded.clinical_hint_es + ' | ' : '') + appendedEs.join(' | ');
+    }
+
+    return upgraded;
+  });
+}
+
+/**
  * Scan `noteText` against every loaded cascade entry (core + HIV modifiers).
  * A signal fires when at least one index_drug_example AND at least one
  * cascade_drug_example are both found in the note (case-insensitive whole-word
@@ -1458,7 +1539,15 @@ function detectCascades(noteText) {
     });
   });
 
-  return detected.concat(detectSymptomCascades(noteText, mentionByCanonical));
+  var allSignals = detected.concat(detectSymptomCascades(noteText, mentionByCanonical));
+
+  /* Post-process: apply clinical context modifiers (priority upgrade + messages) */
+  var activeModifiers = detectClinicalContextModifiers(noteText);
+  if (activeModifiers.length) {
+    allSignals = applyClinicalModifiers(allSignals, activeModifiers);
+  }
+
+  return allSignals;
 }
 
 /**
@@ -4206,6 +4295,7 @@ function wireEvents() {
         state.kb.coreCascades = null;
         state.kb.vihModifiers = null;
         state.kb.ddiWatchlist = null;
+        state.kb.clinicalModifiers = null;
         invalidateDetectedCascades();
         var statusEl = document.getElementById('kb-status');
         if (statusEl) statusEl.innerHTML = '<span class="kb-chip loading"><span class="spinner" style="width:12px;height:12px;border-width:2px;" aria-hidden="true"></span> ' + newMode + '&hellip;</span>';
