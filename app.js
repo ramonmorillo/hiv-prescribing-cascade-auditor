@@ -313,6 +313,14 @@ const UI_STRINGS = {
     signal_bridge_incomplete: ' Temporalidad incompleta en el texto actual.',
     signal_drug_drug:         'Se activ\u00F3 por presencia simult\u00E1nea de f\u00E1rmaco \u00EDndice y f\u00E1rmaco de cascada compatibles con el patr\u00F3n de la KB.',
 
+    /* Alternative-indication penalty — shown when a known diagnosis could independently explain the cascade drug */
+    alt_indication_note:          function (reason) { return 'Existe una posible indicaci\u00F3n alternativa independiente para el f\u00E1rmaco de tratamiento (' + reason + '). Verifique si fue prescrito por la cascada o por esta condici\u00F3n preexistente.'; },
+    prio_reason_alt_indication:   'Penalizaci\u00F3n: posible indicaci\u00F3n alternativa reduce la confianza en la cascada.',
+
+    /* HIV modifier-only signal — drug_drug signal upgraded only by HIV context, no direct ADE in note */
+    hiv_modifier_only_note:       'Se\u00F1al impulsada principalmente por modificador de contexto VIH; falta evidencia directa del EAM en la nota cl\u00EDnica.',
+    prio_reason_hiv_modifier_only: 'Penalizaci\u00F3n: modificador VIH sin apoyo directo de EAM en el texto.',
+
     /* Unknown step */
     unknown_step: 'Paso desconocido.'
   },
@@ -586,6 +594,14 @@ const UI_STRINGS = {
     signal_bridge_base:       'Triggered by coincidence of causal drug + detected symptom + drug used to treat that symptom.',
     signal_bridge_incomplete: ' Incomplete temporality in the current text.',
     signal_drug_drug:         'Triggered by simultaneous presence of index drug and cascade drug compatible with the KB pattern.',
+
+    /* Alternative-indication penalty — shown when a known diagnosis could independently explain the cascade drug */
+    alt_indication_note:          function (reason) { return 'There is a possible independent alternative indication for the treatment drug (' + reason + '). Verify whether it was prescribed for the cascade or for this pre-existing condition.'; },
+    prio_reason_alt_indication:   'Penalty: possible alternative indication reduces cascade confidence.',
+
+    /* HIV modifier-only signal — drug_drug signal upgraded only by HIV context, no direct ADE in note */
+    hiv_modifier_only_note:       'Signal driven mainly by HIV clinical context modifier; direct ADE evidence is lacking in the clinical note.',
+    prio_reason_hiv_modifier_only: 'Penalty: HIV context modifier without direct ADE support in the text.',
 
     /* Unknown step */
     unknown_step: 'Unknown step.'
@@ -1546,6 +1562,13 @@ function detectCascades(noteText) {
   if (activeModifiers.length) {
     allSignals = applyClinicalModifiers(allSignals, activeModifiers);
   }
+
+  /* ── Deduplication: suppress near-duplicate signals ────────────────────
+   * After modifiers have been applied (so final confidence is known), remove
+   * signals that share the same (index_drug, cascade_drug) pair, keeping only
+   * the strongest one.  Suppressed IDs are stored on the winner for JSON export.
+   * ─────────────────────────────────────────────────────────────────────── */
+  allSignals = suppressDuplicateSignals(allSignals);
 
   return allSignals;
 }
@@ -3089,6 +3112,155 @@ function hasText(value) {
   return !!(value && String(value).trim());
 }
 
+/* ── Alternative-indication map ────────────────────────────────────────────
+ * Each entry describes a well-established clinical condition that provides a
+ * plausible independent (non-cascade) reason for the cascade drug to have been
+ * prescribed.  Used by detectAlternativeIndication() to apply a conservative
+ * confidence penalty when such a condition is mentioned in the clinical note.
+ * ─────────────────────────────────────────────────────────────────────────── */
+var ALTERNATIVE_INDICATION_MAP = [
+  {
+    keywords_es: ['artrosis', 'osteoartritis', 'artritis crónica', 'dolor musculoesquelético', 'dolor crónico musculoesquelético', 'lumbalgia crónica', 'coxartrosis', 'gonartrosis'],
+    keywords_en: ['osteoarthritis', 'arthrosis', 'chronic arthritis', 'musculoskeletal pain', 'chronic musculoskeletal pain', 'chronic low back pain'],
+    cascade_drugs: ['ibuprofen', 'naproxen', 'naproxeno', 'celecoxib', 'diclofenac', 'diclofenaco', 'meloxicam', 'indometacin', 'indomethacin', 'ketorolac'],
+    reason_es: 'artrosis/dolor musculoesquelético crónico',
+    reason_en: 'osteoarthritis / chronic musculoskeletal pain'
+  },
+  {
+    keywords_es: ['reflujo gastroesofágico', 'erge', 'dispepsia', 'gastritis', 'úlcera péptica', 'pirosis crónica', 'esofagitis', 'reflujo previo'],
+    keywords_en: ['gerd', 'gastroesophageal reflux', 'dyspepsia', 'gastritis', 'peptic ulcer', 'chronic heartburn', 'esophagitis', 'prior reflux'],
+    cascade_drugs: ['omeprazole', 'omeprazol', 'esomeprazole', 'esomeprazol', 'pantoprazole', 'pantoprazol', 'lansoprazole', 'lansoprazol', 'rabeprazole', 'rabeprazol'],
+    reason_es: 'ERGE/dispepsia/gastritis previa',
+    reason_en: 'prior GERD / dyspepsia / gastritis'
+  },
+  {
+    keywords_es: ['hipertensión esencial', 'hta esencial', 'hta previa', 'hipertensión arterial crónica', 'hipertensión conocida', 'hipertensión arterial esencial', 'hta conocida'],
+    keywords_en: ['essential hypertension', 'prior hypertension', 'known hypertension', 'chronic hypertension', 'pre-existing hypertension'],
+    cascade_drugs: ['amlodipine', 'amlodipino', 'enalapril', 'lisinopril', 'losartan', 'losartán', 'valsartan', 'valsartán', 'ramipril', 'telmisartan', 'perindopril'],
+    reason_es: 'hipertensión arterial esencial previa',
+    reason_en: 'pre-existing essential hypertension'
+  },
+  {
+    keywords_es: ['parkinson', 'enfermedad de parkinson', 'enfermedad de parkinson conocida'],
+    keywords_en: ['parkinson', "parkinson's disease", 'parkinson disease', 'known parkinson'],
+    cascade_drugs: ['levodopa', 'carbidopa', 'ropinirole', 'ropinirol', 'pramipexole', 'pramipexol', 'rotigotine', 'rotigotina'],
+    reason_es: 'enfermedad de Parkinson conocida',
+    reason_en: 'known Parkinson disease'
+  },
+  {
+    keywords_es: ['diabetes mellitus', 'dm2', 'dm tipo 2', 'diabetes tipo 2', 'diabetes conocida', 'diabetes previa', 'diabetes mellitus tipo 2'],
+    keywords_en: ['diabetes mellitus', 'type 2 diabetes', 'known diabetes', 'pre-existing diabetes', 'diabetes mellitus type 2'],
+    cascade_drugs: ['metformin', 'metformina', 'sitagliptin', 'sitagliptina', 'empagliflozin', 'dapagliflozin', 'liraglutide', 'liraglutida', 'glipizide', 'glibenclamide', 'glibenclamida'],
+    reason_es: 'diabetes mellitus tipo 2 conocida',
+    reason_en: 'known type 2 diabetes mellitus'
+  }
+];
+
+/**
+ * Check whether the clinical note contains a plausible independent diagnosis
+ * that could explain why the cascade drug was prescribed, independently of
+ * any adverse drug event from the index drug.
+ *
+ * Uses ALTERNATIVE_INDICATION_MAP: a conservative list of well-established
+ * diagnosis→drug relationships.  Returns { found: true } only when the note
+ * explicitly mentions a recognised diagnosis keyword for that drug.
+ *
+ * @param {string} noteText
+ * @param {string} cascadeDrug  Canonical cascade drug name
+ * @returns {{ found: boolean, reason: string }}
+ */
+function detectAlternativeIndication(noteText, cascadeDrug) {
+  if (!hasText(noteText) || !hasText(cascadeDrug)) return { found: false, reason: '' };
+  var normNote    = normalizeDrugText(noteText);
+  var normCascade = normalizeDrugText(cascadeDrug);
+
+  for (var i = 0; i < ALTERNATIVE_INDICATION_MAP.length; i++) {
+    var entry = ALTERNATIVE_INDICATION_MAP[i];
+
+    /* Does the cascade drug match this indication entry? */
+    var drugMatch = entry.cascade_drugs.some(function (d) {
+      return normalizeDrugText(d) === normCascade;
+    });
+    if (!drugMatch) continue;
+
+    /* Does the note explicitly mention the independent diagnosis? */
+    var allKeywords = (entry.keywords_es || []).concat(entry.keywords_en || []);
+    for (var ki = 0; ki < allKeywords.length; ki++) {
+      var kw = normalizeDrugText(allKeywords[ki]);
+      if (kw && normNote.indexOf(kw) !== -1) {
+        var reason = currentLanguage === 'es' ? entry.reason_es : entry.reason_en;
+        return { found: true, reason: reason };
+      }
+    }
+  }
+  return { found: false, reason: '' };
+}
+
+/**
+ * Deduplication / overlap suppression layer.
+ *
+ * After all cascade signals (drug_drug + symptom_bridge) have been collected,
+ * group them by their core pharmacological pair:
+ *   key = normalized(index_drug) + '|' + normalized(cascade_drug)
+ *
+ * Within each group, keep only the BEST signal and suppress the others.
+ * Selection preference (in order):
+ *   1. Higher confidence rank (high > medium > low)
+ *   2. More specific signal type (symptom_bridge > drug_drug)
+ *   3. Classic ('often_inappropriate') over context-dependent
+ *
+ * Suppressed signal IDs are stored on the winner as suppressed_duplicates[]
+ * for transparency in JSON export; they are not shown in the UI.
+ *
+ * @param {Array} signals
+ * @returns {Array}
+ */
+function suppressDuplicateSignals(signals) {
+  if (!signals || signals.length < 2) return signals;
+
+  /* Build groups keyed by (normalized index_drug | normalized cascade_drug) */
+  var groups = {};
+  signals.forEach(function (sig) {
+    var key = normalizeDrugText(sig.index_drug || '') + '|' + normalizeDrugText(sig.cascade_drug || '');
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(sig);
+  });
+
+  var result = [];
+  Object.keys(groups).forEach(function (key) {
+    var group = groups[key];
+    if (group.length === 1) {
+      result.push(group[0]);
+      return;
+    }
+
+    /* Sort by preference: confidence → signal type → appropriateness */
+    group.sort(function (a, b) {
+      /* 1. Higher confidence wins */
+      var confDiff = confidenceRank(b.confidence) - confidenceRank(a.confidence);
+      if (confDiff !== 0) return confDiff;
+
+      /* 2. symptom_bridge is more specific than drug_drug */
+      var aSpec = a.signal_type === 'symptom_bridge' ? 1 : 0;
+      var bSpec = b.signal_type === 'symptom_bridge' ? 1 : 0;
+      if (bSpec !== aSpec) return bSpec - aSpec;
+
+      /* 3. 'often_inappropriate' (classic) beats context-dependent */
+      var aClassic = a.appropriateness === 'often_inappropriate' ? 1 : 0;
+      var bClassic = b.appropriateness === 'often_inappropriate' ? 1 : 0;
+      return bClassic - aClassic;
+    });
+
+    var winner = group[0];
+    /* Attach suppressed IDs to winner for JSON-export transparency */
+    winner.suppressed_duplicates = group.slice(1).map(function (s) { return s.cascade_id; });
+
+    result.push(winner);
+  });
+
+  return result;
+}
+
 function isNonspecificSymptom(symptomTerm) {
   if (!hasText(symptomTerm)) return false;
   var nonspecific = ['dizziness', 'nausea', 'insomnia'];
@@ -3149,6 +3321,32 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
     missing.push(tUI('missing_clinical_support'));
   }
 
+  /* ── Alternative-indication detection ──────────────────────────────────
+   * Check whether the note contains a plausible independent diagnosis that
+   * could explain the cascade drug without a prescribing cascade.
+   * Conservative: only fires when a well-known diagnosis keyword is present.
+   * When found, adds an explicit "Qué falta" item so clinicians see the caveat.
+   * ─────────────────────────────────────────────────────────────────────── */
+  var altIndication = detectAlternativeIndication(noteText, signal.cascade_drug);
+  if (altIndication.found) {
+    missing.push(tUI('alt_indication_note', altIndication.reason));
+  }
+
+  /* ── HIV modifier-only down-weighting ──────────────────────────────────
+   * A signal is "HIV-modifier-only" if it was upgraded by an HIV clinical
+   * context modifier but has NO direct ADE or symptom evidence in the note.
+   * These signals should not strongly outscore direct drug→ADE→drug patterns,
+   * so we flag them here and apply a scoring penalty in derivePharmacyPriority.
+   * ─────────────────────────────────────────────────────────────────────── */
+  var hivModifierOnly = !!(
+    signal.clinical_modifiers && signal.clinical_modifiers.length > 0 &&
+    signal.signal_type === 'drug_drug' &&
+    !symptomMatch && !explicitEvidence
+  );
+  if (hivModifierOnly) {
+    missing.push(tUI('hiv_modifier_only_note'));
+  }
+
   var isPreliminary = signal.signal_type === 'drug_drug' && !hasClinicalSupport;
   return {
     level:       isPreliminary ? 'preliminary_signal' : 'plausible_cascade',
@@ -3157,7 +3355,9 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
     supports: supports,
     missing: missing,
     hasClinicalSupport: hasClinicalSupport,
-    temporality: temporality
+    temporality: temporality,
+    altIndicationPenalty: altIndication.found,   /* used by derivePharmacyPriority */
+    hivModifierOnly: hivModifierOnly             /* used by derivePharmacyPriority */
   };
 }
 
@@ -3211,6 +3411,27 @@ function derivePharmacyPriority(signal, recommendationText, evidence) {
   if (signal.signal_type === 'symptom_bridge' && isNonspecificSymptom(signal.ade_en) && !hasAdditionalSupport) {
     score -= 1;
     reasons.push(tUI('prio_reason_nonspecific'));
+  }
+
+  /* ── Alternative-indication penalty ────────────────────────────────────
+   * If the note contains a plausible independent diagnosis that could explain
+   * the cascade drug on its own, reduce the score by 1.  This prevents the
+   * signal from being over-called when the cascade drug likely has a primary
+   * non-cascade indication.  Applied conservatively (-1 only).
+   * ─────────────────────────────────────────────────────────────────────── */
+  if (evidence && evidence.altIndicationPenalty) {
+    score -= 1;
+    reasons.push(tUI('prio_reason_alt_indication'));
+  }
+
+  /* ── HIV modifier-only down-weighting ──────────────────────────────────
+   * Signals driven mainly by an HIV clinical context modifier but lacking
+   * direct ADE evidence in the note should not outscore direct drug→ADE→drug
+   * patterns.  Apply a modest penalty (-1) to keep them correctly ranked.
+   * ─────────────────────────────────────────────────────────────────────── */
+  if (evidence && evidence.hivModifierOnly) {
+    score -= 1;
+    reasons.push(tUI('prio_reason_hiv_modifier_only'));
   }
 
   if (score >= 6) return { level: 'alta',       label: tUI('prio_high'),   score: score, reasons: reasons };
