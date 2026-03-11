@@ -9,7 +9,34 @@
    - Export JSON / Import Case / Delete All Data
    ============================================================ */
 
-const LS_KEY = 'hiv_cascade_state';
+const LS_KEY      = 'hiv_cascade_state';
+const LS_LANG_KEY = 'hiv_cascade_lang';
+
+/* ── Language ── */
+var currentLanguage = 'es'; /* default: Spanish */
+
+/**
+ * Return the localized value for `baseField` from `obj`.
+ * Tries `baseField + '_' + lang` first; falls back to the English field,
+ * then to any bare `baseField` value.  Returns '' when nothing is found.
+ *
+ * @param {object} obj       - KB entry or signal object
+ * @param {string} baseField - e.g. 'name', 'ade', 'recommended_first_action'
+ * @param {string} lang      - 'es' or 'en'
+ * @returns {string}
+ */
+function getLocalizedField(obj, baseField, lang) {
+  if (!obj) return '';
+  var preferred = obj[baseField + '_' + lang];
+  if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred;
+  /* Fallback: English field */
+  var en = obj[baseField + '_en'];
+  if (en && typeof en === 'string' && en.trim()) return en;
+  /* Last resort: bare base field */
+  var base = obj[baseField];
+  if (base && typeof base === 'string' && base.trim()) return base;
+  return '';
+}
 
 /* ── State ── */
 const state = {
@@ -42,6 +69,7 @@ function saveState() {
       cascadeClassifications: state.cascadeClassifications
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    localStorage.setItem(LS_LANG_KEY, currentLanguage);
   } catch (err) {
     console.error('[Storage] Could not save state:', err);
     /* QuotaExceededError means browser storage is full — surface this to the user
@@ -66,6 +94,13 @@ function loadState() {
         !Array.isArray(saved.cascadeClassifications))          state.cascadeClassifications = saved.cascadeClassifications;
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
+  }
+  /* Restore language preference */
+  try {
+    var savedLang = localStorage.getItem(LS_LANG_KEY);
+    if (savedLang === 'es' || savedLang === 'en') currentLanguage = savedLang;
+  } catch (err) {
+    console.error('[Storage] Could not load language preference:', err);
   }
 }
 
@@ -830,6 +865,7 @@ function detectCascades(noteText) {
     detected.push({
       cascade_id:    cascade.id,
       cascade_name:  cascade.name_en || cascade.id,
+      cascade_name_es: cascade.name_es || '',
       signal_type:   'drug_drug',
       index_drug:    foundIndex,
       cascade_drug:  foundCascade,
@@ -840,9 +876,12 @@ function detectCascades(noteText) {
       confidence:    cascade.confidence || cascade.plausibility || 'low',
       risk_focus:    cascade.risk_focus || [],
       ade_en:        cascade.ade_en || '',
+      ade_es:        cascade.ade_es || '',
       appropriateness: cascade.appropriateness || '',
       ddi_warning:   cascade.ddi_warning_en || '',
-      clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || ''
+      ddi_warning_es: cascade.ddi_warning_es || '',
+      clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || '',
+      clinical_hint_es: cascade.clinical_note_es || cascade.recommended_first_action_es || ''
     });
   });
 
@@ -1701,11 +1740,17 @@ const STEP_CONTENT = {
 
       /* --- Signal cards ------------------------------------------- */
       var rows = detected.map(function (c) {
+        /* Resolve localized fields for display */
+        var displayName = (currentLanguage === 'es' && c.cascade_name_es)
+          ? c.cascade_name_es : c.cascade_name;
+        var adeDisplay = (currentLanguage === 'es' && c.ade_es)
+          ? c.ade_es : (c.ade_en || '');
+        var ddiDisplay = (currentLanguage === 'es' && c.ddi_warning_es)
+          ? c.ddi_warning_es : c.ddi_warning;
+        var hintDisplay = (currentLanguage === 'es' && c.clinical_hint_es)
+          ? c.clinical_hint_es : c.clinical_hint;
+
         /* Cascade chain: index drug → [ADE] → cascade drug */
-        var adeLabel = c.ade_en
-          ? '&nbsp;<span style="font-size:.78rem;color:#7f8c8d;font-style:italic;">' +
-              '[' + escHtml(c.ade_en) + ']</span>&nbsp;'
-          : '&nbsp;&rarr;&nbsp;';
         var chain = (
           '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
             'flex-wrap:wrap;gap:.2rem;">' +
@@ -1716,7 +1761,7 @@ const STEP_CONTENT = {
             '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
             '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
               'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' +
-              escHtml(c.ade_en || 'ADE') +
+              escHtml(adeDisplay || 'ADE') +
             '</span>' +
             '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
             '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
@@ -1738,20 +1783,20 @@ const STEP_CONTENT = {
           : '';
 
         /* DDI warning — red alert box */
-        var ddiBox = c.ddi_warning
+        var ddiBox = ddiDisplay
           ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
               'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(c.ddi_warning) +
+              '<strong>&#9888; Alerta de interacci&oacute;n:</strong>&nbsp;' + escHtml(ddiDisplay) +
             '</div>'
           : '';
 
         /* Clinical hint — blue note box */
-        var hintBox = c.clinical_hint
+        var hintBox = hintDisplay
           ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
               'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
               'border-radius:0 3px 3px 0;">' +
-              '<strong>&#128203; Acci&oacute;n clínica:</strong>&nbsp;' + escHtml(c.clinical_hint) +
+              '<strong>&#128203; Acci&oacute;n clínica:</strong>&nbsp;' + escHtml(hintDisplay) +
             '</div>'
           : '';
 
@@ -1776,7 +1821,7 @@ const STEP_CONTENT = {
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
               'flex-wrap:wrap;gap:.4rem;">' +
               '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
-                escHtml(c.cascade_name) +
+                escHtml(displayName) +
                 confidenceBadge(c.confidence) +
                 appropriatenessBadge(c.appropriateness) +
                 (c.signal_type === 'symptom_bridge'
@@ -1869,9 +1914,9 @@ const STEP_CONTENT = {
       /* ── Per-cascade detail cards ── */
       var rows = detected.map(function (c) {
         var entry       = findCascadeEntry(c.cascade_id);
-        var recAction   = entry ? (entry.recommended_first_action_en || '') : '';
-        var clinNote    = entry ? (entry.clinical_note_en            || '') : '';
-        var ddiWarning  = entry ? (entry.ddi_warning_en              || '') : '';
+        var recAction   = entry ? getLocalizedField(entry, 'recommended_first_action', currentLanguage) : '';
+        var clinNote    = entry ? getLocalizedField(entry, 'clinical_note', currentLanguage) : '';
+        var ddiWarning  = entry ? getLocalizedField(entry, 'ddi_warning', currentLanguage) : '';
         var diffHints   = (entry && Array.isArray(entry.differential_hints) && entry.differential_hints.length)
                           ? entry.differential_hints : [];
 
@@ -1886,6 +1931,12 @@ const STEP_CONTENT = {
             'text-transform:uppercase;">' + escHtml(c.confidence) + '</span>'
         );
 
+        /* Resolve localized display name and ADE for Step 5 */
+        var step5DisplayName = (currentLanguage === 'es' && c.cascade_name_es)
+          ? c.cascade_name_es : c.cascade_name;
+        var step5AdeDisplay = (currentLanguage === 'es' && c.ade_es)
+          ? c.ade_es : (c.ade_en || '');
+
         /* Cascade chain pill row */
         var chain = (
           '<div style="margin:.6rem 0;display:flex;align-items:center;flex-wrap:wrap;gap:.25rem;">' +
@@ -1893,10 +1944,10 @@ const STEP_CONTENT = {
               'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
               escHtml(c.index_drug) + '</span>' +
             '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>' +
-            (c.ade_en
+            (step5AdeDisplay
               ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
                   'padding:.2rem .6rem;font-size:.82rem;color:#7d6608;">' +
-                  escHtml(c.ade_en) + '</span>' +
+                  escHtml(step5AdeDisplay) + '</span>' +
                 '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>'
               : '') +
             '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
@@ -1971,7 +2022,7 @@ const STEP_CONTENT = {
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
               'flex-wrap:wrap;gap:.35rem;">' +
               '<span style="font-size:.93rem;font-weight:700;">' +
-                escHtml(c.cascade_name) + confBadge +
+                escHtml(step5DisplayName) + confBadge +
               '</span>' +
               '<code style="font-size:.75rem;color:#aaa;">' + escHtml(c.cascade_id) + '</code>' +
             '</div>' +
@@ -2536,10 +2587,11 @@ function buildSignalExplanation(signal) {
 }
 
 function buildClinicalInterpretation(signal, entry) {
-  if (entry && entry.clinical_note_es)             return entry.clinical_note_es;
-  if (entry && entry.recommended_first_action_es)  return entry.recommended_first_action_es;
-  if (entry && entry.clinical_note_en)             return entry.clinical_note_en;
-  if (entry && entry.recommended_first_action_en)  return entry.recommended_first_action_en;
+  /* Use currentLanguage to pick the preferred field, fall back to English */
+  var clinNote  = entry ? getLocalizedField(entry, 'clinical_note', currentLanguage) : '';
+  var recAction = entry ? getLocalizedField(entry, 'recommended_first_action', currentLanguage) : '';
+  if (clinNote)  return clinNote;
+  if (recAction) return recAction;
   if (signal.clinical_hint) return signal.clinical_hint;
   return 'Posible cascada terapéutica a confirmar con revisión clínica individualizada.';
 }
@@ -2568,14 +2620,15 @@ function buildReport() {
   var cascades = detected.map(function (c) {
     var entry = findCascadeEntryForSignal(c);
     var rec   = entry
-      ? (entry.recommended_first_action_es || entry.clinical_note_es ||
-         entry.recommended_first_action_en || entry.clinical_note_en || '')
+      ? (getLocalizedField(entry, 'recommended_first_action', currentLanguage) ||
+         getLocalizedField(entry, 'clinical_note', currentLanguage))
       : (c.clinical_hint || '');
     var evidence = buildEvidenceProfile(c, rec, state.clinicalNote);
     var priority = derivePharmacyPriority(c, rec, evidence);
     var clinicalInterpretation = buildClinicalInterpretation(c, entry);
+    var adeDisplay = (currentLanguage === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
     var factorsInFavor = [
-      'Secuencia detectada: ' + c.index_drug + ' → ' + (c.ade_en || 'posible EAM') + ' → ' + c.cascade_drug + '.',
+      'Secuencia detectada: ' + c.index_drug + ' → ' + (adeDisplay || 'posible EAM') + ' → ' + c.cascade_drug + '.',
       buildSignalExplanation(c)
     ].concat(priority.reasons, evidence.supports);
 
@@ -2585,8 +2638,8 @@ function buildReport() {
      * entry — the true KB cascade (e.g. CC027) must be surfaced instead. */
     var displayId   = (entry && entry.id) ? entry.id : c.cascade_id;
     var displayName = entry
-      ? (entry.name_es || entry.name_en || c.cascade_name)
-      : c.cascade_name;
+      ? (getLocalizedField(entry, 'name', currentLanguage) || c.cascade_name)
+      : ((currentLanguage === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name);
 
     return {
       cascade_id:              displayId,
@@ -2595,9 +2648,10 @@ function buildReport() {
       cascade_drug:            c.cascade_drug,
       confidence:              c.confidence,
       ade_en:                  c.ade_en  || '',
+      ade_display:             adeDisplay,
       clinical_recommendation: rec,
       verification_status:     state.cascadeClassifications[c.cascade_id] || 'unreviewed',
-      sequence:                c.index_drug + ' → ' + (c.ade_en || 'EAM potencial') + ' → ' + c.cascade_drug,
+      sequence:                c.index_drug + ' → ' + (adeDisplay || 'EAM potencial') + ' → ' + c.cascade_drug,
       clinical_interpretation: clinicalInterpretation,
       factors_in_favor:        factorsInFavor,
       factors_to_verify:       buildVerificationItems(c).concat(evidence.missing),
@@ -3578,6 +3632,32 @@ function wireEvents() {
 
   var btnExportKBOp = document.getElementById('btn-export-kb-operational');
   if (btnExportKBOp) btnExportKBOp.addEventListener('click', exportKBBundleOperational);
+
+  /* Language selector */
+  var btnLangEs = document.getElementById('lang-es');
+  var btnLangEn = document.getElementById('lang-en');
+
+  function applyLanguage(lang) {
+    currentLanguage = lang;
+    try { localStorage.setItem(LS_LANG_KEY, lang); } catch (e) { /* ignore */ }
+    /* Update button active states */
+    if (btnLangEs) {
+      btnLangEs.setAttribute('aria-pressed', String(lang === 'es'));
+      btnLangEs.classList.toggle('lang-btn-active', lang === 'es');
+    }
+    if (btnLangEn) {
+      btnLangEn.setAttribute('aria-pressed', String(lang === 'en'));
+      btnLangEn.classList.toggle('lang-btn-active', lang === 'en');
+    }
+    /* Re-render the current step so all text reflects the new language */
+    renderStepContent(state.step);
+  }
+
+  if (btnLangEs) btnLangEs.addEventListener('click', function () { applyLanguage('es'); });
+  if (btnLangEn) btnLangEn.addEventListener('click', function () { applyLanguage('en'); });
+
+  /* Reflect persisted language on startup */
+  applyLanguage(currentLanguage);
 }
 
 /* ============================================================
