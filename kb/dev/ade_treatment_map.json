@@ -1,0 +1,708 @@
+{
+  "version": "1.0.0",
+  "description": "Maps adverse drug events (ADEs) to their plausible pharmacological treatments. Used by the cascade plausibility validator to verify that Drug B is a clinically reasonable treatment for the ADE attributed to Drug A. If not, a confidence penalty is applied. Conservative: when an ADE is not listed here, no penalty is applied.",
+  "last_updated": "2026-03-11",
+  "disclaimer": "For decision support only. Does not replace clinical judgement. Coverage is intentionally limited to common cascade ADEs.",
+  "mappings": [
+    {
+      "ade_id": "ATM001",
+      "ade_label": "Oedema / Peripheral Edema",
+      "ade_terms": [
+        "edema", "oedema", "peripheral edema", "peripheral oedema",
+        "ankle edema", "ankle oedema", "ankle swelling", "leg edema", "leg swelling",
+        "ankle/leg edema"
+      ],
+      "plausible_classes": [
+        "Diuretic", "diuretic", "Loop Diuretic", "Thiazide",
+        "Potassium-sparing Diuretic", "diuretics"
+      ],
+      "plausible_drug_examples": [
+        "furosemide", "furosemida",
+        "hydrochlorothiazide", "hidroclorotiazida",
+        "indapamide", "indapamida",
+        "spironolactone", "espironolactona",
+        "torasemide", "torasemida", "torsemide",
+        "eplerenone", "eplerenona",
+        "amiloride",
+        "bumetanide", "bumetanida",
+        "chlortalidone", "clortalidona"
+      ]
+    },
+    {
+      "ade_id": "ATM002",
+      "ade_label": "Dyspepsia / Upper GI Irritation / Peptic Ulcer",
+      "ade_terms": [
+        "dyspepsia", "dyspepsia, peptic ulcer", "peptic ulcer", "gastric ulcer",
+        "upper gi irritation", "oesophagitis", "esophagitis", "oesophageal irritation",
+        "nausea, abdominal pain", "abdominal pain", "gi irritation",
+        "upper gi", "gastritis", "gastrointestinal irritation"
+      ],
+      "plausible_classes": [
+        "PPI", "Proton Pump Inhibitor", "proton pump inhibitor",
+        "H2 Antagonist", "H2 blocker", "Antacid",
+        "Gastroprotective", "gastroprotective"
+      ],
+      "plausible_drug_examples": [
+        "omeprazole", "omeprazol",
+        "pantoprazole", "pantoprazol",
+        "lansoprazole", "lansoprazol",
+        "esomeprazole", "esomeprazol",
+        "rabeprazole", "rabeprazol",
+        "ranitidine", "ranitidina",
+        "famotidine", "famotidina",
+        "cimetidine", "cimetidina",
+        "sucralfate", "sucralfato",
+        "misoprostol",
+        "antacid", "antiacido"
+      ]
+    },
+    {
+      "ade_id": "ATM003",
+      "ade_label": "Hypertension / Blood Pressure Elevation",
+      "ade_terms": [
+        "hypertension", "blood pressure elevation", "raised blood pressure",
+        "high blood pressure", "hta", "hipertension", "presion arterial elevada",
+        "elevated blood pressure", "bp elevation"
+      ],
+      "plausible_classes": [
+        "Antihypertensive", "antihypertensive",
+        "Calcium Channel Blocker", "ACE Inhibitor", "ARB",
+        "Beta-blocker", "Thiazide", "Diuretic", "Alpha-blocker"
+      ],
+      "plausible_drug_examples": [
+        "amlodipine", "amlodipino", "amlodipina",
+        "nifedipine", "nifedipino",
+        "felodipine", "felodipino",
+        "enalapril",
+        "lisinopril",
+        "ramipril",
+        "perindopril",
+        "losartan",
+        "valsartan",
+        "candesartan",
+        "irbesartan",
+        "bisoprolol",
+        "atenolol",
+        "metoprolol",
+        "carvedilol",
+        "hydrochlorothiazide", "hidroclorotiazida",
+        "chlortalidone", "clortalidona",
+        "indapamide", "indapamida",
+        "furosemide", "furosemida",
+        "doxazosin", "doxazosina",
+        "prazosin", "prazosina",
+        "spironolactone", "espironolactona",
+        "eplerenone", "eplerenona",
+        "diltiazem",
+        "verapamil", "verapamilo"
+      ]
+    },
+    {
+      "ade_id": "ATM004",
+      "ade_label": "Myalgia / Muscle Pain / Tendinopathy",
+      "ade_terms": [
+        "myalgia", "muscle pain", "muscle symptoms", "myalgia / muscle symptoms",
+        "musculoskeletal pain", "tendinopathy", "tendon pain",
+        "muscle weakness", "myopathy", "muscle cramps",
+        "mialgia", "dolor muscular", "dolor musculoesquelético"
+      ],
+      "plausible_classes": [
+        "Analgesic", "NSAID", "analgesic", "nsaid",
+        "Non-steroidal Anti-inflammatory", "Opioid Analgesic"
+      ],
+      "plausible_drug_examples": [
+        "paracetamol", "acetaminophen",
+        "ibuprofen", "ibuprofeno",
+        "naproxen", "naproxeno",
+        "diclofenac", "diclofenaco",
+        "indomethacin", "indometacina",
+        "meloxicam",
+        "celecoxib",
+        "tramadol",
+        "codeine", "codeina",
+        "morphine", "morfina",
+        "metamizole", "metamizol",
+        "etoricoxib",
+        "aspirin", "aspirina", "acetylsalicylic acid"
+      ]
+    },
+    {
+      "ade_id": "ATM005",
+      "ade_label": "Parkinsonism / Extrapyramidal Symptoms / Drug-induced Parkinsonism",
+      "ade_terms": [
+        "parkinsonism", "drug-induced parkinsonism", "extrapyramidal symptoms",
+        "parkinson", "dystonia", "akathisia", "tardive dyskinesia",
+        "tremor", "rigidity", "bradykinesia",
+        "parkinsonismo", "sintomas extrapiramidales", "temblor"
+      ],
+      "plausible_classes": [
+        "Anticholinergic", "Antiparkinsonian", "Dopamine Agonist",
+        "anticholinergic", "antiparkinsonian"
+      ],
+      "plausible_drug_examples": [
+        "biperiden", "biperideno",
+        "trihexyphenidyl", "trihexifenidilo",
+        "benztropine", "benzatropina",
+        "procyclidine", "prociclidina",
+        "orphenadrine", "orfenadrina",
+        "levodopa", "levodopa/carbidopa", "levodopa carbidopa",
+        "carbidopa",
+        "pramipexole", "pramipexol",
+        "ropinirole", "ropinirol",
+        "rotigotine", "rotigotina",
+        "amantadine", "amantadina",
+        "cabergoline", "cabergolina",
+        "bromocriptine", "bromocriptina"
+      ]
+    },
+    {
+      "ade_id": "ATM006",
+      "ade_label": "Insomnia / Sleep Disturbances",
+      "ade_terms": [
+        "insomnia", "sleep disturbances", "insomnia, sleep disturbances",
+        "sleep disorder", "difficulty sleeping", "sleeplessness",
+        "insomnio", "trastorno del sueno", "alteracion del sueno",
+        "mood disturbance", "psychiatric symptoms"
+      ],
+      "plausible_classes": [
+        "Hypnotic", "Sedative", "Benzodiazepine", "hypnotic",
+        "Sedative-Hypnotic", "sedative-hypnotic",
+        "Antidepressant", "Antipsychotic", "Melatonin"
+      ],
+      "plausible_drug_examples": [
+        "zolpidem",
+        "zopiclone", "zopiclon",
+        "eszopiclone", "eszopiclon",
+        "lorazepam",
+        "alprazolam",
+        "clonazepam",
+        "diazepam",
+        "temazepam",
+        "nitrazepam",
+        "mirtazapine", "mirtazapina",
+        "trazodone", "trazodona",
+        "melatonin", "melatonina",
+        "quetiapine", "quetiapina",
+        "doxepin", "doxepina",
+        "hydroxyzine", "hidroxizina",
+        "promethazine", "prometazina"
+      ]
+    },
+    {
+      "ade_id": "ATM007",
+      "ade_label": "Constipation",
+      "ade_terms": [
+        "constipation", "opioid-induced constipation", "anticholinergic-induced constipation",
+        "estreñimiento", "constipacion"
+      ],
+      "plausible_classes": [
+        "Laxative", "laxative", "Prokinetic", "Osmotic Laxative",
+        "Stimulant Laxative", "Opioid Antagonist (peripheral)"
+      ],
+      "plausible_drug_examples": [
+        "lactulose", "lactulosa",
+        "macrogol", "polyethylene glycol", "polietilenglicol",
+        "bisacodyl", "bisacodilo",
+        "senna", "sen",
+        "sodium docusate", "docusato sodico",
+        "naloxegol",
+        "methylnaltrexone", "metilnaltrexona",
+        "lubiprostone", "lubiprostona",
+        "linaclotide",
+        "prucalopride",
+        "glycerine suppository", "supositorio de glicerina"
+      ]
+    },
+    {
+      "ade_id": "ATM008",
+      "ade_label": "Nausea / Vomiting",
+      "ade_terms": [
+        "nausea", "nausea and vomiting", "vomiting", "emesis",
+        "opioid-induced nausea", "nauseas", "nausea, abdominal pain",
+        "nausea, bloating", "vomitos", "nauseas y vomitos"
+      ],
+      "plausible_classes": [
+        "Antiemetic", "antiemetic",
+        "Dopamine Antagonist", "5-HT3 Antagonist", "Prokinetic"
+      ],
+      "plausible_drug_examples": [
+        "metoclopramide", "metoclopramida",
+        "ondansetron", "ondansetron",
+        "prochlorperazine", "proclorperazina",
+        "domperidone", "domperidona",
+        "promethazine", "prometazina",
+        "haloperidol",
+        "granisetron", "granisetrón",
+        "dexamethasone", "dexametasona",
+        "droperidol",
+        "cyclizine", "ciclizina"
+      ]
+    },
+    {
+      "ade_id": "ATM009",
+      "ade_label": "Hyperuricemia / Gout",
+      "ade_terms": [
+        "hyperuricemia", "gout", "gouty arthritis", "hyperuricemia / gout",
+        "hiperuricemia", "gota", "artritis gotosa"
+      ],
+      "plausible_classes": [
+        "Urate-lowering therapy", "Antigout agent", "NSAID", "Corticosteroid",
+        "xanthine oxidase inhibitor"
+      ],
+      "plausible_drug_examples": [
+        "allopurinol",
+        "febuxostat",
+        "colchicine", "colchicina",
+        "indomethacin", "indometacina",
+        "prednisolone", "prednisolona",
+        "naproxen", "naproxeno",
+        "ibuprofen", "ibuprofeno",
+        "probenecid",
+        "rasburicase",
+        "pegloticase"
+      ]
+    },
+    {
+      "ade_id": "ATM010",
+      "ade_label": "Hyperglycemia / Steroid-induced Diabetes / New-onset Diabetes",
+      "ade_terms": [
+        "hyperglycemia", "steroid-induced diabetes", "new-onset diabetes",
+        "hyperglycemia / new-onset diabetes", "hyperglycemia, steroid-induced diabetes",
+        "insulin resistance", "new-onset type 2 diabetes",
+        "hiperglucemia", "diabetes inducida por esteroides", "diabetes de novo"
+      ],
+      "plausible_classes": [
+        "Antidiabetic", "antidiabetic", "Insulin", "Biguanide",
+        "DPP-4 inhibitor", "SGLT-2 inhibitor", "GLP-1 agonist", "Sulfonylurea"
+      ],
+      "plausible_drug_examples": [
+        "metformin", "metformina",
+        "glipizide", "glipizida",
+        "glibenclamide", "glibenclamida",
+        "gliclazide", "gliclazida",
+        "sitagliptin", "sitagliptina",
+        "empagliflozin", "empagliflozina",
+        "dapagliflozin", "dapagliflozina",
+        "liraglutide", "liraglutida",
+        "semaglutide", "semaglutida",
+        "insulin", "insulina",
+        "insulin glargine", "insulina glargina",
+        "insulin aspart", "insulina aspart",
+        "insulin lispro",
+        "pioglitazone", "pioglitazona",
+        "exenatide", "exenatida",
+        "alogliptin", "vildagliptin"
+      ]
+    },
+    {
+      "ade_id": "ATM011",
+      "ade_label": "Dyslipidaemia / Hypercholesterolaemia",
+      "ade_terms": [
+        "dyslipidemia", "dyslipidaemia", "hypercholesterolaemia", "hypercholesterolemia",
+        "hyperlipidaemia", "hyperlipidemia", "dyslipidemia / hyperlipidemia",
+        "dislipemia", "dislipidemia", "hipercolesterolemia", "hiperlipidemia"
+      ],
+      "plausible_classes": [
+        "Statin", "HMG-CoA reductase inhibitor", "Lipid-lowering", "Fibrate",
+        "Cholesterol absorption inhibitor", "PCSK9 inhibitor"
+      ],
+      "plausible_drug_examples": [
+        "atorvastatin", "atorvastatina",
+        "rosuvastatin", "rosuvastatina",
+        "pravastatin", "pravastatina",
+        "pitavastatin", "pitavastatina",
+        "simvastatin", "simvastatina",
+        "fluvastatin", "fluvastatina",
+        "ezetimibe",
+        "fenofibrate", "fenofibrato",
+        "gemfibrozil", "gemfibrozilo",
+        "evolocumab",
+        "alirocumab",
+        "omega-3 fatty acids"
+      ]
+    },
+    {
+      "ade_id": "ATM012",
+      "ade_label": "Osteoporosis / Reduced Bone Density / Fracture Risk",
+      "ade_terms": [
+        "osteoporosis", "corticosteroid-induced osteoporosis", "reduced bone density",
+        "increased fracture risk", "bone loss", "hip fracture",
+        "osteoporosis inducida por corticoides", "perdida de masa osea"
+      ],
+      "plausible_classes": [
+        "Bisphosphonate", "bisphosphonate", "Calcium supplement", "Vitamin D",
+        "RANK-L inhibitor", "Anabolic bone agent"
+      ],
+      "plausible_drug_examples": [
+        "alendronate", "alendronato",
+        "risedronate", "risedronato",
+        "zoledronic acid", "acido zoledronico", "zoledronate",
+        "ibandronate", "ibandronato",
+        "denosumab",
+        "teriparatide",
+        "calcium carbonate", "carbonato calcico",
+        "cholecalciferol", "colecalciferol",
+        "calcitriol",
+        "calcium", "calcio",
+        "raloxifene", "raloxifeno"
+      ]
+    },
+    {
+      "ade_id": "ATM013",
+      "ade_label": "Depression / Low Mood / Neuropsychiatric Symptoms",
+      "ade_terms": [
+        "depression", "low mood", "depressive disorder", "anhedonia",
+        "neuropsychiatric symptoms", "depression / neuropsychiatric symptoms",
+        "mood disturbance", "depresion", "estado animico bajo", "sintomas neuropsiquiatricos"
+      ],
+      "plausible_classes": [
+        "Antidepressant", "antidepressant", "SSRI", "SNRI",
+        "Tricyclic Antidepressant", "NaSSA"
+      ],
+      "plausible_drug_examples": [
+        "sertraline", "sertralina",
+        "escitalopram",
+        "citalopram",
+        "fluoxetine", "fluoxetina",
+        "paroxetine", "paroxetina",
+        "venlafaxine", "venlafaxina",
+        "duloxetine", "duloxetina",
+        "mirtazapine", "mirtazapina",
+        "bupropion", "bupropion",
+        "amitriptyline", "amitriptilina",
+        "nortriptyline", "nortriptilina",
+        "trazodone", "trazodona",
+        "agomelatine", "agomelatina"
+      ]
+    },
+    {
+      "ade_id": "ATM014",
+      "ade_label": "Sexual Dysfunction / Erectile Dysfunction",
+      "ade_terms": [
+        "sexual dysfunction", "erectile dysfunction", "decreased libido",
+        "delayed ejaculation", "anorgasmia", "impotence",
+        "disfuncion sexual", "disfuncion erectil", "libido disminuida"
+      ],
+      "plausible_classes": [
+        "PDE5 inhibitor", "pde5 inhibitor", "Phosphodiesterase inhibitor"
+      ],
+      "plausible_drug_examples": [
+        "sildenafil",
+        "tadalafil",
+        "vardenafil",
+        "avanafil",
+        "yohimbine", "yohimbina"
+      ]
+    },
+    {
+      "ade_id": "ATM015",
+      "ade_label": "Hypokalemia / Low Potassium",
+      "ade_terms": [
+        "hypokalemia", "hypokalaemia", "low potassium", "potassium deficiency",
+        "hypokalemia, muscle cramps", "hypokalaemia, muscle cramps",
+        "hipopotasemia", "hipocalemia", "potasio bajo"
+      ],
+      "plausible_classes": [
+        "Potassium supplement", "Potassium-sparing Diuretic"
+      ],
+      "plausible_drug_examples": [
+        "potassium chloride", "cloruro potasico", "cloruro de potasio",
+        "potassium citrate", "citrato potasico",
+        "spironolactone", "espironolactona",
+        "eplerenone", "eplerenona",
+        "amiloride",
+        "potassium phosphate"
+      ]
+    },
+    {
+      "ade_id": "ATM016",
+      "ade_label": "Persistent Dry Cough",
+      "ade_terms": [
+        "persistent dry cough", "dry cough", "cough",
+        "tos seca", "tos persistente", "tos seca persistente"
+      ],
+      "plausible_classes": [
+        "Antitussive", "Cough suppressant", "antitussive"
+      ],
+      "plausible_drug_examples": [
+        "dextromethorphan", "dextrometorfano",
+        "codeine", "codeina",
+        "benzonatate", "benzonatato",
+        "guaifenesin", "guaifenesina",
+        "levodropropizine", "levodropropizina",
+        "cloperastine", "cloperastina",
+        "pholcodine"
+      ]
+    },
+    {
+      "ade_id": "ATM017",
+      "ade_label": "Urinary Incontinence / Urinary Urgency",
+      "ade_terms": [
+        "urge urinary incontinence", "urinary urgency", "urinary incontinence",
+        "overactive bladder",
+        "incontinencia urinaria", "urgencia urinaria", "vejiga hiperactiva"
+      ],
+      "plausible_classes": [
+        "Anticholinergic (urinary)", "Antimuscarinic", "Beta-3 agonist"
+      ],
+      "plausible_drug_examples": [
+        "oxybutynin", "oxibutinina",
+        "tolterodine", "tolterodina",
+        "solifenacin", "solifenacina",
+        "fesoterodine", "fesoterodina",
+        "darifenacin", "darifenacina",
+        "mirabegron",
+        "trospium", "trospio"
+      ]
+    },
+    {
+      "ade_id": "ATM018",
+      "ade_label": "Urinary Retention / Hesitancy",
+      "ade_terms": [
+        "urinary retention", "urinary hesitancy", "difficulty urinating",
+        "retencion urinaria", "retencion", "hesitancia urinaria"
+      ],
+      "plausible_classes": [
+        "Alpha-blocker", "alpha-blocker", "Cholinergic"
+      ],
+      "plausible_drug_examples": [
+        "tamsulosin", "tamsulosina",
+        "alfuzosin", "alfuzosina",
+        "doxazosin", "doxazosina",
+        "terazosin", "terazosina",
+        "bethanechol", "betanecol",
+        "prazosin", "prazosina"
+      ]
+    },
+    {
+      "ade_id": "ATM019",
+      "ade_label": "Orthostatic Hypotension / Dizziness / Falls",
+      "ade_terms": [
+        "orthostatic hypotension", "dizziness", "falls", "presyncope",
+        "postural hypotension", "lightheadedness",
+        "hipotension ortostatica", "hipotension postural", "mareo", "caidas"
+      ],
+      "plausible_classes": [
+        "Vasopressor", "Mineralocorticoid", "Vestibular agent",
+        "Bisphosphonate", "Calcium supplement"
+      ],
+      "plausible_drug_examples": [
+        "midodrine", "midodrina",
+        "fludrocortisone", "fludrocortisona",
+        "droxidopa",
+        "meclizine", "meclizina",
+        "betahistine", "betahistina",
+        "cinnarizine", "cinarizina",
+        "dimenhydrinate", "dimenhidrinato",
+        "alendronate", "alendronato",
+        "risedronate", "risedronato",
+        "calcium carbonate", "carbonato calcico",
+        "cholecalciferol", "colecalciferol"
+      ]
+    },
+    {
+      "ade_id": "ATM020",
+      "ade_label": "Sedation / Drowsiness",
+      "ade_terms": [
+        "sedation", "drowsiness", "somnolence", "opioid-induced sedation",
+        "fatigue", "lethargy", "exercise intolerance",
+        "sedacion", "somnolencia", "fatiga", "letargia"
+      ],
+      "plausible_classes": [
+        "CNS Stimulant", "Psychostimulant", "Wakefulness agent"
+      ],
+      "plausible_drug_examples": [
+        "methylphenidate", "metilfenidato",
+        "modafinil", "modafinilo",
+        "dextroamphetamine", "dextranfetamina",
+        "amantadine", "amantadina",
+        "caffeine", "cafeina",
+        "armodafinil",
+        "flumazenil",
+        "naloxone", "naloxona"
+      ]
+    },
+    {
+      "ade_id": "ATM021",
+      "ade_label": "Dry Mouth / Xerostomia",
+      "ade_terms": [
+        "dry mouth", "xerostomia", "oral dryness", "mouth dryness",
+        "boca seca", "xerostomia", "sequedad bucal"
+      ],
+      "plausible_classes": [
+        "Sialagogue", "Saliva substitute", "Cholinergic"
+      ],
+      "plausible_drug_examples": [
+        "pilocarpine", "pilocarpina",
+        "cevimeline", "cevimelina",
+        "bethanechol", "betanecol",
+        "artificial saliva",
+        "saliva artificial"
+      ]
+    },
+    {
+      "ade_id": "ATM022",
+      "ade_label": "Confusion / Delirium / Cognitive Impairment",
+      "ade_terms": [
+        "confusion", "delirium", "cognitive impairment", "acute confusion",
+        "deliria", "altered mental status",
+        "confusion", "delirio", "deterioro cognitivo", "confusion aguda"
+      ],
+      "plausible_classes": [
+        "Antipsychotic", "antipsychotic", "Cholinesterase inhibitor"
+      ],
+      "plausible_drug_examples": [
+        "haloperidol",
+        "quetiapine", "quetiapina",
+        "risperidone", "risperidona",
+        "olanzapine", "olanzapina",
+        "aripiprazole", "aripiprazol",
+        "donepezil",
+        "rivastigmine", "rivastigmina"
+      ]
+    },
+    {
+      "ade_id": "ATM023",
+      "ade_label": "Hypomagnesaemia",
+      "ade_terms": [
+        "hypomagnesaemia", "hypomagnesemia", "low magnesium",
+        "hypomagnesaemia (after ppi therapy)", "hipomagnesemia"
+      ],
+      "plausible_classes": [
+        "Magnesium supplement", "Electrolyte supplement"
+      ],
+      "plausible_drug_examples": [
+        "magnesium oxide", "oxido de magnesio",
+        "magnesium glycinate", "glicinato de magnesio",
+        "magnesium sulfate", "sulfato de magnesio",
+        "magnesium citrate", "citrato de magnesio",
+        "magnesium hydroxide", "hidroxido de magnesio",
+        "magnesium chloride", "cloruro de magnesio"
+      ]
+    },
+    {
+      "ade_id": "ATM024",
+      "ade_label": "Hypothyroidism",
+      "ade_terms": [
+        "hypothyroidism", "drug-induced hypothyroidism",
+        "hipotiroidismo", "hipotiroidismo inducido"
+      ],
+      "plausible_classes": [
+        "Thyroid hormone", "thyroid hormone", "Levothyroxine"
+      ],
+      "plausible_drug_examples": [
+        "levothyroxine", "levotiroxina",
+        "liothyronine", "liotironina"
+      ]
+    },
+    {
+      "ade_id": "ATM025",
+      "ade_label": "Hyperprolactinaemia",
+      "ade_terms": [
+        "hyperprolactinaemia", "hyperprolactinemia",
+        "galactorrhoea", "amenorrhoea due to hyperprolactinaemia",
+        "hiperprolactinemia"
+      ],
+      "plausible_classes": [
+        "Dopamine agonist", "dopamine agonist"
+      ],
+      "plausible_drug_examples": [
+        "cabergoline", "cabergolina",
+        "bromocriptine", "bromocriptina",
+        "quinagolide", "quinagolida"
+      ]
+    },
+    {
+      "ade_id": "ATM026",
+      "ade_label": "Akathisia",
+      "ade_terms": [
+        "akathisia", "acatisia", "restlessness", "motor restlessness"
+      ],
+      "plausible_classes": [
+        "Beta-blocker", "Benzodiazepine", "5-HT2 antagonist"
+      ],
+      "plausible_drug_examples": [
+        "propranolol",
+        "clonazepam",
+        "lorazepam",
+        "diazepam",
+        "mirtazapine", "mirtazapina",
+        "cyproheptadine", "ciproheptadina",
+        "biperiden", "biperideno"
+      ]
+    },
+    {
+      "ade_id": "ATM027",
+      "ade_label": "Headache",
+      "ade_terms": [
+        "headache", "migraine", "cephalgia",
+        "cefalea", "migraña", "dolor de cabeza"
+      ],
+      "plausible_classes": [
+        "Analgesic", "NSAID", "Triptan", "analgesic"
+      ],
+      "plausible_drug_examples": [
+        "paracetamol", "acetaminophen",
+        "ibuprofen", "ibuprofeno",
+        "aspirin", "aspirina",
+        "naproxen", "naproxeno",
+        "sumatriptan",
+        "zolmitriptan",
+        "tramadol",
+        "codeine", "codeina",
+        "metamizole", "metamizol"
+      ]
+    },
+    {
+      "ade_id": "ATM028",
+      "ade_label": "Vitamin B12 Deficiency",
+      "ade_terms": [
+        "vitamin b12 deficiency", "b12 deficiency", "cobalamin deficiency",
+        "deficit de vitamina b12", "deficit de b12"
+      ],
+      "plausible_classes": [
+        "Vitamin B12 supplement", "Cobalamin"
+      ],
+      "plausible_drug_examples": [
+        "cyanocobalamin", "cianocobalamina",
+        "hydroxocobalamin", "hidroxocobalamina",
+        "methylcobalamin", "metilcobalamina"
+      ]
+    },
+    {
+      "ade_id": "ATM029",
+      "ade_label": "Hyponatraemia / SIADH",
+      "ade_terms": [
+        "hyponatraemia", "hyponatremia", "siadh", "low sodium",
+        "hiponatremia", "sodio bajo"
+      ],
+      "plausible_classes": [
+        "Vasopressin receptor antagonist", "Sodium supplement", "Osmotic"
+      ],
+      "plausible_drug_examples": [
+        "sodium chloride", "cloruro sodico",
+        "tolvaptan",
+        "demeclocycline", "demeclociclina",
+        "urea"
+      ]
+    },
+    {
+      "ade_id": "ATM030",
+      "ade_label": "Hypophosphatemia / Renal Fanconi Syndrome",
+      "ade_terms": [
+        "hypophosphatemia", "hypophosphataemia", "renal fanconi syndrome",
+        "phosphate deficiency", "hipofosfatemia", "sindrome de fanconi renal"
+      ],
+      "plausible_classes": [
+        "Phosphate supplement", "Mineral supplement", "Vitamin D"
+      ],
+      "plausible_drug_examples": [
+        "sodium phosphate", "fosfato sodico",
+        "potassium phosphate", "fosfato potasico",
+        "calcitriol",
+        "cholecalciferol", "colecalciferol",
+        "calcium carbonate", "carbonato calcico"
+      ]
+    }
+  ]
+}

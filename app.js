@@ -321,6 +321,10 @@ const UI_STRINGS = {
     hiv_modifier_only_note:       'Se\u00F1al impulsada principalmente por modificador de contexto VIH; falta evidencia directa del EAM en la nota cl\u00EDnica.',
     prio_reason_hiv_modifier_only: 'Penalizaci\u00F3n: modificador VIH sin apoyo directo de EAM en el texto.',
 
+    /* Therapeutic plausibility penalty — cascade drug is not a recognised treatment for the detected ADE */
+    plausibility_penalty_note:       'El f\u00E1rmaco de tratamiento detectado no es un tratamiento habitual del evento adverso identificado.',
+    prio_reason_plausibility_penalty: 'Penalizaci\u00F3n: el f\u00E1rmaco de cascada no corresponde a un tratamiento habitual del EAM detectado.',
+
     /* Unknown step */
     unknown_step: 'Paso desconocido.'
   },
@@ -603,6 +607,10 @@ const UI_STRINGS = {
     hiv_modifier_only_note:       'Signal driven mainly by HIV clinical context modifier; direct ADE evidence is lacking in the clinical note.',
     prio_reason_hiv_modifier_only: 'Penalty: HIV context modifier without direct ADE support in the text.',
 
+    /* Therapeutic plausibility penalty — cascade drug is not a recognised treatment for the detected ADE */
+    plausibility_penalty_note:       'El f\u00E1rmaco de tratamiento detectado no es un tratamiento habitual del evento adverso identificado.',
+    prio_reason_plausibility_penalty: 'Penalty: the cascade drug is not a recognised treatment for the identified adverse drug event.',
+
     /* Unknown step */
     unknown_step: 'Unknown step.'
   }
@@ -633,7 +641,7 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null },
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
   /* Step 5 clinician classifications, keyed by cascade_id.
@@ -729,6 +737,7 @@ async function loadKB(track) {
     ddiWatchlist:      folder + '/ddi_watchlist.json',
     symptomDictionary: folder + '/kb_symptoms.json',
     clinicalModifiers: folder + '/kb_clinical_modifiers.json',
+    adeTreatmentMap:   folder + '/ade_treatment_map.json',
     /* Shared drug name dictionary — lives at kb/ root, not inside a track
      * subfolder, because variant/brand-name mappings are track-independent. */
     drugDictionary:    'kb/drug_dictionary.json'
@@ -3288,6 +3297,84 @@ function detectDrugPairTemporality(noteText, signal) {
   return            { status: 'unknown',           detail: tUI('temporality_unknown')   };
 }
 
+/**
+ * checkTherapeuticPlausibility(ade_en, cascade_drug, cascadeDrugMeta)
+ *
+ * Checks whether `cascade_drug` is a clinically plausible treatment for the
+ * adverse drug event described by `ade_en`.  Uses the ade_treatment_map KB.
+ *
+ * Conservative by design:
+ *   - If the ADE is not found in the map → { plausible: true } (no penalty)
+ *   - If the KB is not loaded           → { plausible: true } (no penalty)
+ *   - Matching is case-insensitive and diacritic-insensitive (normalizeSymptomText)
+ *   - ADE lookup: any ade_term that appears as a substring of (or contains) ade_en
+ *   - Drug check: cascade_drug against plausible_drug_examples (exact normalised match)
+ *     OR resolved drug_class against plausible_classes (substring match)
+ *
+ * @param {string} ade_en          - ADE label from the cascade signal
+ * @param {string} cascade_drug    - Drug name found in the note for the cascade role
+ * @param {object|null} cascadeDrugMeta - resolver meta for cascade_drug (may have .drug_class)
+ * @returns {{ plausible: boolean }}
+ */
+function checkTherapeuticPlausibility(ade_en, cascade_drug, cascadeDrugMeta) {
+  /* Cannot evaluate without both an ADE term and a cascade drug */
+  if (!ade_en || !cascade_drug) return { plausible: true };
+
+  var map = state.kb.adeTreatmentMap;
+  if (!map || !Array.isArray(map.mappings) || map.mappings.length === 0) {
+    return { plausible: true };
+  }
+
+  var normAde  = normalizeSymptomText(ade_en);
+  var normDrug = normalizeSymptomText(cascade_drug);
+
+  /* Step 1 — find a matching ADE entry in the map */
+  var matchedEntry = null;
+  for (var i = 0; i < map.mappings.length; i++) {
+    var entry = map.mappings[i];
+    var terms = Array.isArray(entry.ade_terms) ? entry.ade_terms : [];
+    for (var j = 0; j < terms.length; j++) {
+      var normTerm = normalizeSymptomText(terms[j]);
+      /* Accept if either string contains the other — handles both full ADE labels
+       * ("Ankle/leg edema") and shorter canonical terms ("edema"). */
+      if (normAde.indexOf(normTerm) !== -1 || normTerm.indexOf(normAde) !== -1) {
+        matchedEntry = entry;
+        break;
+      }
+    }
+    if (matchedEntry) break;
+  }
+
+  /* ADE not covered by map — apply no penalty (conservative) */
+  if (!matchedEntry) return { plausible: true };
+
+  /* Step 2a — check cascade drug against plausible_drug_examples */
+  var plausibleDrugs = (matchedEntry.plausible_drug_examples || []);
+  for (var d = 0; d < plausibleDrugs.length; d++) {
+    if (normalizeSymptomText(plausibleDrugs[d]) === normDrug) {
+      return { plausible: true };
+    }
+  }
+
+  /* Step 2b — check resolved drug class against plausible_classes */
+  var resolvedClass = cascadeDrugMeta && cascadeDrugMeta.drug_class
+    ? normalizeSymptomText(cascadeDrugMeta.drug_class)
+    : '';
+  if (resolvedClass) {
+    var plausibleClasses = (matchedEntry.plausible_classes || []);
+    for (var c = 0; c < plausibleClasses.length; c++) {
+      var normClass = normalizeSymptomText(plausibleClasses[c]);
+      if (resolvedClass.indexOf(normClass) !== -1 || normClass.indexOf(resolvedClass) !== -1) {
+        return { plausible: true };
+      }
+    }
+  }
+
+  /* Neither drug name nor drug class matched — cascade drug is not a recognised
+   * treatment for this ADE; flag for penalty */
+  return { plausible: false };
+}
+
 function buildEvidenceProfile(signal, recommendationText, noteText) {
   var supports = [];
   var missing = [];
@@ -3347,6 +3434,21 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
     missing.push(tUI('hiv_modifier_only_note'));
   }
 
+  /* ── Therapeutic plausibility check ────────────────────────────────────
+   * After detecting Drug A → ADE → Drug B, verify that Drug B is a
+   * recognised pharmacological treatment for the detected ADE.
+   * Uses the ade_treatment_map KB.  Conservative: no penalty when the ADE
+   * is absent, unmapped, or the KB file is unavailable.
+   * When implausible, a note is added to "missing" and the penalty flag is
+   * set for derivePharmacyPriority to apply a -1 score reduction.
+   * ─────────────────────────────────────────────────────────────────────── */
+  var cascadeDrugMeta = (signal.drug_resolution && signal.drug_resolution.cascade) || null;
+  var plausibilityResult = checkTherapeuticPlausibility(signal.ade_en, signal.cascade_drug, cascadeDrugMeta);
+  var plausibilityPenalty = !plausibilityResult.plausible;
+  if (plausibilityPenalty) {
+    missing.push(tUI('plausibility_penalty_note'));
+  }
+
   var isPreliminary = signal.signal_type === 'drug_drug' && !hasClinicalSupport;
   return {
     level:       isPreliminary ? 'preliminary_signal' : 'plausible_cascade',
@@ -3357,7 +3459,8 @@ function buildEvidenceProfile(signal, recommendationText, noteText) {
     hasClinicalSupport: hasClinicalSupport,
     temporality: temporality,
     altIndicationPenalty: altIndication.found,   /* used by derivePharmacyPriority */
-    hivModifierOnly: hivModifierOnly             /* used by derivePharmacyPriority */
+    hivModifierOnly: hivModifierOnly,            /* used by derivePharmacyPriority */
+    plausibilityPenalty: plausibilityPenalty     /* used by derivePharmacyPriority */
   };
 }
 
@@ -3432,6 +3535,19 @@ function derivePharmacyPriority(signal, recommendationText, evidence) {
   if (evidence && evidence.hivModifierOnly) {
     score -= 1;
     reasons.push(tUI('prio_reason_hiv_modifier_only'));
+  }
+
+  /* ── Therapeutic plausibility penalty ──────────────────────────────────
+   * If the detected cascade drug (Drug B) is not a recognised pharmacological
+   * treatment for the identified ADE, the cascade is less credible — it may
+   * represent a spurious co-prescription rather than a true cascade.
+   * Apply a conservative penalty (-1) to reduce the priority score.
+   * The check is skipped (no penalty) when the ADE is unmapped or the KB
+   * is unavailable, preserving the existing behaviour in those cases.
+   * ─────────────────────────────────────────────────────────────────────── */
+  if (evidence && evidence.plausibilityPenalty) {
+    score -= 1;
+    reasons.push(tUI('prio_reason_plausibility_penalty'));
   }
 
   if (score >= 6) return { level: 'alta',       label: tUI('prio_high'),   score: score, reasons: reasons };
