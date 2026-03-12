@@ -1,5 +1,47 @@
 # Knowledge Base Changelog
 
+## Version 2.1.1 — 2026-03-12
+
+**Promote therapeutic plausibility KB to production: `ade_treatment_map.json` v1.0.0**
+
+### New file
+- `/kb/dev/ade_treatment_map.json` (v1.0.0, `last_updated` 2026-03-11): 25 ADE entries covering the main adverse effects that drive prescribing cascades. Each entry includes bilingual ADE terms and synonyms (`ade_en`/`ade_es` + synonym arrays), treatment drug classes and examples (EN + ES), a `plausibility_weight` field (`high`/`medium`), links back to source cascade IDs, and clinical references.
+- `/kb/prod/ade_treatment_map.json` (v1.0.0, `last_updated` 2026-03-12): production copy, schema identical to dev, date bumped to promotion date.
+
+### Coverage (25 ADEs)
+| ATM ID | ADE (EN) | Plausibility weight |
+|--------|----------|---------------------|
+| ATM001 | Blood pressure elevation | high |
+| ATM002 | Nausea | high |
+| ATM003 | Constipation | high |
+| ATM004 | Peripheral oedema | high |
+| ATM005 | Hypokalemia | high |
+| ATM006 | Osteoporosis | high |
+| ATM007 | Dyspepsia | high |
+| ATM008 | Depression | high |
+| ATM009 | Insomnia | medium |
+| ATM010 | Urinary incontinence / overactive bladder | high |
+| ATM011 | Hypomagnesemia | high |
+| ATM012 | Vitamin B12 deficiency | high |
+| ATM013 | Hypothyroidism | high |
+| ATM014 | Hyperglycemia / Diabetes | high |
+| ATM015 | Hyperlipidemia | high |
+| ATM016 | Hyponatremia | medium |
+| ATM017 | Hyperkalemia | high |
+| ATM018 | Orthostatic hypotension | medium |
+| ATM019 | Vitamin D deficiency | high |
+| ATM020 | Myalgia / Muscle pain | medium |
+| ATM021 | Confusion / Delirium | medium |
+| ATM022 | Urinary retention | high |
+| ATM023 | Dizziness | medium |
+| ATM024 | Metabolic syndrome | medium |
+| ATM025 | Anxiety | medium |
+
+### app.js
+- `loadKB()`: added `adeTreatmentMap` key → `{folder}/ade_treatment_map.json` so the file is fetched for both `dev` and `prod` tracks and stored in `state.kb.adeTreatmentMap`.
+
+---
+
 ## Version 2.0.0 — 2026-03-10
 
 **KB validation run: `kb_validator.js` against `kb/dev/kb_core_cascades.json` (v2.0.0, last_updated 2026-03-04)**
