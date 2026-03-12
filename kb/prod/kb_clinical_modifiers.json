@@ -1,0 +1,188 @@
+{
+  "version": "1.0.0",
+  "description": "General clinical context modifiers for prescribing cascade interpretation — adjusts priority and recommendations based on patient-level risk factors",
+  "last_updated": "2026-03-11",
+  "disclaimer": "For decision support only. Clinical modifiers are population-level heuristics and must be interpreted in the context of the individual patient.",
+  "clinical_modifiers": [
+    {
+      "id": "CM001",
+      "name_es": "Edad avanzada (≥75 años)",
+      "name_en": "Older age (≥75 years)",
+      "trigger_context": {
+        "keywords_en": ["75 years", "76 years", "77 years", "78 years", "79 years", "80 years", "81 years", "82 years", "83 years", "84 years", "85 years", "86 years", "87 years", "88 years", "89 years", "90 years", "91 years", "92 years", "93 years", "94 years", "95 years", "older adult", "elderly", "geriatric", "aged"],
+        "keywords_es": ["75 años", "76 años", "77 años", "78 años", "79 años", "80 años", "81 años", "82 años", "83 años", "84 años", "85 años", "86 años", "87 años", "88 años", "89 años", "90 años", "anciano", "anciana", "geriátrico", "geriátrica", "adulto mayor"],
+        "pattern_hint": "age ≥75 or explicit elderly/geriatric label"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de edad avanzada (≥75 años): aumenta el riesgo de efectos adversos acumulativos, cascadas de prescripción y polifarmacia. Revisar indicación y dosis con criterios geriátricos (STOPP/START, criterios Beers).",
+      "message_en": "Older age context (≥75 years): increases risk of cumulative adverse effects, prescribing cascades, and polypharmacy. Review indication and dosing using geriatric criteria (STOPP/START, Beers Criteria).",
+      "references": ["O'Mahony D et al. Age Ageing 2023 (STOPP/START v3)", "By the 2023 American Geriatrics Society Beers Criteria Update Expert Panel. J Am Geriatr Soc 2023"]
+    },
+    {
+      "id": "CM002",
+      "name_es": "Fragilidad",
+      "name_en": "Frailty",
+      "trigger_context": {
+        "keywords_en": ["frailty", "frail", "frailty syndrome", "sarcopenia", "functional decline", "weight loss", "exhaustion", "low grip strength", "slow gait", "low activity", "clinical frailty scale", "CFS"],
+        "keywords_es": ["fragilidad", "frágil", "síndrome de fragilidad", "sarcopenia", "deterioro funcional", "pérdida de peso", "agotamiento", "escala de fragilidad clínica"],
+        "pattern_hint": "explicit frailty label or frailty phenotype components"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de fragilidad: la reserva fisiológica reducida amplifica el riesgo de efectos adversos medicamentosos y cascadas. Aplicar principio de prescripción prudente; considerar retirada escalonada de fármacos no esenciales.",
+      "message_en": "Frailty context: reduced physiological reserve amplifies risk of adverse drug effects and cascades. Apply prescribing prudence principle; consider stepwise deprescribing of non-essential medications.",
+      "references": ["Fried LP et al. J Gerontol A Biol Sci Med Sci 2001", "Morley JE et al. J Am Med Dir Assoc 2013"]
+    },
+    {
+      "id": "CM003",
+      "name_es": "Deterioro renal (ERC / FGe reducido)",
+      "name_en": "Renal impairment (CKD / reduced eGFR)",
+      "trigger_context": {
+        "keywords_en": ["renal impairment", "kidney disease", "CKD", "chronic kidney disease", "reduced eGFR", "eGFR", "GFR", "creatinine elevated", "renal failure", "renal insufficiency", "dialysis", "hemodialysis", "peritoneal dialysis", "nephropathy"],
+        "keywords_es": ["deterioro renal", "enfermedad renal crónica", "ERC", "FGe reducido", "FGe", "creatinina elevada", "insuficiencia renal", "diálisis", "hemodiálisis", "diálisis peritoneal", "nefropatía"],
+        "pattern_hint": "CKD diagnosis, low eGFR value, or dialysis"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de deterioro renal: la acumulación de fármacos de eliminación renal aumenta el riesgo de toxicidad y reacciones adversas. Verificar ajuste de dosis por FGe y revisar si algún fármaco de la cascada está contraindicado (p.ej. AINE, metformina, gadolinio).",
+      "message_en": "Renal impairment context: accumulation of renally cleared drugs increases toxicity and adverse reaction risk. Verify eGFR-based dose adjustment and check if any cascade drug is contraindicated (e.g. NSAIDs, metformin, gadolinium).",
+      "references": ["Kidney Disease: Improving Global Outcomes (KDIGO) CKD Work Group 2024", "Munar MY & Singh H. Am J Health Syst Pharm 2007"]
+    },
+    {
+      "id": "CM004",
+      "name_es": "Polifarmacia (≥5 fármacos crónicos)",
+      "name_en": "Polypharmacy (≥5 chronic drugs)",
+      "trigger_context": {
+        "keywords_en": ["polypharmacy", "multiple medications", "complex regimen", "many drugs", "numerous medications"],
+        "keywords_es": ["polifarmacia", "múltiples medicamentos", "múltiples fármacos", "régimen complejo", "muchos medicamentos"],
+        "pattern_hint": "explicit polypharmacy label or ≥5 distinct drug classes detected"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de polifarmacia: cada fármaco adicional incrementa exponencialmente el riesgo de interacciones y cascadas de prescripción. Evaluar necesidad real de cada medicamento; considerar revisión estructurada de medicación (herramienta MAI, protocolo STOPP).",
+      "message_en": "Polypharmacy context: each additional drug exponentially increases the risk of interactions and prescribing cascades. Assess genuine need for each medication; consider structured medication review (MAI tool, STOPP protocol).",
+      "references": ["Maher RL et al. Am J Geriatr Pharmacother 2014", "Reeve E et al. Drugs Aging 2015"]
+    },
+    {
+      "id": "CM005",
+      "name_es": "Riesgo de caídas",
+      "name_en": "Fall risk",
+      "trigger_context": {
+        "keywords_en": ["fall risk", "fall history", "recurrent falls", "has fallen", "fall prevention", "fear of falling", "unsteady gait", "balance disorder", "orthostatic hypotension", "syncope"],
+        "keywords_es": ["riesgo de caídas", "caídas", "caída previa", "caídas recurrentes", "prevención de caídas", "miedo a caer", "marcha inestable", "trastorno del equilibrio", "hipotensión ortostática", "síncope"],
+        "pattern_hint": "fall risk label, fall history, or gait/balance impairment"
+      },
+      "affects": ["cascades_with_risk_focus_fall", "sedative_cascades", "antihypertensive_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de riesgo de caídas: cualquier fármaco que cause sedación, mareos o hipotensión ortostática (BZD, opioides, antihipertensivos, antipsicóticos) amplifica el riesgo. Revisar aportación de cada fármaco al riesgo de caída y considerar alternativas o retirada.",
+      "message_en": "Fall risk context: any drug causing sedation, dizziness, or orthostatic hypotension (BZDs, opioids, antihypertensives, antipsychotics) amplifies risk. Review each drug's contribution to fall risk and consider alternatives or withdrawal.",
+      "references": ["Panel on Prevention of Falls in Older Persons (AGS/BGS) 2011", "Woolcott JC et al. Arch Intern Med 2009"]
+    },
+    {
+      "id": "CM006",
+      "name_es": "Carga anticolinérgica elevada",
+      "name_en": "High anticholinergic burden",
+      "trigger_context": {
+        "keywords_en": ["anticholinergic", "anticholinergic burden", "anticholinergic load", "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "trospium", "amitriptyline", "nortriptyline", "clozapine", "olanzapine", "quetiapine", "chlorpromazine", "promethazine", "diphenhydramine", "hydroxyzine", "meclizine"],
+        "keywords_es": ["anticolinérgico", "carga anticolinérgica", "oxybutinina", "tolterodina", "solifenacina", "fesoterodina", "trospio", "amitriptilina", "nortriptilina", "clozapina", "olanzapina", "quetiapina", "clorpromazina", "prometazina", "difenhidramina", "hidroxizina"],
+        "pattern_hint": "one or more high-ACB drugs mentioned"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Carga anticolinérgica elevada detectada: el efecto acumulado de múltiples fármacos con actividad anticolinérgica aumenta el riesgo de confusión, retención urinaria, estreñimiento y caídas, especialmente en personas mayores. Calcular puntuación ACB total y reducir si es posible.",
+      "message_en": "High anticholinergic burden detected: cumulative effect of multiple drugs with anticholinergic activity increases risk of confusion, urinary retention, constipation, and falls, especially in older adults. Calculate total ACB score and reduce if possible.",
+      "references": ["Rudolph JL et al. J Am Geriatr Soc 2008 (ACB Scale)", "Fox C et al. Age Ageing 2014"]
+    },
+    {
+      "id": "CM007",
+      "name_es": "Carga depresora del SNC elevada",
+      "name_en": "High CNS depressant burden",
+      "trigger_context": {
+        "keywords_en": ["benzodiazepine", "opioid", "gabapentin", "pregabalin", "muscle relaxant", "sleeping pill", "sedative", "hypnotic", "CNS depressant", "central nervous system depressant", "alprazolam", "diazepam", "lorazepam", "clonazepam", "zolpidem", "zopiclone", "morphine", "oxycodone", "tramadol", "fentanyl", "codeine", "baclofen", "cyclobenzaprine", "carisoprodol"],
+        "keywords_es": ["benzodiazepina", "opioide", "gabapentina", "pregabalina", "relajante muscular", "pastilla para dormir", "sedante", "hipnótico", "depresor del SNC", "alprazolam", "diazepam", "lorazepam", "clonazepam", "zolpidem", "zopiclona", "morfina", "oxicodona", "tramadol", "fentanilo", "codeína", "baclofeno", "ciclobenzaprina"],
+        "pattern_hint": "≥2 CNS depressant drug classes detected"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Carga depresora del SNC elevada: la combinación de ≥2 depresores del SNC (opioides, BZD, gabapentinoides, relajantes musculares) multiplica el riesgo de depresión respiratoria, sedación excesiva y caídas. Evaluar necesidad de cada componente; evitar escalada.",
+      "message_en": "High CNS depressant burden: combination of ≥2 CNS depressants (opioids, BZDs, gabapentinoids, muscle relaxants) multiplies risk of respiratory depression, excessive sedation, and falls. Evaluate necessity of each component; avoid escalation.",
+      "references": ["FDA Drug Safety Communication: Opioids + CNS Depressants 2016", "Gomes T et al. BMJ 2017"]
+    },
+    {
+      "id": "CM008",
+      "name_es": "Riesgo cardiovascular elevado",
+      "name_en": "High cardiovascular risk",
+      "trigger_context": {
+        "keywords_en": ["cardiovascular risk", "high CV risk", "coronary artery disease", "CAD", "ischemic heart disease", "IHD", "myocardial infarction", "MI", "heart failure", "HF", "atrial fibrillation", "AF", "stroke", "TIA", "peripheral artery disease", "PAD", "diabetes mellitus", "hypertension", "hyperlipidemia", "ASCVD"],
+        "keywords_es": ["riesgo cardiovascular", "riesgo CV elevado", "enfermedad coronaria", "cardiopatía isquémica", "infarto de miocardio", "IAM", "insuficiencia cardíaca", "IC", "fibrilación auricular", "FA", "ictus", "ACV", "AIT", "diabetes mellitus", "hipertensión", "hiperlipidemia", "ECVA"],
+        "pattern_hint": "established ASCVD or ≥2 major CV risk factors"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de riesgo cardiovascular elevado: los AINEs, ciertos antidepresivos, antipsicóticos y otros fármacos pueden agravar el riesgo CV o interactuar con antiagregantes/anticoagulantes. Revisar el perfil cardiovascular de cada medicamento añadido.",
+      "message_en": "High cardiovascular risk context: NSAIDs, certain antidepressants, antipsychotics, and other drugs may worsen CV risk or interact with antiplatelets/anticoagulants. Review the cardiovascular profile of each drug added.",
+      "references": ["Bhatt DL et al. N Engl J Med 2010", "Olsen AM et al. Circulation 2011"]
+    },
+    {
+      "id": "CM009",
+      "name_es": "Demencia o deterioro cognitivo",
+      "name_en": "Dementia or cognitive impairment",
+      "trigger_context": {
+        "keywords_en": ["dementia", "Alzheimer", "cognitive impairment", "cognitive decline", "vascular dementia", "Lewy body", "frontotemporal dementia", "mild cognitive impairment", "MCI", "memory loss", "confusion", "delirium"],
+        "keywords_es": ["demencia", "Alzheimer", "deterioro cognitivo", "deterioro cognitivo leve", "demencia vascular", "cuerpos de Lewy", "demencia frontotemporal", "pérdida de memoria", "confusión", "delirium"],
+        "pattern_hint": "dementia diagnosis or cognitive impairment label"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de demencia o deterioro cognitivo: los fármacos con efecto anticolinérgico, sedante o que alteran la tensión arterial son especialmente problemáticos. Revisar con criterios STOPP-D; priorizar deprescripción de fármacos cognitivamente activos.",
+      "message_en": "Dementia or cognitive impairment context: drugs with anticholinergic, sedative, or blood pressure-altering effects are particularly problematic. Review with STOPP-D criteria; prioritize deprescribing of cognitively active drugs.",
+      "references": ["O'Mahony D et al. Age Ageing 2023 (STOPP/START v3)", "Lam K et al. Prim Care Companion CNS Disord 2021"]
+    },
+    {
+      "id": "CM010",
+      "name_es": "Insuficiencia hepática / Hepatopatía crónica",
+      "name_en": "Hepatic impairment / Chronic liver disease",
+      "trigger_context": {
+        "keywords_en": ["liver disease", "hepatic impairment", "cirrhosis", "hepatic failure", "chronic hepatitis", "hepatitis B", "hepatitis C", "liver fibrosis", "Child-Pugh", "MELD score", "portal hypertension", "ascites", "hepatic encephalopathy"],
+        "keywords_es": ["hepatopatía", "insuficiencia hepática", "cirrosis", "hepatitis crónica", "hepatitis B", "hepatitis C", "fibrosis hepática", "Child-Pugh", "puntuación MELD", "hipertensión portal", "ascitis", "encefalopatía hepática"],
+        "pattern_hint": "cirrhosis, hepatic impairment, or chronic liver disease diagnosis"
+      },
+      "affects": ["all_cascades"],
+      "effect": {
+        "priority_upgrade": true,
+        "upgrade_magnitude": "one_level"
+      },
+      "message_es": "Contexto de hepatopatía: la reducción del metabolismo hepático (especialmente CYP450) puede elevar los niveles plasmáticos de muchos fármacos. Revisar ajuste de dosis, evitar hepatotóxicos acumulativos y verificar interacciones en presencia de Child-Pugh B/C.",
+      "message_en": "Hepatic impairment context: reduced hepatic metabolism (especially CYP450) may elevate plasma levels of many drugs. Review dose adjustments, avoid cumulative hepatotoxins, and verify interactions in the presence of Child-Pugh B/C.",
+      "references": ["Verbeeck RK. Eur J Clin Pharmacol 2008", "Smith DA et al. Drug Metab Dispos 2018"]
+    }
+  ]
+}

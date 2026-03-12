@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "description": "Therapeutic plausibility map — links adverse drug effects (ADEs) to drugs commonly prescribed to treat them. Used by the cascade scoring engine to assess whether a new drug is a plausible treatment for an ADE caused by a prior drug.",
-  "last_updated": "2026-03-12",
+  "last_updated": "2026-03-11",
   "disclaimer": "For decision support only. Therapeutic plausibility is assessed at population level and does not replace individualised clinical judgement.",
   "ade_treatment_map": [
     {
