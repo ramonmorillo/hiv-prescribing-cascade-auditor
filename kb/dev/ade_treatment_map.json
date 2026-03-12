@@ -1,0 +1,407 @@
+{
+  "version": "1.0.0",
+  "description": "Therapeutic plausibility map — links adverse drug effects (ADEs) to drugs commonly prescribed to treat them. Used by the cascade scoring engine to assess whether a new drug is a plausible treatment for an ADE caused by a prior drug.",
+  "last_updated": "2026-03-11",
+  "disclaimer": "For decision support only. Therapeutic plausibility is assessed at population level and does not replace individualised clinical judgement.",
+  "ade_treatment_map": [
+    {
+      "ade_id": "ATM001",
+      "ade_en": "Blood pressure elevation",
+      "ade_es": "Elevación de la presión arterial",
+      "ade_synonyms_en": ["hypertension", "high blood pressure", "BP elevation", "raised blood pressure", "elevated BP"],
+      "ade_synonyms_es": ["hipertensión", "presión arterial alta", "tensión arterial elevada", "HTA"],
+      "treatment_drug_classes": ["Antihypertensive", "ACE inhibitor", "ARB", "Calcium channel blocker", "Beta-blocker", "Thiazide diuretic"],
+      "treatment_drug_examples": [
+        "amlodipine", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan",
+        "hydrochlorothiazide", "bisoprolol", "atenolol", "furosemide", "doxazosin",
+        "amlodipino", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan",
+        "hidroclorotiazida", "bisoprolol", "atenolol", "furosemida", "doxazosina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC001"],
+      "references": ["Whelton PK et al. J Am Coll Cardiol 2018 (ACC/AHA BP Guidelines)"]
+    },
+    {
+      "ade_id": "ATM002",
+      "ade_en": "Nausea",
+      "ade_es": "Náuseas",
+      "ade_synonyms_en": ["nausea", "nauseous", "vomiting", "emesis", "GI upset"],
+      "ade_synonyms_es": ["náuseas", "nauseas", "vómitos", "emesis", "malestar gastrointestinal"],
+      "treatment_drug_classes": ["Antiemetic", "5-HT3 antagonist", "Dopamine antagonist"],
+      "treatment_drug_examples": [
+        "ondansetron", "metoclopramide", "domperidone", "prochlorperazine", "promethazine",
+        "granisetron", "cyclizine",
+        "ondansetrón", "metoclopramida", "domperidona", "proclorperazina", "prometazina",
+        "granisetrón", "ciclizina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC002"],
+      "references": ["Navari RM & Aapro M. N Engl J Med 2016"]
+    },
+    {
+      "ade_id": "ATM003",
+      "ade_en": "Constipation",
+      "ade_es": "Estreñimiento",
+      "ade_synonyms_en": ["constipation", "hard stools", "reduced bowel movements", "bowel obstruction"],
+      "ade_synonyms_es": ["estreñimiento", "heces duras", "tránsito intestinal lento", "obstrucción intestinal"],
+      "treatment_drug_classes": ["Laxative", "Osmotic laxative", "Stimulant laxative", "PAMORA"],
+      "treatment_drug_examples": [
+        "lactulose", "macrogol", "bisacodyl", "senna", "sodium docusate",
+        "naloxegol", "methylnaltrexone", "linaclotide", "lubiprostone",
+        "lactulosa", "macrogol", "bisacodilo", "sen", "docusato sodico",
+        "naloxegol", "metilnaltrexona", "linaclotida", "lubiprostona"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC008"],
+      "references": ["Camilleri M et al. Gastroenterology 2017"]
+    },
+    {
+      "ade_id": "ATM004",
+      "ade_en": "Peripheral oedema",
+      "ade_es": "Edema periférico",
+      "ade_synonyms_en": ["oedema", "edema", "ankle swelling", "peripheral edema", "leg swelling", "fluid retention"],
+      "ade_synonyms_es": ["edema", "edema periférico", "edema de tobillo", "edema maleolar", "retención de líquidos", "piernas hinchadas"],
+      "treatment_drug_classes": ["Loop diuretic", "Thiazide diuretic", "Potassium-sparing diuretic"],
+      "treatment_drug_examples": [
+        "furosemide", "hydrochlorothiazide", "indapamide", "spironolactone", "torasemide",
+        "furosemida", "hidroclorotiazida", "indapamida", "espironolactona", "torasemida"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC004"],
+      "references": ["Sica DA. J Clin Hypertens 2003"]
+    },
+    {
+      "ade_id": "ATM005",
+      "ade_en": "Hypokalemia",
+      "ade_es": "Hipopotasemia",
+      "ade_synonyms_en": ["hypokalemia", "low potassium", "low serum potassium", "hypokalaemia"],
+      "ade_synonyms_es": ["hipopotasemia", "hipokaliemia", "potasio bajo", "potasio sérico bajo"],
+      "treatment_drug_classes": ["Potassium supplement", "Potassium-sparing diuretic"],
+      "treatment_drug_examples": [
+        "potassium chloride", "potassium citrate", "spironolactone", "eplerenone", "amiloride",
+        "cloruro potásico", "citrato potásico", "espironolactona", "eplerenona", "amilorida"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC005"],
+      "references": ["Kraft MD et al. Ann Pharmacother 2005"]
+    },
+    {
+      "ade_id": "ATM006",
+      "ade_en": "Osteoporosis",
+      "ade_es": "Osteoporosis",
+      "ade_synonyms_en": ["osteoporosis", "bone loss", "reduced bone density", "low BMD"],
+      "ade_synonyms_es": ["osteoporosis", "pérdida ósea", "densidad mineral ósea baja", "desmineralización ósea"],
+      "treatment_drug_classes": ["Bisphosphonate", "RANKL inhibitor", "Calcium supplement", "Vitamin D"],
+      "treatment_drug_examples": [
+        "alendronate", "risedronate", "ibandronate", "zoledronic acid", "denosumab",
+        "calcium carbonate", "calcium citrate", "cholecalciferol",
+        "alendronato", "risedronato", "ibandronato", "ácido zoledrónico", "denosumab",
+        "carbonato cálcico", "citrato cálcico", "colecalciferol"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC006"],
+      "references": ["Kanis JA et al. Osteoporos Int 2019 (FRAX guidelines)"]
+    },
+    {
+      "ade_id": "ATM007",
+      "ade_en": "Dyspepsia",
+      "ade_es": "Dispepsia",
+      "ade_synonyms_en": ["dyspepsia", "GI irritation", "stomach pain", "gastric discomfort", "heartburn", "acid reflux", "GERD", "peptic ulcer"],
+      "ade_synonyms_es": ["dispepsia", "irritación gástrica", "dolor de estómago", "malestar gástrico", "ardor", "pirosis", "reflujo ácido", "ERGE", "úlcera péptica"],
+      "treatment_drug_classes": ["Proton pump inhibitor", "H2 blocker", "Antacid"],
+      "treatment_drug_examples": [
+        "omeprazole", "lansoprazole", "pantoprazole", "esomeprazole", "rabeprazole",
+        "ranitidine", "famotidine", "cimetidine",
+        "omeprazol", "lansoprazol", "pantoprazol", "esomeprazol", "rabeprazol",
+        "ranitidina", "famotidina", "cimetidina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC003"],
+      "references": ["Lanza FL et al. Am J Gastroenterol 2009"]
+    },
+    {
+      "ade_id": "ATM008",
+      "ade_en": "Depression",
+      "ade_es": "Depresión",
+      "ade_synonyms_en": ["depression", "depressed mood", "low mood", "anhedonia", "depressive episode"],
+      "ade_synonyms_es": ["depresión", "estado de ánimo deprimido", "ánimo bajo", "anhedonia", "episodio depresivo"],
+      "treatment_drug_classes": ["SSRI", "SNRI", "TCA", "Antidepressant"],
+      "treatment_drug_examples": [
+        "fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram",
+        "venlafaxine", "duloxetine", "amitriptyline", "mirtazapine",
+        "fluoxetina", "sertralina", "paroxetina", "citalopram", "escitalopram",
+        "venlafaxina", "duloxetina", "amitriptilina", "mirtazapina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC007"],
+      "references": ["Cipriani A et al. Lancet 2018"]
+    },
+    {
+      "ade_id": "ATM009",
+      "ade_en": "Insomnia",
+      "ade_es": "Insomnio",
+      "ade_synonyms_en": ["insomnia", "sleep difficulty", "sleeplessness", "poor sleep", "sleep disturbance"],
+      "ade_synonyms_es": ["insomnio", "dificultad para dormir", "trastorno del sueño", "alteración del sueño"],
+      "treatment_drug_classes": ["Benzodiazepine", "Z-drug", "Sedating antidepressant", "Melatonin agonist"],
+      "treatment_drug_examples": [
+        "zolpidem", "zopiclone", "lorazepam", "alprazolam", "clonazepam",
+        "mirtazapine", "trazodone", "melatonin",
+        "zolpidem", "zopiclona", "lorazepam", "alprazolam", "clonazepam",
+        "mirtazapina", "trazodona", "melatonina"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": ["CC009"],
+      "references": ["Riemann D et al. J Sleep Res 2017"]
+    },
+    {
+      "ade_id": "ATM010",
+      "ade_en": "Urinary incontinence / overactive bladder",
+      "ade_es": "Incontinencia urinaria / vejiga hiperactiva",
+      "ade_synonyms_en": ["urinary incontinence", "overactive bladder", "urgency incontinence", "urinary urgency", "OAB"],
+      "ade_synonyms_es": ["incontinencia urinaria", "vejiga hiperactiva", "urgencia urinaria", "incontinencia de urgencia"],
+      "treatment_drug_classes": ["Antimuscarinic", "Beta-3 agonist"],
+      "treatment_drug_examples": [
+        "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
+        "mirabegron", "trospium",
+        "oxibutinina", "tolterodina", "solifenacina", "fesoterodina", "darifenacina",
+        "mirabegrón", "trospio"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC010"],
+      "references": ["Gormley EA et al. J Urol 2012 (AUA OAB Guidelines)"]
+    },
+    {
+      "ade_id": "ATM011",
+      "ade_en": "Hypomagnesemia",
+      "ade_es": "Hipomagnesemia",
+      "ade_synonyms_en": ["hypomagnesemia", "hypomagnesaemia", "low magnesium", "magnesium deficiency"],
+      "ade_synonyms_es": ["hipomagnesemia", "magnesio bajo", "déficit de magnesio"],
+      "treatment_drug_classes": ["Magnesium supplement"],
+      "treatment_drug_examples": [
+        "magnesium oxide", "magnesium citrate", "magnesium hydroxide", "magnesium sulfate",
+        "óxido de magnesio", "citrato de magnesio", "hidróxido de magnesio", "sulfato de magnesio"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC011"],
+      "references": ["Jahnen-Dechent W & Ketteler M. Clin Kidney J 2012"]
+    },
+    {
+      "ade_id": "ATM012",
+      "ade_en": "Vitamin B12 deficiency",
+      "ade_es": "Déficit de vitamina B12",
+      "ade_synonyms_en": ["B12 deficiency", "vitamin B12 deficiency", "cobalamin deficiency", "cyanocobalamin deficiency"],
+      "ade_synonyms_es": ["déficit de vitamina B12", "deficiencia de vitamina B12", "déficit de cobalamina"],
+      "treatment_drug_classes": ["Vitamin B12 supplement"],
+      "treatment_drug_examples": [
+        "cyanocobalamin", "hydroxocobalamin",
+        "cianocobalamina", "hidroxocobalamina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": ["CC012"],
+      "references": ["Stabler SP. N Engl J Med 2013"]
+    },
+    {
+      "ade_id": "ATM013",
+      "ade_en": "Hypothyroidism",
+      "ade_es": "Hipotiroidismo",
+      "ade_synonyms_en": ["hypothyroidism", "low thyroid function", "underactive thyroid", "thyroid deficiency"],
+      "ade_synonyms_es": ["hipotiroidismo", "hipofunción tiroidea", "tiroides hipoactivo", "déficit tiroideo"],
+      "treatment_drug_classes": ["Thyroid hormone replacement"],
+      "treatment_drug_examples": [
+        "levothyroxine", "liothyronine",
+        "levotiroxina", "liotironina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["Jonklaas J et al. Thyroid 2014 (ATA Guidelines)"]
+    },
+    {
+      "ade_id": "ATM014",
+      "ade_en": "Hyperglycemia / Diabetes",
+      "ade_es": "Hiperglucemia / Diabetes",
+      "ade_synonyms_en": ["hyperglycemia", "hyperglycaemia", "elevated blood glucose", "diabetes", "new onset diabetes", "glucose intolerance"],
+      "ade_synonyms_es": ["hiperglucemia", "glucosa elevada", "diabetes", "diabetes de nueva aparición", "intolerancia a la glucosa"],
+      "treatment_drug_classes": ["Biguanide", "Sulfonylurea", "GLP-1 agonist", "DPP-4 inhibitor", "SGLT-2 inhibitor", "Insulin"],
+      "treatment_drug_examples": [
+        "metformin", "gliclazide", "glibenclamide", "sitagliptin", "empagliflozin",
+        "liraglutide", "insulin glargine", "insulin aspart",
+        "metformina", "gliclazida", "glibenclamida", "sitagliptina", "empagliflozina",
+        "liraglutida", "insulina glargina", "insulina aspart"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["American Diabetes Association. Diabetes Care 2026"]
+    },
+    {
+      "ade_id": "ATM015",
+      "ade_en": "Hyperlipidemia",
+      "ade_es": "Hiperlipidemia",
+      "ade_synonyms_en": ["hyperlipidemia", "hyperlipidaemia", "high cholesterol", "dyslipidemia", "hypertriglyceridemia", "elevated LDL"],
+      "ade_synonyms_es": ["hiperlipidemia", "colesterol elevado", "dislipidemia", "hipertrigliceridemia", "LDL elevado"],
+      "treatment_drug_classes": ["Statin", "Fibrate", "Ezetimibe", "PCSK9 inhibitor"],
+      "treatment_drug_examples": [
+        "atorvastatin", "rosuvastatin", "simvastatin", "pravastatin", "fluvastatin",
+        "ezetimibe", "fenofibrate", "gemfibrozil", "evolocumab", "alirocumab",
+        "atorvastatina", "rosuvastatina", "simvastatina", "pravastatina", "fluvastatina",
+        "ezetimiba", "fenofibrato", "gemfibrozilo", "evolocumab", "alirocumab"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["Grundy SM et al. Circulation 2019 (ACC/AHA Cholesterol Guidelines)"]
+    },
+    {
+      "ade_id": "ATM016",
+      "ade_en": "Hyponatremia",
+      "ade_es": "Hiponatremia",
+      "ade_synonyms_en": ["hyponatremia", "hyponatraemia", "low sodium", "low serum sodium"],
+      "ade_synonyms_es": ["hiponatremia", "sodio bajo", "sodio sérico bajo"],
+      "treatment_drug_classes": ["Hypertonic saline", "Tolvaptan", "Fluid restriction"],
+      "treatment_drug_examples": [
+        "sodium chloride", "tolvaptan", "conivaptan", "fludrocortisone",
+        "cloruro sódico", "tolvaptán", "conivaptán", "fludrocortisona"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Verbalis JG et al. Am J Med 2013"]
+    },
+    {
+      "ade_id": "ATM017",
+      "ade_en": "Hyperkalemia",
+      "ade_es": "Hiperpotasemia",
+      "ade_synonyms_en": ["hyperkalemia", "hyperkalaemia", "high potassium", "elevated serum potassium"],
+      "ade_synonyms_es": ["hiperpotasemia", "hiperkaliemia", "potasio alto", "potasio sérico elevado"],
+      "treatment_drug_classes": ["Potassium binder", "Loop diuretic", "Cation exchange resin"],
+      "treatment_drug_examples": [
+        "sodium zirconium cyclosilicate", "patiromer", "calcium polystyrene sulfonate",
+        "furosemide", "kayexalate",
+        "ciclosilicato de sodio y zirconio", "patirómero", "poliestireno sulfonato cálcico",
+        "furosemida", "kayexalate"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["Kovesdy CP. Nat Rev Nephrol 2014"]
+    },
+    {
+      "ade_id": "ATM018",
+      "ade_en": "Orthostatic hypotension",
+      "ade_es": "Hipotensión ortostática",
+      "ade_synonyms_en": ["orthostatic hypotension", "postural hypotension", "dizziness on standing", "BP drop on standing"],
+      "ade_synonyms_es": ["hipotensión ortostática", "hipotensión postural", "mareo al levantarse", "caída de tensión al incorporarse"],
+      "treatment_drug_classes": ["Fludrocortisone", "Alpha-1 agonist", "Compression stockings"],
+      "treatment_drug_examples": [
+        "fludrocortisone", "midodrine", "droxidopa",
+        "fludrocortisona", "midodrina", "droxidopa"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Freeman R et al. Neurology 2011"]
+    },
+    {
+      "ade_id": "ATM019",
+      "ade_en": "Vitamin D deficiency",
+      "ade_es": "Déficit de vitamina D",
+      "ade_synonyms_en": ["vitamin D deficiency", "low vitamin D", "hypovitaminosis D", "25-OH vitamin D deficiency"],
+      "ade_synonyms_es": ["déficit de vitamina D", "vitamina D baja", "hipovitaminosis D"],
+      "treatment_drug_classes": ["Vitamin D supplement"],
+      "treatment_drug_examples": [
+        "cholecalciferol", "ergocalciferol", "calcitriol", "alfacalcidol",
+        "colecalciferol", "ergocalciferol", "calcitriol", "alfacalcidol"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["Holick MF. N Engl J Med 2007"]
+    },
+    {
+      "ade_id": "ATM020",
+      "ade_en": "Myalgia / Muscle pain",
+      "ade_es": "Mialgia / Dolor muscular",
+      "ade_synonyms_en": ["myalgia", "muscle pain", "muscle ache", "myopathy", "rhabdomyolysis"],
+      "ade_synonyms_es": ["mialgia", "dolor muscular", "dolor de músculos", "miopatía", "rabdomiólisis"],
+      "treatment_drug_classes": ["NSAID", "Analgesic", "CoQ10 supplement"],
+      "treatment_drug_examples": [
+        "ibuprofen", "naproxen", "paracetamol", "acetaminophen", "coenzyme Q10",
+        "ibuprofeno", "naproxeno", "paracetamol", "acetaminofén", "coenzima Q10"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Thompson PD et al. J Am Coll Cardiol 2016"]
+    },
+    {
+      "ade_id": "ATM021",
+      "ade_en": "Confusion / Delirium",
+      "ade_es": "Confusión / Delirium",
+      "ade_synonyms_en": ["confusion", "delirium", "disorientation", "agitation", "cognitive impairment"],
+      "ade_synonyms_es": ["confusión", "delirium", "desorientación", "agitación", "deterioro cognitivo"],
+      "treatment_drug_classes": ["Antipsychotic", "Acetylcholinesterase inhibitor"],
+      "treatment_drug_examples": [
+        "haloperidol", "quetiapine", "risperidone", "olanzapine",
+        "haloperidol", "quetiapina", "risperidona", "olanzapina"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Inouye SK et al. N Engl J Med 2014"]
+    },
+    {
+      "ade_id": "ATM022",
+      "ade_en": "Urinary retention",
+      "ade_es": "Retención urinaria",
+      "ade_synonyms_en": ["urinary retention", "unable to void", "urinary hesitancy", "incomplete bladder emptying"],
+      "ade_synonyms_es": ["retención urinaria", "incapacidad para orinar", "hesitancia urinaria", "vaciado vesical incompleto"],
+      "treatment_drug_classes": ["Alpha-1 blocker"],
+      "treatment_drug_examples": [
+        "tamsulosin", "alfuzosin", "terazosin", "doxazosin", "silodosin",
+        "tamsulosina", "alfuzosina", "terazosina", "doxazosina", "silodosina"
+      ],
+      "plausibility_weight": "high",
+      "source_cascade_ids": [],
+      "references": ["McVary KT et al. J Urol 2011 (AUA BPH Guidelines)"]
+    },
+    {
+      "ade_id": "ATM023",
+      "ade_en": "Dizziness",
+      "ade_es": "Mareo",
+      "ade_synonyms_en": ["dizziness", "vertigo", "lightheadedness", "vestibular symptoms"],
+      "ade_synonyms_es": ["mareo", "vértigo", "sensación de inestabilidad", "síntomas vestibulares"],
+      "treatment_drug_classes": ["Vestibular suppressant", "Antihistamine"],
+      "treatment_drug_examples": [
+        "meclizine", "betahistine", "cinnarizine", "dimenhydrinate",
+        "meclizina", "betahistina", "cinarizina", "dimenhidrinato"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Bhattacharyya N et al. Otolaryngol Head Neck Surg 2017"]
+    },
+    {
+      "ade_id": "ATM024",
+      "ade_en": "Metabolic syndrome",
+      "ade_es": "Síndrome metabólico",
+      "ade_synonyms_en": ["metabolic syndrome", "central obesity", "insulin resistance", "metabolic complications"],
+      "ade_synonyms_es": ["síndrome metabólico", "obesidad central", "resistencia a la insulina", "complicaciones metabólicas"],
+      "treatment_drug_classes": ["Biguanide", "GLP-1 agonist", "Statin", "Antihypertensive"],
+      "treatment_drug_examples": [
+        "metformin", "liraglutide", "semaglutide", "atorvastatin",
+        "metformina", "liraglutida", "semaglutida", "atorvastatina"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Alberti KG et al. Circulation 2009 (Joint Interim Statement)"]
+    },
+    {
+      "ade_id": "ATM025",
+      "ade_en": "Anxiety",
+      "ade_es": "Ansiedad",
+      "ade_synonyms_en": ["anxiety", "agitation", "restlessness", "panic", "nervousness"],
+      "ade_synonyms_es": ["ansiedad", "agitación", "inquietud", "pánico", "nerviosismo"],
+      "treatment_drug_classes": ["Benzodiazepine", "SSRI", "SNRI", "Buspirone"],
+      "treatment_drug_examples": [
+        "lorazepam", "alprazolam", "diazepam", "clonazepam",
+        "sertraline", "escitalopram", "venlafaxine", "buspirone",
+        "lorazepam", "alprazolam", "diazepam", "clonazepam",
+        "sertralina", "escitalopram", "venlafaxina", "buspirona"
+      ],
+      "plausibility_weight": "medium",
+      "source_cascade_ids": [],
+      "references": ["Baldwin DS et al. J Psychopharmacol 2014 (BAP Guidelines)"]
+    }
+  ]
+}

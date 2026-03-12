@@ -728,7 +728,8 @@ async function loadKB(track) {
     vihModifiers:      folder + '/kb_vih_modifiers.json',
     ddiWatchlist:      folder + '/ddi_watchlist.json',
     symptomDictionary: folder + '/kb_symptoms.json',
-    clinicalModifiers: folder + '/kb_clinical_modifiers.json',
+    clinicalModifiers:  folder + '/kb_clinical_modifiers.json',
+    adeTreatmentMap:    folder + '/ade_treatment_map.json',
     /* Shared drug name dictionary — lives at kb/ root, not inside a track
      * subfolder, because variant/brand-name mappings are track-independent. */
     drugDictionary:    'kb/drug_dictionary.json'
