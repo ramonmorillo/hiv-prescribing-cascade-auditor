@@ -732,6 +732,11 @@ td.badge-cell { white-space: nowrap; }
   gap: 0.25rem;
 }
 
+.footer-legal {
+  margin-top: 0.35rem;
+  line-height: 1.4;
+}
+
 /* ---------- Onboarding panel (Step 1 empty state) ---------- */
 .onboarding-panel {
   background: linear-gradient(135deg, #eaf4fb 0%, #f0f7ee 100%);
