@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Drug name normalization dictionary for prescribing cascade detection. Maps spelling variants, Spanish INNs, common brand names, and abbreviations to a canonical English generic name.",
-  "last_updated": "2026-03-10",
+  "last_updated": "2026-06-16",
   "entries": [
     {
       "canonical": "amlodipine",
@@ -1959,7 +1959,9 @@
         "abacavir",
         "abc",
         "ziagen",
-        "abacavir sulfato"
+        "abacavir sulfato",
+        "kivexa",
+        "epzicom"
       ]
     },
     {
@@ -1968,7 +1970,10 @@
       "variants": [
         "dolutegravir",
         "dtg",
-        "tivicay"
+        "tivicay",
+        "dovato",
+        "triumeq",
+        "juluca"
       ]
     },
     {
@@ -2048,7 +2053,9 @@
       "variants": [
         "rilpivirina",
         "rilpivirine",
-        "edurant"
+        "rpv",
+        "edurant",
+        "odefsey"
       ]
     },
     {
@@ -2058,6 +2065,295 @@
         "nevirapina",
         "nevirapine",
         "viramune"
+      ]
+    },
+    {
+      "canonical": "doravirine",
+      "drug_class": "Antiretroviral / NNRTI",
+      "variants": [
+        "doravirina",
+        "doravirine",
+        "dor",
+        "pifeltro"
+      ]
+    },
+    {
+      "canonical": "etravirine",
+      "drug_class": "Antiretroviral / NNRTI",
+      "variants": [
+        "etravirina",
+        "etravirine",
+        "etr",
+        "intelence"
+      ]
+    },
+    {
+      "canonical": "elvitegravir",
+      "drug_class": "Antiretroviral / INSTI",
+      "variants": [
+        "elvitegravir",
+        "evg",
+        "genvoya",
+        "stribild"
+      ]
+    },
+    {
+      "canonical": "cabotegravir",
+      "drug_class": "Antiretroviral / INSTI",
+      "variants": [
+        "cabotegravir",
+        "cab",
+        "vocabria",
+        "apretude",
+        "cabenuva"
+      ]
+    },
+    {
+      "canonical": "lenacapavir",
+      "drug_class": "Antiretroviral / Capsid Inhibitor",
+      "variants": [
+        "lenacapavir",
+        "len",
+        "sunlenca"
+      ]
+    },
+    {
+      "canonical": "ibalizumab",
+      "drug_class": "Antiretroviral / Post-attachment Inhibitor",
+      "variants": [
+        "ibalizumab",
+        "trogarzo"
+      ]
+    },
+    {
+      "canonical": "fostemsavir",
+      "drug_class": "Antiretroviral / Attachment Inhibitor",
+      "variants": [
+        "fostemsavir",
+        "rukobia"
+      ]
+    },
+    {
+      "canonical": "rifampicin",
+      "drug_class": "Antitubercular / Rifamycin (CYP3A4 inducer)",
+      "variants": [
+        "rifampicina",
+        "rifampin",
+        "rifaldin",
+        "rifadin",
+        "rimactan"
+      ]
+    },
+    {
+      "canonical": "rifabutin",
+      "drug_class": "Antitubercular / Rifamycin",
+      "variants": [
+        "rifabutina",
+        "rifabutin",
+        "mycobutin",
+        "ansatipin"
+      ]
+    },
+    {
+      "canonical": "isoniazid",
+      "drug_class": "Antitubercular",
+      "variants": [
+        "isoniacida",
+        "isoniazida",
+        "isoniazid",
+        "inh",
+        "cemidon"
+      ]
+    },
+    {
+      "canonical": "pyrazinamide",
+      "drug_class": "Antitubercular",
+      "variants": [
+        "pirazinamida",
+        "pyrazinamide",
+        "pza"
+      ]
+    },
+    {
+      "canonical": "ethambutol",
+      "drug_class": "Antitubercular",
+      "variants": [
+        "etambutol",
+        "ethambutol",
+        "myambutol",
+        "emb"
+      ]
+    },
+    {
+      "canonical": "sofosbuvir/velpatasvir",
+      "drug_class": "Antiviral / HCV Direct-Acting Antiviral",
+      "variants": [
+        "sofosbuvir velpatasvir",
+        "sofosbuvir/velpatasvir",
+        "epclusa"
+      ]
+    },
+    {
+      "canonical": "glecaprevir/pibrentasvir",
+      "drug_class": "Antiviral / HCV Direct-Acting Antiviral",
+      "variants": [
+        "glecaprevir pibrentasvir",
+        "glecaprevir/pibrentasvir",
+        "maviret"
+      ]
+    },
+    {
+      "canonical": "ledipasvir/sofosbuvir",
+      "drug_class": "Antiviral / HCV Direct-Acting Antiviral",
+      "variants": [
+        "ledipasvir sofosbuvir",
+        "ledipasvir/sofosbuvir",
+        "harvoni"
+      ]
+    },
+    {
+      "canonical": "sofosbuvir",
+      "drug_class": "Antiviral / HCV Direct-Acting Antiviral",
+      "variants": [
+        "sofosbuvir",
+        "sovaldi"
+      ]
+    },
+    {
+      "canonical": "tacrolimus",
+      "drug_class": "Immunosuppressant / Calcineurin Inhibitor",
+      "variants": [
+        "tacrolimus",
+        "tacrolimús",
+        "prograf",
+        "advagraf",
+        "envarsus",
+        "fk506"
+      ]
+    },
+    {
+      "canonical": "cyclosporine",
+      "drug_class": "Immunosuppressant / Calcineurin Inhibitor",
+      "variants": [
+        "ciclosporina",
+        "cyclosporine",
+        "ciclosporin",
+        "sandimmun",
+        "neoral"
+      ]
+    },
+    {
+      "canonical": "everolimus",
+      "drug_class": "Immunosuppressant / mTOR Inhibitor",
+      "variants": [
+        "everolimus",
+        "certican",
+        "afinitor",
+        "votubia"
+      ]
+    },
+    {
+      "canonical": "sirolimus",
+      "drug_class": "Immunosuppressant / mTOR Inhibitor",
+      "variants": [
+        "sirolimus",
+        "sirolimús",
+        "rapamune",
+        "rapamycin"
+      ]
+    },
+    {
+      "canonical": "mycophenolate",
+      "drug_class": "Immunosuppressant / Antiproliferative",
+      "variants": [
+        "micofenolato",
+        "mycophenolate",
+        "micofenolato mofetilo",
+        "cellcept",
+        "myfortic"
+      ]
+    },
+    {
+      "canonical": "lovastatin",
+      "drug_class": "Statin",
+      "variants": [
+        "lovastatina",
+        "lovastatin",
+        "mevacor"
+      ]
+    },
+    {
+      "canonical": "pitavastatin",
+      "drug_class": "Statin",
+      "variants": [
+        "pitavastatina",
+        "pitavastatin",
+        "livazo",
+        "alipza"
+      ]
+    },
+    {
+      "canonical": "evolocumab",
+      "drug_class": "PCSK9 Inhibitor",
+      "variants": [
+        "evolocumab",
+        "repatha"
+      ]
+    },
+    {
+      "canonical": "alirocumab",
+      "drug_class": "PCSK9 Inhibitor",
+      "variants": [
+        "alirocumab",
+        "praluent"
+      ]
+    },
+    {
+      "canonical": "denosumab",
+      "drug_class": "RANKL Inhibitor / Antiresorptive",
+      "variants": [
+        "denosumab",
+        "prolia",
+        "xgeva"
+      ]
+    },
+    {
+      "canonical": "prasugrel",
+      "drug_class": "Antiplatelet / P2Y12 Inhibitor",
+      "variants": [
+        "prasugrel",
+        "efient",
+        "effient"
+      ]
+    },
+    {
+      "canonical": "ibandronate",
+      "drug_class": "Bisphosphonate",
+      "variants": [
+        "ibandronato",
+        "ibandronate",
+        "ibandronic acid",
+        "bonviva",
+        "boniva"
+      ]
+    },
+    {
+      "canonical": "trazodone",
+      "drug_class": "Antidepressant / SARI",
+      "variants": [
+        "trazodona",
+        "trazodone",
+        "deprax",
+        "desyrel"
+      ]
+    },
+    {
+      "canonical": "melatonin",
+      "drug_class": "Hypnotic / Chronobiotic",
+      "variants": [
+        "melatonina",
+        "melatonin",
+        "circadin"
       ]
     },
     {
@@ -2107,6 +2403,8 @@
         "carbonato cálcico",
         "calcium carbonate",
         "calcio carbonato",
+        "calcio",
+        "calcium",
         "calcichew",
         "caltrate"
       ]
