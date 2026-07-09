@@ -7,6 +7,25 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ---
 
+## [Unreleased]
+
+Mejora de detección clínica y farmacológica: normalización conservadora del texto, reconocimiento de combinaciones de dosis fija y un nuevo módulo de problemas clínicos urológico/renales, motivados por un caso de regresión real (dolor de flanco + estudio urológico + tamsulosina no generaban ninguna señal).
+
+### Añadido
+
+- **`normalizeClinicalText()`**: normalización conservadora previa a la detección (corrección de erratas frecuentes por diccionario cerrado — "vral"→"viral", "izqueirdo/izuqierdo"→"izquierdo", "dolro"→"dolor", "palapcion"→"palpacion", "capo"→"comp", "q comp"→"1 comp" — y colapso de espacios). Se aplica al inicio de `extractDrugs()`, `extractSymptoms()` y `detectCascades()`; el texto original de la nota nunca se modifica.
+- **Combinaciones de dosis fija** (`kb/drug_combinations.json`, nuevo fichero raíz de KB, independiente de track PROD/DEV): mapea una marca comercial a sus principios activos individuales conservando la trazabilidad (p. ej. "Biktarvy → bictegravir + emtricitabina + tenofovir alafenamida"). `buildDrugResolver()`/`resolveDrugMentions()` expanden la mención de marca en una mención por principio activo, cada una con `brand`/`brand_ingredients`/`brand_therapeutic_class` para uso en la interfaz. Altas iniciales: Biktarvy (bictegravir/emtricitabina/tenofovir alafenamida) y Gibiter Easyhaler (budesonida/formoterol).
+- **Detección de problemas clínicos urológico/renales** (`detectClinicalProblems()` / `detectUrologicRenalProblem()`): nuevo módulo de reglas, independiente del diccionario de síntomas ADE existente, que identifica un problema "en estudio" a partir de hallazgos ancla (dolor de flanco, cólico renal, litiasis, hematuria, obstrucción urinaria, expulsión de cálculo) combinados con contexto de apoyo (urocultivo/sistemático/ecografía solicitados, puñopercusión, tira de orina, otros síntomas urinarios, y tamsulosina prescrita como señal puramente contextual — nunca como diagnóstico automático). Cada hallazgo incluye evidencia textual literal de la nota y un nivel de certeza (`symptom` | `suspected`; nunca `confirmed`). Los hallazgos negados (p. ej. "Tira de orina: NEGATIVO", "puñopercusión renal negativa", "No sintomatología miccional") se registran como `negatedFindings` y nunca generan falsos positivos.
+- **Paso 2 — bloque "Problemas activos detectados"**: ahora muestra también los problemas clínicos del nuevo módulo (categoría, certeza, evidencia, hallazgos negativos), y una línea de trazabilidad marca→principios activos bajo los medicamentos detectados cuando aplica.
+- **Tests de regresión** (`window.runNlpSelfTest()`, grupos I/J/K): normalización de erratas, resolución de combinaciones (Biktarvy, Gibiter Easyhaler) y los 5 casos de aceptación del módulo de problemas urológico/renales, incluyendo el caso real completo de regresión.
+
+### Modificado
+
+- `isNegatedSymptom()`: añadidos cues de negación POST-término para "negativo/negativa" a secas (antes solo se detectaba "negativo/negativa para X"), cubriendo el patrón muy frecuente en español "Tira de orina: NEGATIVO" / "puñopercusión renal negativa".
+- Advertencia metodológica del Paso 2 actualizada para reflejar que la detección combina palabras clave, sinónimos, marcas comerciales y reglas clínicas simples, y que los problemas inferidos son sospecha/en estudio, no diagnóstico.
+
+---
+
 ## [1.0.0] — 2026-03-07
 
 Primera versión estable completa con interfaz clínica en español, detección robusta de cascadas y experiencia de usuario completa para revisión farmacoterapéutica.

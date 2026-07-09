@@ -1,0 +1,34 @@
+{
+  "version": "1.0.0",
+  "description": "Fixed-dose combination products. Maps a brand/trade name to its individual active ingredients so the cascade-detection and classification pipeline can reason about each ingredient (drug class, cascade membership) while preserving traceability back to the prescribed brand (e.g. 'Biktarvy → bictegravir / emtricitabine / tenofovir alafenamide'). Track-independent, like drug_dictionary.json: lives at kb/ root, not inside a PROD/DEV subfolder.",
+  "last_updated": "2026-07-09",
+  "combinations": [
+    {
+      "brand": "Biktarvy",
+      "aliases": [
+        "biktarvy",
+        "bic/ftc/taf",
+        "bictegravir/emtricitabina/tenofovir alafenamida",
+        "bictegravir/emtricitabine/tenofovir alafenamide"
+      ],
+      "activeIngredients": ["bictegravir", "emtricitabine", "tenofovir alafenamide"],
+      "therapeuticClass_es": "INSTI + pareja de INTI (backbone)",
+      "therapeuticClass_en": "INSTI + NRTI backbone",
+      "hivDrug": true
+    },
+    {
+      "brand": "Gibiter Easyhaler",
+      "aliases": [
+        "gibiter easyhaler",
+        "gibiter",
+        "budesonida/formoterol",
+        "budesonida formoterol",
+        "budesonide/formoterol"
+      ],
+      "activeIngredients": ["budesonide", "formoterol"],
+      "therapeuticClass_es": "Corticoide inhalado + broncodilatador de acción prolongada (ICS/LABA)",
+      "therapeuticClass_en": "Inhaled corticosteroid + long-acting bronchodilator (ICS/LABA)",
+      "hivDrug": false
+    }
+  ]
+}

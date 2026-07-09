@@ -102,7 +102,18 @@ const UI_STRINGS = {
     symptoms_count:                function (a, i) { return 'Problemas detectados (' + a + ' activo' + (a === 1 ? '' : 's') + (i ? ', ' + i + ' no activo' + (i === 1 ? '' : 's') : '') + ')'; },
     inactive_mentions:             'Menciones no activas (negadas o hist&oacute;ricas):',
     none:                          'Ninguno',
-    detection_warning:             '&#9888;&nbsp;La detecci&oacute;n es por palabras clave. Nombres comerciales, abreviaturas y t&eacute;rminos no incluidos en la KB pueden no identificarse.',
+    detection_warning:             '&#9888;&nbsp;La detecci&oacute;n combina palabras clave, sin&oacute;nimos, marcas comerciales y reglas cl&iacute;nicas simples. Los problemas inferidos se muestran como sospecha/en estudio y requieren validaci&oacute;n profesional.',
+
+    /* Step 2 — rule-based clinical problems (e.g. urologic/renal) */
+    problem_category_lbl:          'Categor&iacute;a:',
+    problem_certainty_lbl:         'Certeza:',
+    problem_evidence_lbl:          'Evidencia:',
+    problem_negated_lbl:           'Hallazgos negativos relevantes:',
+    certainty_confirmed:           'Diagn&oacute;stico confirmado',
+    certainty_suspected:           'Sospecha cl&iacute;nica / en estudio',
+    certainty_symptom:             'S&iacute;ntoma/signo cl&iacute;nico',
+    certainty_rule_out:            'A descartar',
+    certainty_negated:             'Descartado (negado en la nota)',
 
     /* Step 3 */
     drug_class_none:   'sin clasificar',
@@ -384,7 +395,18 @@ const UI_STRINGS = {
     symptoms_count:                function (a, i) { return 'Problems detected (' + a + ' active' + (i ? ', ' + i + ' inactive' : '') + ')'; },
     inactive_mentions:             'Inactive mentions (negated or historical):',
     none:                          'None',
-    detection_warning:             '&#9888;&nbsp;Detection is keyword-based. Brand names, abbreviations and terms not in the KB may not be identified.',
+    detection_warning:             '&#9888;&nbsp;Detection combines keywords, synonyms, brand names, and simple clinical rules. Inferred problems are shown as suspected/under study and require professional validation.',
+
+    /* Step 2 — rule-based clinical problems (e.g. urologic/renal) */
+    problem_category_lbl:          'Category:',
+    problem_certainty_lbl:         'Certainty:',
+    problem_evidence_lbl:          'Evidence:',
+    problem_negated_lbl:           'Relevant negative findings:',
+    certainty_confirmed:           'Confirmed diagnosis',
+    certainty_suspected:           'Clinical suspicion / under study',
+    certainty_symptom:             'Clinical symptom/sign',
+    certainty_rule_out:            'To rule out',
+    certainty_negated:             'Ruled out (negated in note)',
 
     /* Step 3 */
     drug_class_none:   'unclassified',
@@ -633,9 +655,14 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, drugCombinations: null },
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
+  /* Step 2 — rule-based clinical problems (e.g. urologic/renal) found in the
+     clinical note; separate from symptomsDetected (ADE symptom dictionary)
+     so its richer shape (category/certainty/evidence) never has to be
+     reconciled with the existing symptomsDetected export/state contract. */
+  clinicalProblemsDetected: [],
   /* Step 5 clinician classifications, keyed by cascade_id.
      Values: 'confirmed' | 'possible' | 'not_cascade' */
   cascadeClassifications: {},
@@ -732,7 +759,10 @@ async function loadKB(track) {
     adeTreatmentMap:    folder + '/ade_treatment_map.json',
     /* Shared drug name dictionary — lives at kb/ root, not inside a track
      * subfolder, because variant/brand-name mappings are track-independent. */
-    drugDictionary:    'kb/drug_dictionary.json'
+    drugDictionary:    'kb/drug_dictionary.json',
+    /* Fixed-dose combination products (brand → active ingredients), also
+     * track-independent — see kb/drug_combinations.json for rationale. */
+    drugCombinations:  'kb/drug_combinations.json'
   };
 
   /* cache:'no-cache' sends a conditional GET on each load — the browser still
@@ -1019,6 +1049,72 @@ function downloadJSON(obj, filename) {
    Cascade Detection Engine
    ============================================================ */
 
+/* ============================================================
+   CLINICAL TEXT NORMALIZATION — conservative typo correction
+   ============================================================
+   Applied once, ahead of drug / symptom / clinical-problem detection.
+   Deliberately narrow in scope: whole-word (or fixed-phrase) exact
+   substitutions only, no fuzzy/edit-distance matching. This keeps the
+   correction fully auditable — every substitution the tool can ever make
+   is listed below — and prevents the normalizer from ever inventing or
+   guessing at content that is not in the KB reference list. */
+
+/**
+ * Frequent misspellings observed in free-text clinical notes, mapped to
+ * their correction. Extend only with typos confirmed in real notes —
+ * this is not a general spell-checker.
+ */
+var CLINICAL_TYPO_CORRECTIONS = {
+  'vral': 'viral',
+  'izqueirdo': 'izquierdo',
+  'izuqierdo': 'izquierdo',
+  'dolro': 'dolor',
+  'palapcion': 'palpacion',
+  'sintomatologia': 'sintomatologia',
+  'puñopercusion': 'punopercusion',
+  'capo': 'comp',
+  'q comp': '1 comp'
+};
+
+/**
+ * Apply conservative clinical-text normalization: fixes the whole-word
+ * misspellings in CLINICAL_TYPO_CORRECTIONS and collapses redundant
+ * whitespace. Case, accents and wording are otherwise left untouched —
+ * case/diacritic-insensitive matching is handled separately downstream by
+ * normalizeDrugText() / normalizeSymptomText(). Multi-word phrases are
+ * substituted before single-word ones so a phrase key is never fragmented
+ * by an earlier single-word replacement.
+ *
+ * Never mutates the input; the caller's original note text (e.g.
+ * state.clinicalNote, shown to the user and used for export) is always
+ * preserved untouched — only the copy passed to the detection pipeline is
+ * corrected.
+ *
+ * @param {string} text
+ * @returns {string} corrected copy of `text`
+ */
+function normalizeClinicalText(text) {
+  if (!text) return '';
+  var corrected = text;
+
+  Object.keys(CLINICAL_TYPO_CORRECTIONS).forEach(function (typo) {
+    if (typo.indexOf(' ') === -1) return; /* phrases only, this pass */
+    var escaped = typo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    corrected = corrected.replace(new RegExp(escaped, 'gi'), CLINICAL_TYPO_CORRECTIONS[typo]);
+  });
+
+  Object.keys(CLINICAL_TYPO_CORRECTIONS).forEach(function (typo) {
+    if (typo.indexOf(' ') !== -1) return; /* single words only, this pass */
+    var escaped = typo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    corrected = corrected.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), CLINICAL_TYPO_CORRECTIONS[typo]);
+  });
+
+  /* Normalise runs of spaces/tabs (not newlines, so paragraph structure —
+     and therefore character offsets used by the sentence-snippet extractor
+     below — stay predictable). */
+  return corrected.replace(/[ \t]+/g, ' ');
+}
+
 /**
  * Drug mention resolver (Phase 1):
  * - text normalization (NFC + diacritic folding + punctuation simplification)
@@ -1062,7 +1158,10 @@ function buildDrugResolver() {
     'azt': 'zidovudine',
     'tdf': 'tenofovir disoproxil fumarate',
     'dtg': 'dolutegravir',
-    'biktarvy': 'bictegravir',
+    /* 'biktarvy' is intentionally NOT mapped here as a single-drug alias —
+     * it is a fixed-dose combination handled by the combosByVariant logic
+     * below (kb/drug_combinations.json), which expands it to all three
+     * active ingredients instead of collapsing it to just bictegravir. */
     'descovy': 'tenofovir disoproxil fumarate',
     'truvada': 'tenofovir disoproxil fumarate',
     'kaletra': 'lopinavir/ritonavir',
@@ -1139,6 +1238,30 @@ function buildDrugResolver() {
     });
   });
 
+  /* ── Fixed-dose combination products (kb/drug_combinations.json) ────────
+   * A brand like "Biktarvy" or "Gibiter Easyhaler" mentions ONE surface
+   * form but denotes SEVERAL active ingredients. byVariant only supports a
+   * single canonical per variant string, so combo brand/aliases are kept in
+   * a separate lookup (combosByVariant) that resolveDrugMentions() checks
+   * FIRST; when a match is a combo, it is expanded into one mention per
+   * active ingredient (see resolveDrugMentions below) instead of collapsing
+   * to a single drug. The alias is still registered in byVariant too so it
+   * participates in the shared matching regex built below; that byVariant
+   * entry is never actually consulted for a combo alias because the combo
+   * lookup always wins first. */
+  resolver.combosByVariant = {};
+  var combos = (state.kb.drugCombinations && state.kb.drugCombinations.combinations) || [];
+  combos.forEach(function (combo) {
+    if (!combo.brand || !Array.isArray(combo.activeIngredients) || !combo.activeIngredients.length) return;
+    var aliases = [combo.brand].concat(combo.aliases || []);
+    aliases.forEach(function (alias) {
+      var normAlias = normalizeDrugText(alias);
+      if (!normAlias || normAlias.length < 2) return;
+      resolver.combosByVariant[normAlias] = combo;
+      addVariant(alias, combo.activeIngredients[0], '', 'combo_brand', 'high');
+    });
+  });
+
   var escaped = Object.keys(resolver.byVariant)
     .sort(function (a, b) { return b.length - a.length; })
     .map(function (term) { return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
@@ -1181,13 +1304,43 @@ function resolveDrugMentions(noteText) {
     var variant = (match[2] || '').trim();
     if (!variant) continue;
 
+    /* Combination product (e.g. "Biktarvy", "Gibiter Easyhaler"): expand
+     * the single surface match into one mention per active ingredient, so
+     * downstream classification/cascade logic sees each ingredient exactly
+     * as if it had been prescribed individually — while every mention still
+     * carries `brand`/`brand_ingredients` so the UI can show the original
+     * trade name and preserve "Biktarvy → bictegravir/emtricitabina/
+     * tenofovir alafenamida" traceability. */
+    var combo = resolver.combosByVariant && resolver.combosByVariant[variant];
+    if (combo) {
+      combo.activeIngredients.forEach(function (ingredient) {
+        var normIngredient = normalizeDrugText(ingredient);
+        var dedupeKey = normIngredient + '::' + match.index;
+        if (seen[dedupeKey]) return;
+        seen[dedupeKey] = true;
+        var ingredientMeta = resolver.byVariant[normIngredient];
+        mentions.push({
+          mention: variant,
+          canonical: ingredient,
+          drug_class: (ingredientMeta && ingredientMeta.drug_class) || '',
+          match_type: 'combo_brand',
+          confidence: 'high',
+          start_index: match.index,
+          brand: combo.brand,
+          brand_ingredients: combo.activeIngredients,
+          brand_therapeutic_class: getLocalizedField(combo, 'therapeuticClass', currentLanguage)
+        });
+      });
+      continue;
+    }
+
     var meta = resolver.byVariant[variant];
     if (!meta) continue;
 
     /* Deduplicate: same canonical at the same offset is only reported once. */
-    var dedupeKey = meta.canonical + '::' + match.index;
-    if (seen[dedupeKey]) continue;
-    seen[dedupeKey] = true;
+    var dedupeKey2 = meta.canonical + '::' + match.index;
+    if (seen[dedupeKey2]) continue;
+    seen[dedupeKey2] = true;
 
     mentions.push({
       mention: variant,        /* surface form found in note */
@@ -1321,7 +1474,71 @@ function isNegatedSymptom(noteText, matchIndex, matchLength) {
     }
   }
 
+  /* ---- bare "negative/negativo/negativa" result cues appearing AFTER the
+     term ---- Spanish clinical notes very commonly report a negative test
+     result *after* naming the test/finding ("Tira de orina: NEGATIVO",
+     "puñopercusión renal negativa"), rather than negating it beforehand.
+     The pre-window cues above only catch "negativo/negativa para X"; this
+     catches the equally common bare post-cue form. */
+  var negAfter = [
+    /* English */
+    /\bnegative\b/,
+    /* Spanish */
+    /\bnegativo\b/, /\bnegativa\b/, /\bnegativos\b/, /\bnegativas\b/
+  ];
+  for (var n = 0; n < negAfter.length; n++) {
+    if (negAfter[n].test(postStr)) {
+      return { negated: true,
+               reason: 'negative result after: "' + noteText.slice(matchIndex, matchIndex + matchLength) +
+                       ' ' + postTokens.slice(0, 2).join(' ') + '"' };
+    }
+  }
+
   return { negated: false, reason: '' };
+}
+
+/**
+ * Extract a readable, real (never synthesised) excerpt from `text` around a
+ * match at [index, index+length): expands left to the previous sentence/
+ * clause boundary (. , ; : or newline) and right to the next clause boundary
+ * (. , ; or newline — deliberately NOT ':', so a leading label like "Tira de
+ * orina:" doesn't get separated from its result). Used to build the
+ * traceable evidence quotes shown for detected clinical problems — every
+ * piece of evidence is a literal quote from the note, not a generated
+ * description, so a clinician can always see exactly what triggered it.
+ *
+ * @param {string} text
+ * @param {number} index
+ * @param {number} length
+ * @returns {string}
+ */
+function extractSentenceSnippet(text, index, length) {
+  var start = index;
+  while (start > 0 && !/[.,;:\n]/.test(text.charAt(start - 1))) start--;
+  var end = index + length;
+  while (end < text.length && !/[.,;\n]/.test(text.charAt(end))) end++;
+  return text.slice(start, end).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Locate `term` in `normalizedText` (an accent/case-normalised copy of
+ * `originalText` — see normalizeSymptomText(), which preserves character
+ * offsets 1:1 with the original) and classify it as active or negated.
+ * Returns null when the term is not present at all.
+ *
+ * @param {string} originalText    typo-corrected note, original case/accents
+ * @param {string} normalizedText  normalizeSymptomText(originalText)
+ * @param {string} term            lowercase, accent-free search term
+ * @returns {{active: boolean, snippet: string}|null}
+ */
+function findClinicalFinding(originalText, normalizedText, term) {
+  var pos = findTermInNote(normalizedText, term);
+  if (!pos) return null;
+  var neg = isNegatedSymptom(normalizedText, pos.index, pos.length);
+  return {
+    active: !neg.negated,
+    snippet: extractSentenceSnippet(originalText, pos.index, pos.length)
+  };
 }
 
 /**
@@ -1487,6 +1704,7 @@ function applyClinicalModifiers(signals, modifiers) {
  */
 function detectCascades(noteText) {
   if (!noteText || !noteText.trim()) return [];
+  noteText = normalizeClinicalText(noteText);
 
   var mentions = resolveDrugMentions(noteText);
   var mentionByCanonical = {};
@@ -1742,6 +1960,7 @@ function invalidateDrugResolver() {
  */
 function extractDrugs(noteText) {
   if (!noteText || !noteText.trim()) return [];
+  noteText = normalizeClinicalText(noteText);
 
   var seen   = {};
   var result = [];
@@ -1841,6 +2060,7 @@ function extractSymptoms(noteText) {
     state.symptomsDetected = [];
     return [];
   }
+  noteText = normalizeClinicalText(noteText);
 
   var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
 
@@ -1906,6 +2126,168 @@ function extractSymptoms(noteText) {
   state.symptomsDetected = detected;
   invalidateDetectedCascades();
   return detected;
+}
+
+/* ============================================================
+   CLINICAL PROBLEM DETECTION
+   ============================================================
+   Rule-based detection of active/suspected CLINICAL PROBLEMS — distinct
+   from the ADE symptom dictionary above (kb_symptoms.json / extractSymptoms),
+   which only detects symptoms that bridge two drugs into a prescribing
+   cascade. A clinical problem here is a complaint + work-up pattern (e.g.
+   flank pain worked up with urine tests / imaging / an alpha-blocker) that
+   is clinically active on its own, independent of any cascade.
+
+   Design principles (see README/KB_REFERENCE for the app's broader ones):
+     - Every rule is a small, hand-curated, fully auditable pattern list —
+       no external services, no fuzzy/statistical inference.
+     - Every detected problem always carries the literal note text that
+       triggered it (`evidence`) and any negated findings it ruled out
+       (`negatedFindings`), so a clinician can see exactly why it fired.
+     - `certainty` is never 'confirmed' by this module — it only ever
+       proposes 'symptom' or 'suspected' signals for clinician review; it
+       never asserts a diagnosis.
+   ============================================================ */
+
+/**
+ * Rule: urologic_renal_problem.
+ *
+ * "Anchor" findings (flank pain, renal colic, urolithiasis, haematuria,
+ * urinary obstruction, stone passage) are, on their own, specific enough to
+ * raise a 'symptom' level signal. "Support" findings (urine tests/imaging
+ * ordered, positive dipstick/punch sign, other urinary symptoms) are too
+ * nonspecific alone but raise the signal to 'suspected' when combined with
+ * an anchor — or with each other, since e.g. "urocultivo + ecografía renal"
+ * together already indicate an active urologic work-up.
+ *
+ * Tamsulosin is handled as pure CONTEXT (never a diagnosis trigger by
+ * itself, per clinical-safety requirement): it only contributes a support
+ * signal when at least one other urologic/renal element is already present
+ * in the note. "Tamsulosina 400 mcg 1 comp/día" with nothing else urologic
+ * in the note therefore produces NO problem at all.
+ *
+ * Every positive/negated match is resolved through findClinicalFinding(),
+ * which in turn uses the shared isNegatedSymptom() reliability layer — so
+ * "No sintomatología miccional", "Tira de orina: NEGATIVO" and
+ * "puñopercusión renal negativa" are recorded as negated findings, never as
+ * active evidence.
+ *
+ * @param {string} noteText  already typo-corrected clinical text
+ * @returns {object|null}
+ */
+function detectUrologicRenalProblem(noteText) {
+  if (!noteText || !noteText.trim()) return null;
+
+  var original = noteText;
+  var text = normalizeSymptomText(noteText); /* lowercase, accent-free, offsets preserved */
+
+  /* Anatomically-specific complaints — sufficient on their own for a
+     'symptom' level signal. */
+  var ANCHOR_TERMS = ['flanco', 'colico renal', 'litiasis', 'hematuria', 'obstruccion urinaria', 'expulsion de calculo'];
+
+  /* Corroborating context: tests/imaging ordered, or other urinary
+     symptoms. Individually nonspecific; raise certainty when combined with
+     an anchor or with each other. NOTE: "sistematico" is matched bare
+     (rather than requiring the full "sistemático de orina") because notes
+     routinely elide it, e.g. "solicitud de urocultivo y sistemático [de
+     orina] y ecografía abdominal". */
+  var SUPPORT_TERMS = [
+    'urocultivo', 'sistematico', 'ecografia abdominal', 'ecografia renal',
+    'disuria', 'polaquiuria', 'tenesmo', 'retencion urinaria', 'sintomatologia miccional'
+  ];
+
+  var evidence = [];
+  var negatedFindings = [];
+  var hasAnchor = false;
+  var supportCount = 0;
+
+  ANCHOR_TERMS.forEach(function (term) {
+    var f = findClinicalFinding(original, text, term);
+    if (!f) return;
+    if (f.active) { hasAnchor = true; evidence.push(f.snippet); }
+    else negatedFindings.push(f.snippet);
+  });
+
+  SUPPORT_TERMS.forEach(function (term) {
+    var f = findClinicalFinding(original, text, term);
+    if (!f) return;
+    if (f.active) { supportCount++; evidence.push(f.snippet); }
+    else negatedFindings.push(f.snippet);
+  });
+
+  /* Puñopercusión and "tira de orina" get the same active/negated handling,
+     kept separate only because they read best as their own labelled checks. */
+  var punopercusion = findClinicalFinding(original, text, 'punopercusion');
+  if (punopercusion) {
+    if (punopercusion.active) { supportCount++; evidence.push(punopercusion.snippet); }
+    else negatedFindings.push(punopercusion.snippet);
+  }
+
+  var tiraOrina = findClinicalFinding(original, text, 'tira de orina');
+  if (tiraOrina) {
+    if (tiraOrina.active) { supportCount++; evidence.push(tiraOrina.snippet); }
+    else negatedFindings.push(tiraOrina.snippet);
+  }
+
+  /* Tamsulosin: contextual signal ONLY — never sufficient by itself. */
+  if (drugFoundInNote(original, 'tamsulosin') && (hasAnchor || supportCount > 0)) {
+    supportCount++;
+    evidence.push(currentLanguage === 'es' ? 'tamsulosina prescrita' : 'tamsulosin prescribed');
+  }
+
+  if (!hasAnchor && supportCount === 0) return null; /* nothing urologic/renal at all */
+
+  var certainty = hasAnchor ? (supportCount > 0 ? 'suspected' : 'symptom') : 'suspected';
+
+  var problem = hasAnchor
+    ? (currentLanguage === 'es'
+        ? 'Dolor de flanco / problema urológico-renal en estudio'
+        : 'Flank pain / urologic-renal problem under study')
+    : (currentLanguage === 'es'
+        ? 'Problema urológico/renal en estudio'
+        : 'Urologic/renal problem under study');
+
+  /* De-duplicate: the same sentence can legitimately satisfy several
+     patterns at once (e.g. one sentence mentions urocultivo, sistemático
+     AND ecografía abdominal together) — show it once. */
+  function uniqueInOrder(arr) {
+    var seen = {};
+    return arr.filter(function (s) { return seen[s] ? false : (seen[s] = true); });
+  }
+
+  return {
+    id: 'CP_UROLOGIC_RENAL',
+    category: 'urologic_renal_problem',
+    category_label: currentLanguage === 'es' ? 'Urológico/Renal' : 'Urologic/Renal',
+    problem: problem,
+    certainty: certainty, /* 'symptom' | 'suspected' — this rule never confirms a diagnosis */
+    evidence: uniqueInOrder(evidence),
+    negatedFindings: uniqueInOrder(negatedFindings)
+  };
+}
+
+/**
+ * Run all clinical-problem rules against `noteText` and return every
+ * problem detected. Currently a single rule (urologic_renal_problem);
+ * kept as an array so further rules (e.g. GI, cardiovascular) can be added
+ * later without changing this function's contract.
+ *
+ * @param {string} noteText  raw clinical note — normalization is applied here
+ * @returns {Array<object>}
+ */
+function detectClinicalProblems(noteText) {
+  if (!noteText || !noteText.trim()) {
+    state.clinicalProblemsDetected = [];
+    return [];
+  }
+  var corrected = normalizeClinicalText(noteText);
+  var problems = [];
+
+  var urologic = detectUrologicRenalProblem(corrected);
+  if (urologic) problems.push(urologic);
+
+  state.clinicalProblemsDetected = problems;
+  return problems;
 }
 
 /**
@@ -2169,9 +2551,76 @@ const STEP_CONTENT = {
         );
       }
 
+      /* ── Combination-brand traceability ──────────────────────────────────
+       * Brands like Biktarvy or Gibiter Easyhaler are shown above as their
+       * individual active ingredients (so classification/cascade logic can
+       * use each one) — this line preserves the link back to the brand the
+       * clinician actually prescribed, e.g.
+       * "Biktarvy → bictegravir + emtricitabina + tenofovir alafenamida". */
+      var comboBrands = {};
+      resolveDrugMentions(state.clinicalNote).forEach(function (m) {
+        if (m.brand && !comboBrands[m.brand]) {
+          comboBrands[m.brand] = { ingredients: m.brand_ingredients || [], cls: m.brand_therapeutic_class || '' };
+        }
+      });
+      var comboBrandNames = Object.keys(comboBrands);
+      if (comboBrandNames.length) {
+        var comboRows = comboBrandNames.map(function (brand) {
+          var info = comboBrands[brand];
+          var clsSuffix = info.cls ? ' &mdash; ' + escHtml(info.cls) : '';
+          return (
+            '<div style="font-size:.82rem;color:#333;padding:.15rem 0;">' +
+              '<strong>' + escHtml(brand) + '</strong> &rarr; ' +
+              escHtml(info.ingredients.join(' + ')) + clsSuffix +
+            '</div>'
+          );
+        }).join('');
+        drugSection += (
+          '<div style="margin-top:.3rem;padding:.4rem .6rem;background:#f6f8fa;border-radius:4px;border:1px solid #d0d7de;">' +
+            comboRows +
+          '</div>'
+        );
+      }
+
       /* ── Symptom extraction — uses extractSymptoms() which also caches in state ── */
       var symptoms    = extractSymptoms(state.clinicalNote);
       saveState();   /* persist state.symptomsDetected */
+
+      /* ── Clinical-problem extraction — separate rule-based module (see
+       * detectClinicalProblems / detectUrologicRenalProblem) covering active/
+       * suspected problems inferred from complaint + work-up patterns, not
+       * just the ADE symptom dictionary above. Counted together with the ADE
+       * symptoms in the same "active problems" heading since both answer the
+       * same clinical question for the reviewer: what looks clinically active
+       * in this note? */
+      var clinicalProblems = detectClinicalProblems(state.clinicalNote);
+
+      var CERTAINTY_COLOR = { confirmed: '#922b21', suspected: '#a04000', symptom: '#6c3483', rule_out: '#7f8c8d', negated: '#95a5a6' };
+      var renderProblemCard = function (p) {
+        var certColor = CERTAINTY_COLOR[p.certainty] || '#555';
+        var evidenceHtml = p.evidence.length
+          ? '<div style="margin-top:.35rem;font-size:.82rem;"><strong>' + tUI('problem_evidence_lbl') + '</strong> ' +
+              p.evidence.map(escHtml).join('; ') + '</div>'
+          : '';
+        var negatedHtml = p.negatedFindings.length
+          ? '<div style="margin-top:.25rem;font-size:.8rem;color:#777;font-style:italic;"><strong style="font-style:normal;">' +
+              tUI('problem_negated_lbl') + '</strong> ' + p.negatedFindings.map(escHtml).join('; ') + '</div>'
+          : '';
+        return (
+          '<div style="border:1px solid #e0c9a6;border-left:4px solid ' + certColor + ';border-radius:4px;' +
+            'padding:.55rem .7rem;margin:.35rem 0;background:#fffaf3;">' +
+            '<div style="font-weight:700;font-size:.9rem;color:#222;">' + escHtml(p.problem) + '</div>' +
+            '<div style="font-size:.78rem;color:#666;margin-top:.15rem;">' +
+              tUI('problem_category_lbl') + ' ' + escHtml(p.category_label) + ' &middot; ' +
+              tUI('problem_certainty_lbl') + ' <span style="color:' + certColor + ';font-weight:600;">' +
+                tUI('certainty_' + p.certainty) +
+              '</span>' +
+            '</div>' +
+            evidenceHtml + negatedHtml +
+          '</div>'
+        );
+      };
+      var clinicalProblemsHtml = clinicalProblems.map(renderProblemCard).join('');
 
       var symCountLabel;
       var symptomSection;
@@ -2183,18 +2632,21 @@ const STEP_CONTENT = {
             tUI('symptoms_dict_unavailable_detail') +
           '</div>'
         );
-      } else if (symptoms.length === 0) {
+      } else if (symptoms.length === 0 && clinicalProblems.length === 0) {
         symCountLabel = tUI('symptoms_zero_label');
         symptomSection = (
           '<div class="callout callout-success">' +
             tUI('no_symptoms') +
           '</div>'
         );
+      } else if (symptoms.length === 0) {
+        symCountLabel = tUI('symptoms_count', clinicalProblems.length, 0);
+        symptomSection = clinicalProblemsHtml;
       } else {
         /* Split into active vs non-active (negated / historical) */
         var activeSyms   = symptoms.filter(function (s) { return s.active !== false; });
         var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
-        symCountLabel = tUI('symptoms_count', activeSyms.length, inactiveSyms.length);
+        symCountLabel = tUI('symptoms_count', activeSyms.length + clinicalProblems.length, inactiveSyms.length);
 
         /* Category → colour mapping */
         var catColor = {
@@ -2244,6 +2696,7 @@ const STEP_CONTENT = {
           : '';
 
         symptomSection = (
+          clinicalProblemsHtml +
           '<div style="padding:.2rem 0 .65rem;">' +
             (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">' + tUI('none') + '</span>') +
             inactiveRow +
@@ -4356,6 +4809,129 @@ window.runNlpSelfTest = function () {
 
   var h4 = resolveDrugMentions('Paciente con oxibutinína y estreñimiento.').map(function (m) { return m.canonical; });
   assert('H4: orthographic variant (accent) resolves to oxybutynin', h4.indexOf('oxybutynin') >= 0, true);
+
+  console.groupEnd();
+
+  /* ── I. normalizeClinicalText() — conservative typo correction ── */
+  console.group('I. normalizeClinicalText — typo correction');
+
+  assert('I1: "vral" → "viral"',
+         normalizeClinicalText('carga vral indetectable').indexOf('viral') >= 0, true);
+  assert('I2: "izqueirdo" → "izquierdo"',
+         normalizeClinicalText('flanco izqueirdo').indexOf('izquierdo') >= 0, true);
+  assert('I3: "izuqierdo" → "izquierdo"',
+         normalizeClinicalText('flanco izuqierdo').indexOf('izquierdo') >= 0, true);
+  assert('I4: "dolro" → "dolor"',
+         normalizeClinicalText('dolro a la palapcion').indexOf('dolor') >= 0, true);
+  assert('I5: "palapcion" → "palpacion"',
+         normalizeClinicalText('dolro a la palapcion').indexOf('palapcion') >= 0, false);
+  assert('I6: "q comp" → "1 comp"',
+         normalizeClinicalText('enalapril 20 mg q comp al dia').indexOf('1 comp') >= 0, true);
+  assert('I7: idempotent — correcting twice = correcting once',
+         normalizeClinicalText(normalizeClinicalText('vral izqueirdo dolro')),
+         normalizeClinicalText('vral izqueirdo dolro'));
+  assert('I8: does not touch unrelated words',
+         normalizeClinicalText('paciente estable sin cambios').indexOf('paciente estable sin cambios') >= 0, true);
+
+  console.groupEnd();
+
+  /* ── J. Combination-product resolution (Biktarvy, Gibiter Easyhaler) ── */
+  console.group('J. Drug combination resolution');
+
+  var j1 = resolveDrugMentions('Biktarvy 1 comp al dia desde 2019.').map(function (m) { return m.canonical; });
+  assert('J1: Biktarvy → bictegravir present', j1.indexOf('bictegravir') >= 0, true);
+  assert('J2: Biktarvy → emtricitabine present', j1.indexOf('emtricitabine') >= 0, true);
+  assert('J3: Biktarvy → tenofovir alafenamide present', j1.indexOf('tenofovir alafenamide') >= 0, true);
+
+  var j2m = resolveDrugMentions('Biktarvy 1 comp al dia.').find(function (m) { return m.canonical === 'bictegravir'; });
+  assert('J4: Biktarvy mention carries brand traceability', j2m ? j2m.brand : null, 'Biktarvy');
+
+  var j3 = resolveDrugMentions('GIBITER EASYHALER 1 inhalacion al dia.').map(function (m) { return m.canonical; });
+  assert('J5: Gibiter Easyhaler → budesonide present', j3.indexOf('budesonide') >= 0, true);
+  assert('J6: Gibiter Easyhaler → formoterol present', j3.indexOf('formoterol') >= 0, true);
+
+  /* Ingredient-level class comes from drug_dictionary.json (via the mention
+     metadata), NOT from normalizeDrugs() — that function only classifies
+     drugs that appear in a cascade KB entry, which budesonide/formoterol
+     correctly do not. */
+  var j5mentions   = resolveDrugMentions('GIBITER EASYHALER 1 inhalacion al dia.');
+  var j5budesonide = j5mentions.find(function (m) { return m.canonical === 'budesonide'; });
+  var j5formoterol = j5mentions.find(function (m) { return m.canonical === 'formoterol'; });
+  assert('J7: budesonide ingredient classified (from drug_dictionary.json)',
+         j5budesonide ? j5budesonide.drug_class : null, 'Corticosteroid / Inhaled');
+  assert('J8: formoterol ingredient classified (from drug_dictionary.json)',
+         j5formoterol ? j5formoterol.drug_class : null, 'Bronchodilator / LABA');
+  assert('J9: combo brand therapeutic class shown at brand level',
+         j5budesonide ? j5budesonide.brand_therapeutic_class : null,
+         'Corticoide inhalado + broncodilatador de acción prolongada (ICS/LABA)');
+
+  console.groupEnd();
+
+  /* ── K. Clinical problem detection (urologic/renal rule) ── */
+  console.group('K. Clinical problem detection — urologic/renal');
+
+  /* K1 — full real-case regression (see task report): flank pain + urine
+     work-up + tamsulosin, with three negated findings that must NOT create
+     false-positive UTI/miccional-syndrome/GI-bleed signals. */
+  var REAL_CASE_NOTE = [
+    'Mujer de 54 años VIH en tratamiento con Biktarvy y carga vral indetectable.',
+    'Tratamiento habitual de la paciente:',
+    '- Biktarvy 1 comp al dia desde 2019',
+    '- Omeprazol 1 capo al dia desde 2022',
+    '- Enalapril 20 mg q comp al día desde 2019',
+    '- Metamizol y paracetamol si precisa por dolores',
+    '- Loratadina 10 mg 1 comprimido si precisa',
+    '- GIBITER EASYHALER 1 inhalacion al día desde 2018',
+    '',
+    'Consulta por dolor intermitente de flanco izqueirdo desde hace varios meses. No sintomatologia miccional, no lo relaciona con las comidas. No rectorragia, no melenas.',
+    'Exploración: Abdomen blando, depresible, dolro a la palapcion de flanco izuqierdo, puñopercusión renal negativa.',
+    'Solicitud de urocultivo y sistematico y ecografia abdominal.',
+    'Exploracion: Buen estado general. Eupneica. Bien hidratada y perfundida. Abdomen blando, depresible, dolro a la palapcion de flanco izuqierdo, puñopercusión renal negativa.',
+    '',
+    'Tira de orina: NEGATIVO.',
+    '',
+    'Tratamiento prescrito: tamsulosina 400 mcg 1 comprimido al día.'
+  ].join('\n');
+
+  var k1drugs = extractDrugs(REAL_CASE_NOTE);
+  ['bictegravir', 'emtricitabine', 'tenofovir alafenamide', 'omeprazole', 'enalapril',
+   'metamizole', 'paracetamol', 'loratadine', 'budesonide', 'formoterol', 'tamsulosin'
+  ].forEach(function (drug) {
+    assert('K1: real case detects "' + drug + '"', k1drugs.indexOf(drug) >= 0, true);
+  });
+
+  var k1problems = detectClinicalProblems(REAL_CASE_NOTE);
+  assert('K2: real case detects exactly one clinical problem', k1problems.length, 1);
+  assert('K3: category = urologic_renal_problem', k1problems[0] ? k1problems[0].category : null, 'urologic_renal_problem');
+  assert('K4: certainty = suspected (flank pain + urine work-up + tamsulosin)',
+         k1problems[0] ? k1problems[0].certainty : null, 'suspected');
+  assert('K5: evidence mentions flank pain ("flanco")',
+         k1problems[0] && k1problems[0].evidence.some(function (e) { return /flanco/i.test(e); }), true);
+  assert('K6: evidence mentions tamsulosin as context',
+         k1problems[0] && k1problems[0].evidence.some(function (e) { return /tamsulosina/i.test(e); }), true);
+  assert('K7: negated findings include miccional symptoms (not a false-positive UTI)',
+         k1problems[0] && k1problems[0].negatedFindings.some(function (e) { return /miccional/i.test(e); }), true);
+  assert('K8: negated findings include the negative dipstick ("Tira de orina")',
+         k1problems[0] && k1problems[0].negatedFindings.some(function (e) { return /tira de orina/i.test(e); }), true);
+  assert('K9: negated findings include the negative punch sign ("puñopercusión")',
+         k1problems[0] && k1problems[0].negatedFindings.some(function (e) { return /pu.opercusi.n/i.test(e); }), true);
+  assert('K10: no finding text leaks "no rectorragia" (unrelated negated GI symptom)',
+         k1problems[0] && k1problems[0].evidence.concat(k1problems[0].negatedFindings)
+           .some(function (e) { return /rectorragia/i.test(e); }), false);
+
+  /* K11-13 — Test 2: pure negation note must yield no problem at all */
+  var k2problems = detectClinicalProblems('Paciente sin disuria, sin polaquiuria, tira de orina negativa.');
+  assert('K11: negation-only note detects zero clinical problems', k2problems.length, 0);
+
+  /* K12-13 — Test 3: flank pain + imaging order, no tamsulosin → still suspected/symptom */
+  var k3problems = detectClinicalProblems('Consulta por dolor de flanco derecho. Se solicita ecografía renal.');
+  assert('K12: flank pain + imaging order detects a urologic/renal problem', k3problems.length, 1);
+  assert('K13: certainty is "symptom" or "suspected" (never "confirmed")',
+         k3problems[0] && (k3problems[0].certainty === 'symptom' || k3problems[0].certainty === 'suspected'), true);
+
+  /* K14 — Test 4: tamsulosin prescribed alone must NEVER auto-create a diagnosis */
+  var k4problems = detectClinicalProblems('Tratamiento habitual: tamsulosina 400 mcg al día.');
+  assert('K14: tamsulosin alone creates NO clinical problem', k4problems.length, 0);
 
   console.groupEnd();
 
