@@ -1,5 +1,28 @@
 # Knowledge Base Changelog
 
+## Version 2.2.0 — 2026-09-14
+
+**Clinical-engine audit: fix drug catalog errors, consolidate duplicate cascade rules, add active-problem dictionary, wire the already-existing `ade_treatment_map.json` into detection.**
+
+This release follows a full audit of the detection pipeline triggered by a reported index case (HIV+ patient on Dovato with an NSAID → single-reading "hypertension" → enalapril sequence that the tool presented as a confirmed cascade without ever checking whether hypertension was actually documented). Full root-cause analysis, the new CaseModel/classification design, and file-by-file rationale are in `KB_REFERENCE.md` and the accompanying audit report. This is a KB + engine change together — `clinical-engine.js` (new) is the only place these files are consumed by app.js from now on.
+
+### New file
+- `kb/prod/clinical_problems.json` + `kb/dev/clinical_problems.json` (v1.0.0): centralizes the active-problem dictionary (hypertension, heart failure, type 2 diabetes, GERD/dyspepsia, osteoarthritis, Parkinson's disease) that previously lived as a hardcoded `ALTERNATIVE_INDICATION_MAP` array inside `app.js`. Drives `CaseModel.activeProblems`, intermediate-problem verification for `drug_drug` cascades linked via `source_cascade_ids`, and alternative-indication detection. Each hypertension entry additionally documents that a single blood-pressure reading does not equal a confirmed diagnosis (`diagnostic_note_es/en`, `measurement_type`).
+- `kb/kb_cascade_registry.md`: Fase-8 audit table of every active core/VIH cascade rule (evidence source or explicit "PENDIENTE DE REVISIÓN CLÍNICA" flag, required conditions, exclusions). Generated from the JSON KB; regenerate after any rule change.
+
+### Fixed — drug catalog errors (root cause of "Dovato → dolutegravir only, no lamivudine")
+- `kb/drug_dictionary.json`: **Dovato, Triumeq, Juluca** were miscatalogued as single-ingredient *variants* of `dolutegravir` (collapsing a 2-3 drug combination to one ingredient); **Kivexa/Epzicom** were miscatalogued as variants of `abacavir`; **Truvada/Descovy** were separately miscatalogued in `app.js`'s `MANUAL_ALIASES` as variants of `tenofovir disoproxil fumarate` (Descovy's tenofovir is actually **alafenamide**, not disoproxil fumarate — a factual error, not just a missing entry). All six brands removed from single-ingredient variant lists.
+- `kb/drug_combinations.json` (v1.1.0): added Dovato (dolutegravir+lamivudine), Triumeq (dolutegravir+abacavir+lamivudine), Juluca (dolutegravir+rilpivirine), Kivexa/Epzicom (abacavir+lamivudine), Truvada (emtricitabine+tenofovir disoproxil fumarate), Descovy (emtricitabine+tenofovir alafenamide) as proper fixed-dose combinations, each ingredient extracted as its own medication with brand traceability preserved.
+- `kb/drug_dictionary.json`: added **anastrozole** (Antineoplastic / Aromatase inhibitor), entirely absent from the dictionary before this release.
+- `kb/prod/kb_vih_modifiers.json` + `kb/dev/kb_vih_modifiers.json`: removed a redundant literal `"AZT"` entry from two cascades' `index_drugs_examples` (alongside the already-present `"zidovudine"`). Because the drug resolver treats every list entry as its own independent canonical, listing both created two unrelated canonical drugs and silently defeated the `AZT → zidovudine` alias.
+
+### Fixed — near-duplicate cascade rules (root cause of "7 posibles cascadas" over-detection)
+- **CC061 merged into CC001** (both: AINE/NSAID → Hipertensión → Antihipertensivo). CC061's broader index list (etoricoxib, ketoprofen, indomethacin, meloxicam) and `often_inappropriate` appropriateness were folded into CC001; CC061 kept in the JSON with `status: "merged"`, `merged_into: "CC001"` for traceability, excluded from active detection.
+- **CC050 merged into CC033** (both: Estatina → Mialgia → Analgésico/AINE). CC050's extra cascade-drug example (codeine) folded into CC033; CC050 kept with `status: "merged"`.
+
+### Removed — dead files
+- `kb/kb_core_cascades.json`, `kb/kb_vih_modifiers.json`, `kb/ddi_watchlist.json` (repo root): stale pre-PROD/DEV-split copies (338/187/173 lines vs. 3800+/1100+/900+ in `kb/prod/`), never read by `loadKB()` (which only loads from `kb/prod/` or `kb/dev/`, plus the track-independent `kb/drug_dictionary.json` and `kb/drug_combinations.json`). Confirmed unused before deletion; not a rule removal.
+
 ## Version 2.1.1 — 2026-03-12
 
 **Promote therapeutic plausibility KB to production: `ade_treatment_map.json` v1.0.0**

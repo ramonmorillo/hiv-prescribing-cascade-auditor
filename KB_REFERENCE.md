@@ -255,6 +255,41 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
 
 ---
 
+## Fichero 5 — `clinical_problems.json` (añadido en la auditoría 2026-09-14)
+
+**Descripción:** Diccionario centralizado de problemas clínicos/diagnósticos (hipertensión, insuficiencia cardiaca, diabetes tipo 2, ERGE/dispepsia, artrosis, Parkinson) que pueden mencionarse explícitamente en una nota clínica, independientemente de si participan en una cascada concreta. Sustituye el `ALTERNATIVE_INDICATION_MAP` que antes vivía embebido en `app.js` — todos los diccionarios de contenido clínico deben vivir en `kb/`, nunca en el código.
+
+**Versión:** 1.0.0 · **Actualizado:** 2026-09-14 · **Entradas PROD/DEV:** 6 problemas
+
+### Estructura de cada entrada
+
+```json
+{
+  "id": "CPB001",
+  "concept_es": "hipertensión arterial",
+  "category": "cardiovascular",
+  "keywords_es": ["hipertension", "hipertension arterial", "hta", "..."],
+  "chronic_keywords_es": ["hipertension esencial", "hta previa", "hta conocida", "..."],
+  "alternative_indication_for_drug_examples": ["enalapril", "amlodipine", "..."],
+  "measurement_type": "blood_pressure",
+  "diagnostic_note_es": "Una única lectura de presión arterial no equivale a un diagnóstico confirmado...",
+  "source_cascade_ids": ["CC001", "CC061", "CC064", "CC071"],
+  "references": ["McEvoy JW et al. 2024 ESC Guidelines... Eur Heart J 2024"]
+}
+```
+
+### Campos
+
+| Campo | Descripción |
+|-------|-------------|
+| `keywords_*` / `chronic_keywords_*` | Términos que identifican el problema como activo/nuevo, o específicamente como antecedente/crónico (estos últimos fuerzan el estado `history` con independencia del contexto). La negación y el antecedente genérico ("no presenta", "antecedente de") se detectan aparte, reutilizando la misma capa de fiabilidad NLP que ya usaba el detector urológico/renal — no hace falta listarlos aquí. |
+| `alternative_indication_for_drug_examples` | Fármacos para los que este problema constituye una indicación independiente conocida — usado para rebajar/descartar una cascada cuando el fármaco-cascada tiene una explicación documentada distinta de la cascada evaluada. Un problema nunca cuenta como "indicación alternativa" de la cascada de la que él mismo es el problema intermedio (ver `source_cascade_ids`). |
+| `measurement_type` | Si el diagnóstico habitualmente se apoya en una medición objetiva (p. ej. `blood_pressure`), habilita la comprobación de discordancia entre esa medición y el diagnóstico consignado en la nota. |
+| `source_cascade_ids` | IDs de `kb_core_cascades.json`/`kb_vih_modifiers.json` cuyo problema intermedio verifica esta entrada. Enlaza con `ade_treatment_map.json`, que ya contenía la misma relación (vía `ade_synonyms_*`) pero **no estaba conectada al motor de detección** antes de esta auditoría. |
+| `references` | Igual que en el resto de la KB: si está vacío, la entrada debe tratarse como no respaldada por una fuente citada en este fichero. |
+
+---
+
 ## Proceso de actualización de la KB
 
 Las actualizaciones de la KB siguen este proceso:

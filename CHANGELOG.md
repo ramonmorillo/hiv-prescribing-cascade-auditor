@@ -9,6 +9,34 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Auditoría del motor clínico (2026-09-14) — refactor de arquitectura
+
+Auditoría completa del pipeline de extracción/normalización/inferencia/detección de cascadas, motivada por un caso índice real: una paciente en Dovato desde 2019, con AINE (naproxeno) y a la que se prescribe enalapril por una única lectura de TA 130/80 mmHg descrita como "hipertensión". La herramienta generaba la cascada AINE→hipertensión→enalapril sin verificar nunca que la hipertensión estuviera realmente documentada, no reconocía Dovato como dolutegravir+lamivudina, no detectaba anastrozol, mostraba alertas de carga anticolinérgica/depresora del SNC dentro de la tarjeta de esa cascada, e informaba de 7 posibles cascadas sin distinguir su nivel de certeza. Diagnóstico completo, mapa de flujo y diseño propuesto documentados en el informe de auditoría de esta sesión; cambios de base de conocimiento en `kb/CHANGELOG.md`.
+
+#### Añadido
+
+- **`clinical-engine.js`** (nuevo módulo raíz): toda la lógica clínica (normalización, resolución de fármacos, extracción de problemas activos, mediciones clínicas, evaluación de cascadas, alertas globales) se ha extraído de `app.js` a un módulo puro sin dependencias del DOM, cargable tanto en el navegador (`<script>` antes de `app.js`) como en Node (`module.exports`), lo que permite ejecutar la suite de pruebas automatizadas sin navegador. `app.js` pasa a ser una capa fina de UI/estado sobre `window.ClinicalEngine`.
+- **Modelo de caso estructurado (`CaseModel`)**: `ClinicalEngine.buildCaseModel(noteText, kb, opts)` devuelve `medications`, `activeProblems`, `clinicalMeasurements`, `events`, `possibleCascades`, `globalMedicationAlerts` y `missingInformation` como colecciones independientes y trazables — nunca una lista plana de "cascadas detectadas".
+- **Clasificación de cascadas en 5 niveles**, nunca "confirmada": `supported_possible_cascade`, `possible_but_incomplete`, `pharmacological_match_only`, `not_evaluable`, `discarded`. Cada señal incluye `classification_reason_es/en` y un objeto `evidence` con el estado de cada elemento (fármaco índice, problema intermedio, fármaco posterior, orden temporal, indicación alternativa, discordancia de medición) y su procedencia (`explicit` | `inferred` | `unavailable`).
+- **Extracción de problemas clínicos activos genéricos** (`kb/{prod,dev}/clinical_problems.json`, nuevo): hipertensión/HTA, insuficiencia cardiaca, diabetes tipo 2, ERGE/dispepsia, artrosis, Parkinson — con estados `active`/`history`/`negated`/`suspected`, evidencia textual literal y enlace a las cascadas que verifican. Sustituye el `ALTERNATIVE_INDICATION_MAP` que vivía embebido en `app.js`.
+- **Extracción de mediciones clínicas** (`extractClinicalMeasurements()`): captura lecturas de presión arterial (p. ej. "130/80 mmHg") y registra explícitamente si una única lectura alcanza o no el umbral diagnóstico habitual — nunca convierte una medición aislada en un diagnóstico confirmado.
+- **Alertas globales de medicación** (`globalMedicationAlerts`), estructuralmente separadas de `possibleCascades`: carga anticolinérgica y carga depresora del SNC (antes inyectadas incorrectamente en la explicación de *cada* cascada, incluidas las no relacionadas) y duplicidad de AINE concurrentes (p. ej. naproxeno + etoricoxib), ahora mostradas en su propia sección tanto en el paso "Cascadas" como en el informe final.
+- **Suite de pruebas automatizadas en Node** (`tests/`, sin dependencias — `node tests/run.js`): caso índice completo (Dovato→dolutegravir+lamivudina, anastrozol, calcio/colecalciferol, TA 130/80 con discordancia registrada, máximo una señal AINE-HTA-enalapril nunca presentada como confirmada, alertas anticolinérgicas/SNC excluidas de esa tarjeta, duplicidad AINE mostrada aparte, "si precisa" conservado), 8 casos negativos de la especificación de auditoría, regresión de la suite NLP previa, y validación estructural de la KB (sin IDs duplicados, reglas fusionadas correctamente excluidas de la detección activa).
+- **`kb/kb_cascade_registry.md`**: tabla de auditoría de todas las reglas de cascada activas (fuente bibliográfica o "pendiente de revisión clínica", condiciones necesarias, exclusiones).
+
+#### Corregido
+
+- Dovato/Triumeq/Juluca/Kivexa/Epzicom/Truvada/Descovy estaban catalogados como fármacos de un solo principio activo; ahora se expanden correctamente a todos sus componentes (ver `kb/CHANGELOG.md`).
+- Anastrozol, ausente del diccionario de fármacos, añadido.
+- CC061 (duplicado de CC001) y CC050 (duplicado de CC033) fusionados — documentado, no eliminado silenciosamente.
+- Las cascadas fármaco-fármaco ya no se dan por válidas solo por la coincidencia de dos clases farmacológicas: se verifica explícitamente la presencia, negación, cronicidad o sospecha del problema intermedio antes de clasificar la señal.
+
+#### Migración
+
+- Los veredictos de clasificación clínica (`state.cascadeClassifications`) guardados en `localStorage` bajo los identificadores fusionados `CC061`/`CC050` se migran automáticamente a `CC001`/`CC033` al cargar la aplicación.
+
+---
+
 Mejora de detección clínica y farmacológica: normalización conservadora del texto, reconocimiento de combinaciones de dosis fija y un nuevo módulo de problemas clínicos urológico/renales, motivados por un caso de regresión real (dolor de flanco + estudio urológico + tamsulosina no generaban ninguna señal).
 
 ### Añadido

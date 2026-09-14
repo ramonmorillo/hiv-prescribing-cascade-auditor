@@ -1917,9 +1917,7 @@
         "tenofovir disoproxil fumarato",
         "tenofovir disoproxil",
         "tdf",
-        "viread",
-        "truvada",
-        "descovy"
+        "viread"
       ]
     },
     {
@@ -1959,9 +1957,7 @@
         "abacavir",
         "abc",
         "ziagen",
-        "abacavir sulfato",
-        "kivexa",
-        "epzicom"
+        "abacavir sulfato"
       ]
     },
     {
@@ -1970,10 +1966,16 @@
       "variants": [
         "dolutegravir",
         "dtg",
-        "tivicay",
-        "dovato",
-        "triumeq",
-        "juluca"
+        "tivicay"
+      ]
+    },
+    {
+      "canonical": "anastrozole",
+      "drug_class": "Antineoplastic / Aromatase inhibitor",
+      "variants": [
+        "anastrozol",
+        "anastrozole",
+        "arimidex"
       ]
     },
     {

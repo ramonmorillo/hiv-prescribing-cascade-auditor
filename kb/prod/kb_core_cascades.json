@@ -19,7 +19,9 @@
         "ketorolac",
         "celecoxib",
         "indomethacin",
-        "piroxicam"
+        "piroxicam",
+        "etoricoxib",
+        "ketoprofen"
       ],
       "ade_mechanism_en": "Prostaglandin inhibition → sodium/water retention + vasoconstriction → BP elevation",
       "ade_mechanism_es": "Inhibición de prostaglandinas → retención de sodio/agua + vasoconstricción → elevación de la PA",
@@ -36,7 +38,8 @@
         "bisoprolol",
         "atenolol",
         "furosemide",
-        "doxazosin"
+        "doxazosin",
+        "indapamide"
       ],
       "confidence": "high",
       "age_sensitivity": "medium",
@@ -51,7 +54,7 @@
         "Obesity-related hypertension independent of NSAID use",
         "Renal parenchymal disease causing secondary hypertension"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 7,
       "time_window_days_max": 90,
       "recommended_first_action_en": "Consider if NSAIDs are truly necessary. In PLHIV, prefer paracetamol when possible.",
@@ -59,6 +62,12 @@
       "references": [
         "Scott IA et al. Med J Aust 2013",
         "Lanas A et al. Aliment Pharmacol Ther 2003"
+      ],
+      "merged_from": [
+        {
+          "id": "CC061",
+          "reason": "Regla casi-duplicada (mismo patrón AINE→Hipertensión→Antihipertensivo). Fusionada en auditoría 2026-09-14: index/cascade_drug_examples ampliados con etoricoxib/ketoprofen/indapamida; appropriateness elevado a often_inappropriate (el más específico de los dos). Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1563,7 +1572,8 @@
         "ibuprofen",
         "naproxen",
         "diclofenac",
-        "tramadol"
+        "tramadol",
+        "codeine"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1585,7 +1595,13 @@
       "references": [
         "Bruckert E et al. Cardiovasc Drugs Ther 2005"
       ],
-      "ddi_warning_en": "CAUTION: PI/r dramatically increases simvastatin/lovastatin exposure. Prefer rosuvastatin, pravastatin, or pitavastatin in PLHIV on PI/r."
+      "ddi_warning_en": "CAUTION: PI/r dramatically increases simvastatin/lovastatin exposure. Prefer rosuvastatin, pravastatin, or pitavastatin in PLHIV on PI/r.",
+      "merged_from": [
+        {
+          "id": "CC050",
+          "reason": "Regla casi-duplicada (mismo patrón Estatina→Mialgia→Analgésico/AINE). Fusionada en auditoría 2026-09-14: cascade_drug_examples ampliados con codeine. Ver kb/CHANGELOG.md."
+        }
+      ]
     },
     {
       "id": "CC034",
@@ -2300,7 +2316,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC033",
+      "merge_note_es": "Fusionada en CC033 el 2026-09-14 por ser una regla casi-duplicada. Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC033 on 2026-09-14 as a near-duplicate rule. Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC051",
@@ -2729,7 +2749,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC001",
+      "merge_note_es": "Fusionada en CC001 el 2026-09-14 por ser una regla casi-duplicada. Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC001 on 2026-09-14 as a near-duplicate rule. Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC062",
