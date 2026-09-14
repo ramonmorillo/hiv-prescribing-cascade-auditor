@@ -72,8 +72,8 @@ var MESSAGES = {
     en: 'The intermediate clinical problem is mentioned as active/new-onset in the note.'
   },
   temporality_supportive: {
-    es: 'La cronología descrita en la nota es compatible con una secuencia causal (fármaco índice → problema → fármaco cascada).',
-    en: 'The chronology described in the note is compatible with a causal sequence (index drug → problem → cascade drug).'
+    es: 'La cronología descrita es compatible con una posible cascada terapéutica: el medicamento índice precede al problema clínico y al tratamiento posterior. La relación causal requiere validación profesional.',
+    en: 'The chronology described is compatible with a possible prescribing cascade: the index medication precedes the clinical problem and subsequent treatment. The causal relationship requires professional validation.'
   },
   temporality_unknown: {
     es: 'La nota no aporta información cronológica suficiente para evaluar la secuencia.',
@@ -112,14 +112,45 @@ var MESSAGES = {
     en: 'The drug proposed as the cascade response was already prescribed before the index drug was started; it cannot be a response to an effect that had not yet occurred.'
   },
   problem_predates_index: {
-    es: 'El problema clínico intermedio ya estaba presente antes de que se iniciara el fármaco índice; no es compatible con una cascada incidente causada por ese fármaco.',
-    en: 'The intermediate clinical problem was already present before the index drug was started; not compatible with an incident cascade caused by that drug.'
+    es: 'El problema clínico intermedio ya estaba presente antes de que se iniciara el fármaco índice; la información disponible es incompatible con la secuencia temporal propuesta por esta regla.',
+    en: 'The intermediate clinical problem was already present before the index drug was started; the available information is incompatible with the temporal sequence proposed by this rule.'
   },
   medication_indication_mismatch: {
     es: 'El fármaco propuesto como respuesta a la cascada tiene en esta nota una indicación explícita distinta e incompatible con el problema propuesto por esta regla; la indicación explícita prevalece sobre la inferencia farmacológica genérica.',
     en: 'The drug proposed as the cascade response has an explicit indication in this note that is different from and incompatible with the problem this rule proposes; the explicit indication takes precedence over the generic pharmacological inference.'
   }
 };
+
+/* Common automated conclusion text. Rule-specific evidence remains in
+ * MESSAGES, but every rule and output surface receives the same cautious
+ * interpretation for a given classification. */
+var CLASSIFICATION_MESSAGES = {
+  supported_possible_cascade: {
+    es: 'Secuencia temporal y farmacológica compatible con una posible cascada terapéutica. La relación causal requiere validación profesional.',
+    en: 'Temporal and pharmacological sequence compatible with a possible prescribing cascade. The causal relationship requires professional validation.'
+  },
+  possible_but_incomplete: {
+    es: 'Patrón compatible con una posible cascada terapéutica, pero faltan datos clínicos o temporales necesarios para evaluarla.',
+    en: 'Pattern compatible with a possible prescribing cascade, but clinical or temporal data needed for assessment are missing.'
+  },
+  pharmacological_match_only: {
+    es: 'Coincidencia farmacológica sin evidencia suficiente del problema intermedio o de la secuencia temporal.',
+    en: 'Pharmacological match without sufficient evidence of the intermediate problem or temporal sequence.'
+  },
+  not_evaluable: {
+    es: 'No es posible evaluar la posible cascada con la información disponible.',
+    en: 'The possible prescribing cascade cannot be assessed with the available information.'
+  },
+  discarded: {
+    es: 'La información disponible es incompatible con la secuencia propuesta por esta regla.',
+    en: 'The available information is incompatible with the sequence proposed by this rule.'
+  }
+};
+
+function classificationReason(classification, lang) {
+  var entry = CLASSIFICATION_MESSAGES[classification] || CLASSIFICATION_MESSAGES.not_evaluable;
+  return entry[lang] || entry.es;
+}
 
 function msg(code, lang) {
   var entry = MESSAGES[code];
@@ -406,17 +437,39 @@ function classifyMedicationMention(noteText, mention) {
   var sentence = normalizeDrugText(text.slice(boundary + 1, sentenceEnd < 0 ? text.length : index + sentenceEnd));
 
   var assertion = 'affirmed', status = 'active', temporality = 'current';
-  if (/\bsi\s+(desarrolla|presenta|aparece|ocurre)\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea)\b/.test(sentence)) {
-    assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
-    status = 'planned'; temporality = 'future';
-  } else if (/\b(se )?(suspendio|suspendi[oó]|retirado|retirada|interrumpio|interrumpi[oó])\b/.test(sentence) ||
-             /\b(tomo|tom[oó]|recibio|recibi[oó])\b/.test(clauseBefore) && /\bhasta\b/.test(sentence)) {
-    assertion = 'affirmed'; status = 'discontinued'; temporality = 'historical';
-  } else if (/\b(no|ni)\s+(toma|tomaba|recibe|recibia|usa|utiliza|esta tomando|est[aá] tomando)\b/.test(clauseBefore) ||
+  if (/\b(no|ni)\s+(toma|tomaba|recibe|recibia|usa|utiliza|esta tomando|est[aá] tomando)\b/.test(clauseBefore) ||
              /\bno\s+(?:toma|recibe|usa)[^.;]*\bni\b/.test(clauseBefore)) {
     assertion = 'negated'; status = 'not_taking'; temporality = 'current';
+  } else if (/\bsi\s+(desarrolla|presenta|aparece|ocurre|desarrollara|desarrollar[aá])\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea|se plantearia|se plantear[ií]a)\b/.test(sentence)) {
+    assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
+    status = 'conditional_future'; temporality = 'future';
+  } else if (/\b(se )?(suspendio|suspendi[oó]|suspendido|suspendida|retirado|retirada|interrumpio|interrumpi[oó])\b/.test(sentence) ||
+             /\b(tomo|tom[oó]|recibio|recibi[oó])\b/.test(clauseBefore) && /\bhasta\b/.test(sentence)) {
+    assertion = 'affirmed'; status = 'discontinued'; temporality = 'historical';
   }
   return { assertion: assertion, status: status, temporality: temporality };
+}
+
+function medicationExclusionReason(m) {
+  if (m.assertion === 'negated') return 'explicit_current_negation';
+  if (m.status === 'discontinued') return 'discontinued_or_historical_therapy';
+  if (m.assertion === 'conditional' || m.assertion === 'hypothetical' || m.temporality === 'future') return 'future_conditional_or_hypothetical_mention';
+  return 'not_currently_active';
+}
+
+function extractFutureMedicationCondition(noteText, mention) {
+  var start = mention.actual_start_index != null ? mention.actual_start_index : mention.start_index || 0;
+  var sentenceStart = Math.max(noteText.lastIndexOf('.', start), noteText.lastIndexOf('\n', start)) + 1;
+  var endOffset = noteText.slice(start).search(/[.\n]/);
+  var sentenceEnd = endOffset < 0 ? noteText.length : start + endOffset;
+  var sentence = noteText.slice(sentenceStart, sentenceEnd).trim();
+  var normalized = normalizeDrugText(sentence);
+  if (!/\b(podria|se valorara|se plantea|se plantearia|futuro)\b/.test(normalized)) return null;
+  var condition = sentence.match(/\bsi\s+([^.;]+)/i);
+  return {
+    assertion: 'conditional', status: 'conditional_future', temporality: 'future',
+    condition: condition ? condition[0].trim() : null, evidence_span: sentence
+  };
 }
 
 function isActiveMedication(medication) {
@@ -2028,8 +2081,10 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       recommended_action_en: getLocalizedField(cascade, 'recommended_first_action', 'en') || getLocalizedField(cascade, 'clinical_note', 'en'),
       classification: decision.classification,
       classification_reason_code: decision.reason_code,
-      classification_reason_es: msg(decision.reason_code, 'es'),
-      classification_reason_en: msg(decision.reason_code, 'en'),
+      classification_reason_es: classificationReason(decision.classification, 'es'),
+      classification_reason_en: classificationReason(decision.classification, 'en'),
+      classification_evidence_reason_es: msg(decision.reason_code, 'es'),
+      classification_evidence_reason_en: msg(decision.reason_code, 'en'),
       knowledge_validation_status: (cascade.references && cascade.references.length) ? 'reviewed_source' : 'pending_review',
       potential_clinical_relevance: mapConfidenceToRelevance(cascade.confidence || cascade.plausibility),
       evidence: {
@@ -2142,8 +2197,10 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
       recommended_action_en: entry.cascade_relevance || '',
       classification: classification,
       classification_reason_code: supportive ? 'temporality_supportive' : 'temporality_unknown',
-      classification_reason_es: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'es'),
-      classification_reason_en: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'en'),
+      classification_reason_es: classificationReason(supportive ? 'supported_possible_cascade' : 'possible_but_incomplete', 'es'),
+      classification_reason_en: classificationReason(supportive ? 'supported_possible_cascade' : 'possible_but_incomplete', 'en'),
+      classification_evidence_reason_es: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'es'),
+      classification_evidence_reason_en: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'en'),
       /* Fase 7: the symptom dictionary carries no `references` field today,
          so this path is always "pending_review" — an honest reflection of
          what has and hasn't been source-checked, not a guess. */
@@ -2345,8 +2402,30 @@ function buildCaseModel(noteText, kb, options) {
       temporality: m.temporality, start_date: date ? date.raw : null, end_date: null,
       evidence_span: extractSentenceSnippet(corrected, pos.index, pos.length),
       source: m.match_type === 'combo_brand' ? 'inferred' : 'explicit', confidence: m.confidence || 'medium',
-      drug_class: m.drug_class || ''
+      drug_class: m.drug_class || '', active_for_clinical_reasoning: isActiveMedication(m),
+      exclusion_reason: isActiveMedication(m) ? null : medicationExclusionReason(m),
+      condition: (function () {
+        if (m.assertion !== 'conditional' && m.assertion !== 'hypothetical') return null;
+        var condition = extractSentenceSnippet(corrected, pos.index, pos.length).match(/\bsi\s+([^.;]+)/i);
+        return condition ? condition[0].trim() : null;
+      }()),
+      provenance: 'clinical_note'
     };
+  });
+  mentions.forEach(function (m) {
+    /* A second event is needed only when the same lexical mention carries a
+       present negation plus a separate future condition. A standalone future
+       mention is already represented by its primary mention above. */
+    if (m.assertion !== 'negated') return;
+    var future = extractFutureMedicationCondition(corrected, m);
+    if (!future) return;
+    var existing = allMedicationMentions.find(function (x) { return x.normalized_name === m.canonical; });
+    allMedicationMentions.push(Object.assign({}, existing, future, {
+      current_status: future.status,
+      active_for_clinical_reasoning: false,
+      exclusion_reason: medicationExclusionReason(future),
+      evidence_span: future.evidence_span
+    }));
   });
   var inactiveOrNegatedMedications = allMedicationMentions.filter(function (m) { return !isActiveMedication(m); });
   var currentInteractions = evaluateCurrentInteractions(kb, medications);
@@ -2377,7 +2456,9 @@ function buildCaseModel(noteText, kb, options) {
    ============================================================ */
 return {
   MESSAGES: MESSAGES,
+  CLASSIFICATION_MESSAGES: CLASSIFICATION_MESSAGES,
   msg: msg,
+  classificationReason: classificationReason,
   getLocalizedField: getLocalizedField,
   normalizeClinicalText: normalizeClinicalText,
   normalizeDrugText: normalizeDrugText,

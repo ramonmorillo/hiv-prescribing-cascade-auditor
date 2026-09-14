@@ -267,7 +267,7 @@ const UI_STRINGS = {
     problem_status_none:            'no mencionado',
     evidence_measurement_discordant:  'La medición clínica disponible no alcanza el umbral diagnóstico habitual: discordancia entre el dato objetivo y el diagnóstico consignado.',
     evidence_measurement_supportive:  'La medición clínica disponible es compatible con el umbral diagnóstico habitual.',
-    evidence_temporality_supportive:  'Cronología compatible con una secuencia causal.',
+    evidence_temporality_supportive:  'Cronología compatible con una posible cascada terapéutica; la relación causal requiere validación profesional.',
     evidence_temporality_weak:        'Cronología sugiere un problema preexistente/crónico.',
     evidence_temporality_unknown:     'La nota no aporta cronología suficiente.',
     evidence_alt_indication:          function (reason) { return 'Indicación alternativa documentada: ' + reason + '.'; },
@@ -609,7 +609,7 @@ const UI_STRINGS = {
     problem_status_none:            'not mentioned',
     evidence_measurement_discordant:  'The available clinical measurement does not reach the usual diagnostic threshold: discordance between the objective data point and the recorded diagnosis.',
     evidence_measurement_supportive:  'The available clinical measurement is compatible with the usual diagnostic threshold.',
-    evidence_temporality_supportive:  'Chronology compatible with a causal sequence.',
+    evidence_temporality_supportive:  'Chronology compatible with a possible prescribing cascade; the causal relationship requires professional validation.',
     evidence_temporality_weak:        'Chronology suggests a pre-existing/chronic problem.',
     evidence_temporality_unknown:     'The note does not provide enough chronology.',
     evidence_alt_indication:          function (reason) { return 'Documented alternative indication: ' + reason + '.'; },
@@ -1461,7 +1461,8 @@ const STEP_CONTENT = {
         drugSection += '<details style="margin:.25rem 0 .7rem"><summary style="cursor:pointer;color:#5d6d7e;font-weight:600;">' +
           escHtml(tUI('inactive_drugs_label')) + ' (' + inactiveRows.length + ')</summary><ul>' +
           inactiveRows.map(function (m) { return '<li><strong>' + escHtml(m.normalized_name) + '</strong> — ' +
-            escHtml(m.status) + ': “' + escHtml(m.evidence_span) + '”</li>'; }).join('') + '</ul></details>';
+            escHtml(m.status) + (m.condition ? ' (' + escHtml(m.condition) + ')' : '') +
+            ': “' + escHtml(m.evidence_span) + '”</li>'; }).join('') + '</ul></details>';
       }
 
       /* ── Combination-brand traceability ──────────────────────────────────
@@ -2754,7 +2755,8 @@ window.exportReport = function (format) {
       'index_drug', 'cascade_drug', 'ade_en',
       'potential_clinical_relevance', 'knowledge_validation_status',
       'classification', 'verification_status',
-      'clinical_recommendation', 'temporal_support'
+      'clinical_recommendation', 'classification_reason', 'temporal_support',
+      'inactive_medication_mentions_json'
     ];
     /* RFC 4180 cell quoting: wrap in " and double any inner " */
     function csvCell(v) {
@@ -2770,7 +2772,8 @@ window.exportReport = function (format) {
         csvCell(''), csvCell(''), csvCell(''),
         csvCell(''), csvCell(''),
         csvCell(''), csvCell(''),
-        csvCell(''), csvCell('')
+        csvCell(''), csvCell(''), csvCell(''),
+        csvCell(JSON.stringify(report.inactive_or_negated_medications || []))
       ].join(','));
     } else {
       report.cascades.forEach(function (c) {
@@ -2788,7 +2791,9 @@ window.exportReport = function (format) {
           csvCell(c.classification),
           csvCell(c.verification_status),
           csvCell(c.clinical_recommendation),
-          csvCell(c.temporal_support)
+          csvCell(currentLanguage === 'es' ? c.classification_reason_es : c.classification_reason_en),
+          csvCell(c.temporal_support),
+          csvCell(JSON.stringify(report.inactive_or_negated_medications || []))
         ].join(','));
       });
     }
