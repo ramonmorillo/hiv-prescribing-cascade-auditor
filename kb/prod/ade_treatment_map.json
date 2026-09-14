@@ -12,9 +12,9 @@
       "ade_synonyms_es": ["hipertensión", "presión arterial alta", "tensión arterial elevada", "HTA"],
       "treatment_drug_classes": ["Antihypertensive", "ACE inhibitor", "ARB", "Calcium channel blocker", "Beta-blocker", "Thiazide diuretic"],
       "treatment_drug_examples": [
-        "amlodipine", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan",
+        "amlodipine", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan", "candesartan",
         "hydrochlorothiazide", "bisoprolol", "atenolol", "furosemide", "doxazosin",
-        "amlodipino", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan",
+        "amlodipino", "enalapril", "lisinopril", "ramipril", "losartan", "valsartan", "candesartán",
         "hidroclorotiazida", "bisoprolol", "atenolol", "furosemida", "doxazosina"
       ],
       "plausibility_weight": "high",
