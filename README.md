@@ -33,15 +33,16 @@ La herramienta está orientada a la revisión farmacoterapéutica de:
 
 ## Qué hace esta herramienta
 
-1. **Extracción de medicación y síntomas** desde una nota clínica en texto libre (NLP local, sin IA externa). Identifica fármacos por nombre genérico, sus clases farmacológicas y síntomas/efectos adversos mencionados en el texto.
+1. **Extracción de medicación, problemas clínicos activos y mediciones** desde una nota clínica en texto libre (NLP local, sin IA externa). Identifica fármacos por nombre genérico/marca (incluyendo combinaciones de dosis fija, expandidas a sus principios activos), problemas clínicos explícitos (p. ej. hipertensión, diabetes) con su estado (activo/antecedente/negado/sospechado), y mediciones simples como lecturas de presión arterial.
 
 2. **Clasificación farmacológica** de la medicación detectada: asigna clase terapéutica a cada fármaco usando la base de conocimiento local.
 
-3. **Detección de posibles cascadas** mediante dos mecanismos complementarios:
-   - *Detección directa*: cruce del par (fármaco índice, fármaco cascada) con los patrones documentados en la KB.
+3. **Evaluación de posibles cascadas** mediante dos mecanismos complementarios, cada señal clasificada en uno de cinco niveles de certeza (nunca "confirmada" por el sistema):
+   - *Fármaco-fármaco*: para cada candidata (fármaco índice, problema intermedio, fármaco posterior) se verifica explícitamente si el problema intermedio está documentado, negado, es un antecedente, o solo se infiere de la coincidencia de clases — antes de asignar `supported_possible_cascade`, `possible_but_incomplete`, `pharmacological_match_only`, `not_evaluable` o `discarded`.
    - *Puente sintomático*: identificación de síntomas en el texto que pueden ser efectos adversos de un fármaco activo y que a su vez son tratados por otro fármaco activo.
+   - Las alertas que dependen del conjunto de la medicación (carga anticolinérgica, carga depresora del SNC, duplicidad de AINE) se muestran por separado, nunca dentro de la explicación de una cascada concreta.
 
-4. **Verificación clínica interactiva**: el clínico puede clasificar cada hallazgo como "confirmado", "posible" o "descartado", añadir notas y señales de alerta.
+4. **Verificación clínica interactiva**: el clínico puede clasificar cada hallazgo como "confirmado", "posible" o "descartado", añadir notas y señales de alerta — esta validación profesional es independiente de (y prevalece sobre) la clasificación automática del sistema.
 
 5. **Generación de informe estructurado**: informe bilingüe exportable (JSON, CSV) con los hallazgos, clasificaciones, alertas de IFF y notas clínicas.
 
@@ -113,27 +114,47 @@ python3 -m http.server 8080
 ```
 hiv-prescribing-cascade-auditor/
 ├── index.html                  # Aplicación principal (SPA estática)
-├── app.js                      # Lógica de negocio (ES2020, ~2700 líneas)
+├── clinical-engine.js          # Motor clínico puro (sin DOM): normalización, extracción,
+│                                #   problemas activos, clasificación de cascadas. Testeable con Node.
+├── app.js                      # Capa de UI/estado sobre ClinicalEngine (wizard, render, i18n)
 ├── styles.css                  # Estilos (CSS3, sin frameworks)
 ├── kb/
+│   ├── drug_dictionary.json            # Diccionario de fármacos (genéricos/marcas), track-independiente
+│   ├── drug_combinations.json          # Combinaciones de dosis fija (marca → principios activos)
+│   ├── kb_cascade_registry.md          # Auditoría de todas las reglas de cascada (fuente/estado)
 │   ├── prod/                   # Base de conocimiento de producción
-│   │   ├── kb_core_cascades.json       # Cascadas genéricas (40 patrones, v2.0.0)
-│   │   ├── kb_vih_modifiers.json       # Cascadas VIH-específicas (8 patrones, v1.1.0)
-│   │   ├── ddi_watchlist.json          # Vigilancia de IFF (10 interacciones, v1.1.0)
-│   │   └── kb_symptoms.json            # Diccionario de síntomas (10 entradas, v1.2.0)
-│   └── dev/                    # Base de conocimiento de desarrollo (en revisión)
-│       ├── kb_core_cascades.json
-│       ├── kb_vih_modifiers.json
-│       ├── ddi_watchlist.json
-│       ├── kb_symptoms.json
-│       └── kb_validator.js             # Validador de integridad de la KB
+│   │   ├── kb_core_cascades.json       # Cascadas genéricas
+│   │   ├── kb_vih_modifiers.json       # Cascadas VIH-específicas
+│   │   ├── ddi_watchlist.json          # Vigilancia de IFF
+│   │   ├── kb_symptoms.json            # Diccionario de síntomas (puente sintomático)
+│   │   ├── kb_clinical_modifiers.json  # Modificadores de contexto clínico (edad, ERC, carga anticolinérgica…)
+│   │   ├── ade_treatment_map.json      # Enlace efecto adverso ↔ fármacos que lo tratan, por cascada
+│   │   └── clinical_problems.json      # Diccionario de problemas clínicos activos (HTA, IC, DM2, ERGE…)
+│   └── dev/                    # Base de conocimiento de desarrollo (en revisión), mismo esquema que prod/
+│       └── kb_validator.js             # Validador de integridad bilingüe de la KB
+├── tests/                      # Suite de pruebas automatizadas (Node puro, sin dependencias)
+│   ├── run.js                          # `node tests/run.js` ejecuta toda la suite
+│   ├── index-case.test.js              # Caso índice de la auditoría clínica
+│   ├── negative-cases.test.js          # 8 casos negativos (negación, antecedente, indicación alternativa…)
+│   ├── regression.test.js              # Regresión de la capa NLP (negación, puente sintomático)
+│   ├── legacy-nlp.test.js              # Resolución de fármacos, combos, typo-correction, urológico/renal
+│   └── kb-audit.test.js                # Validación estructural de la KB
 ├── methodology/
 │   └── pipeline_spec_v1.0.md   # Especificación técnica del pipeline de detección
 ├── examples/
 │   └── example_note.txt        # Nota clínica de ejemplo para pruebas
 ├── README.md                   # Este fichero
-└── CHANGELOG.md                # Registro de cambios por versión
+├── CHANGELOG.md                # Registro de cambios por versión
+└── KB_REFERENCE.md             # Referencia detallada de la base de conocimiento
 ```
+
+### Ejecutar las pruebas automatizadas
+
+```bash
+node tests/run.js
+```
+
+No requiere dependencias ni navegador: `clinical-engine.js` se carga vía `require()` directamente.
 
 ---
 

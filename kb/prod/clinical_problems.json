@@ -1,0 +1,120 @@
+{
+  "version": "1.0.0",
+  "description": "Diccionario centralizado de problemas clínicos/diagnósticos que pueden mencionarse explícitamente en una nota clínica. Sustituye la lista ALTERNATIVE_INDICATION_MAP que antes vivía embebida en app.js. Se usa en tres puntos del motor: (1) construir CaseModel.activeProblems (hechos clínicos explícitos, independientes de cualquier cascada), (2) verificar si el problema intermedio de una cascada fármaco-fármaco está realmente presente/activo en la nota (en combinación con ade_treatment_map.json, que enlaza cada ADE con las cascadas que lo usan), (3) detectar una indicación alternativa conocida para el fármaco-cascada que reduzca la plausibilidad de la cascada.",
+  "last_updated": "2026-09-14",
+  "disclaimer": "Herramienta de apoyo a la decisión. La presencia de un término no equivale a un diagnóstico confirmado; toda clasificación requiere revisión por un profesional sanitario cualificado.",
+  "problems": [
+    {
+      "id": "CPB001",
+      "concept_en": "hypertension",
+      "concept_es": "hipertensión arterial",
+      "category": "cardiovascular",
+      "keywords_es": ["hipertension", "hipertension arterial", "hta", "tension arterial elevada", "presion arterial elevada", "cifras tensionales elevadas"],
+      "keywords_en": ["hypertension", "high blood pressure", "elevated blood pressure", "htn", "raised blood pressure"],
+      "chronic_keywords_es": ["hipertension esencial", "hta esencial", "hta previa", "hipertension arterial cronica", "hipertension conocida", "hta conocida", "hipertension arterial esencial"],
+      "chronic_keywords_en": ["essential hypertension", "prior hypertension", "known hypertension", "chronic hypertension", "pre-existing hypertension"],
+      "alternative_indication_for_drug_examples": [
+        "amlodipine", "amlodipino", "enalapril", "lisinopril", "losartan", "losartán",
+        "valsartan", "valsartán", "ramipril", "telmisartan", "perindopril",
+        "bisoprolol", "atenolol", "hydrochlorothiazide", "hidroclorotiazida",
+        "indapamide", "indapamida", "doxazosin", "doxazosina"
+      ],
+      "measurement_type": "blood_pressure",
+      "diagnostic_note_es": "Una única lectura de presión arterial no equivale a un diagnóstico confirmado de hipertensión: las guías ESC/ESH exigen confirmación en visitas separadas o mediante MAPA/AMPA. Si la nota describe 'hipertensión' apoyada en una sola medición, registrar la discordancia y no tratar el diagnóstico como confirmado.",
+      "diagnostic_note_en": "A single blood-pressure reading does not equal a confirmed hypertension diagnosis: ESC/ESH guidance requires confirmation on separate visits or via ABPM/HBPM. If the note states 'hypertension' supported only by one reading, record the discordance and do not treat the diagnosis as confirmed.",
+      "source_cascade_ids": ["CC001", "CC061", "CC064", "CC071"],
+      "references": ["McEvoy JW et al. 2024 ESC Guidelines for the management of elevated blood pressure and hypertension. Eur Heart J 2024;45:3912-4018"]
+    },
+    {
+      "id": "CPB002",
+      "concept_en": "heart failure",
+      "concept_es": "insuficiencia cardiaca",
+      "category": "cardiovascular",
+      "keywords_es": ["insuficiencia cardiaca", "insuficiencia cardíaca", "ic congestiva", "fallo cardiaco", "disfuncion ventricular", "fraccion de eyeccion reducida", "fevi reducida"],
+      "keywords_en": ["heart failure", "congestive heart failure", "chf", "reduced ejection fraction", "hfref", "left ventricular dysfunction"],
+      "chronic_keywords_es": ["insuficiencia cardiaca cronica", "insuficiencia cardiaca conocida", "ic cronica"],
+      "chronic_keywords_en": ["chronic heart failure", "known heart failure"],
+      "alternative_indication_for_drug_examples": [
+        "enalapril", "lisinopril", "ramipril", "losartan", "losartán", "valsartan", "valsartán",
+        "sacubitril/valsartan", "bisoprolol", "carvedilol", "metoprolol",
+        "spironolactone", "espironolactona", "eplerenone", "eplerenona",
+        "furosemide", "furosemida", "torasemide", "torasemida", "dapagliflozin", "dapagliflozina", "empagliflozin", "empagliflozina"
+      ],
+      "diagnostic_note_es": "Un IECA/ARA-II/betabloqueante puede estar indicado por insuficiencia cardiaca en lugar de por hipertensión: no asumir automáticamente que trata una hipertensión inducida por AINE si hay insuficiencia cardiaca documentada.",
+      "diagnostic_note_en": "An ACE inhibitor/ARB/beta-blocker may be indicated for heart failure rather than hypertension: do not automatically assume it treats an NSAID-induced hypertension when heart failure is documented.",
+      "source_cascade_ids": [],
+      "references": []
+    },
+    {
+      "id": "CPB003",
+      "concept_en": "type 2 diabetes mellitus",
+      "concept_es": "diabetes mellitus tipo 2",
+      "category": "metabolic",
+      "keywords_es": ["diabetes mellitus", "dm2", "dm tipo 2", "diabetes tipo 2", "diabetes conocida", "diabetes previa", "diabetes mellitus tipo 2"],
+      "keywords_en": ["diabetes mellitus", "type 2 diabetes", "known diabetes", "pre-existing diabetes", "diabetes mellitus type 2"],
+      "chronic_keywords_es": ["diabetes conocida", "diabetes previa", "diabetes de larga evolucion"],
+      "chronic_keywords_en": ["known diabetes", "pre-existing diabetes", "long-standing diabetes"],
+      "alternative_indication_for_drug_examples": [
+        "metformin", "metformina", "sitagliptin", "sitagliptina", "empagliflozin", "empagliflozina",
+        "dapagliflozin", "dapagliflozina", "liraglutide", "liraglutida", "glipizide", "glibenclamide", "glibenclamida"
+      ],
+      "diagnostic_note_es": "",
+      "diagnostic_note_en": "",
+      "source_cascade_ids": [],
+      "references": []
+    },
+    {
+      "id": "CPB004",
+      "concept_en": "GERD / dyspepsia",
+      "concept_es": "reflujo gastroesofágico / dispepsia",
+      "category": "gastrointestinal",
+      "keywords_es": ["reflujo gastroesofagico", "erge", "dispepsia", "gastritis", "ulcera peptica", "pirosis cronica", "esofagitis", "reflujo previo"],
+      "keywords_en": ["gerd", "gastroesophageal reflux", "dyspepsia", "gastritis", "peptic ulcer", "chronic heartburn", "esophagitis", "prior reflux"],
+      "chronic_keywords_es": ["reflujo previo", "gastritis cronica"],
+      "chronic_keywords_en": ["prior reflux", "chronic gastritis"],
+      "alternative_indication_for_drug_examples": [
+        "omeprazole", "omeprazol", "esomeprazole", "esomeprazol", "pantoprazole", "pantoprazol",
+        "lansoprazole", "lansoprazol", "rabeprazole", "rabeprazol"
+      ],
+      "diagnostic_note_es": "",
+      "diagnostic_note_en": "",
+      "source_cascade_ids": [],
+      "references": []
+    },
+    {
+      "id": "CPB005",
+      "concept_en": "osteoarthritis / chronic musculoskeletal pain",
+      "concept_es": "artrosis / dolor musculoesquelético crónico",
+      "category": "musculoskeletal",
+      "keywords_es": ["artrosis", "osteoartritis", "artritis cronica", "dolor musculoesqueletico", "dolor cronico musculoesqueletico", "lumbalgia cronica", "coxartrosis", "gonartrosis"],
+      "keywords_en": ["osteoarthritis", "arthrosis", "chronic arthritis", "musculoskeletal pain", "chronic musculoskeletal pain", "chronic low back pain"],
+      "chronic_keywords_es": [],
+      "chronic_keywords_en": [],
+      "alternative_indication_for_drug_examples": [
+        "ibuprofen", "naproxen", "naproxeno", "celecoxib", "diclofenac", "diclofenaco",
+        "meloxicam", "indometacin", "indomethacin", "ketorolac", "etoricoxib"
+      ],
+      "diagnostic_note_es": "",
+      "diagnostic_note_en": "",
+      "source_cascade_ids": [],
+      "references": []
+    },
+    {
+      "id": "CPB006",
+      "concept_en": "Parkinson's disease",
+      "concept_es": "enfermedad de Parkinson",
+      "category": "neurological",
+      "keywords_es": ["parkinson", "enfermedad de parkinson", "enfermedad de parkinson conocida"],
+      "keywords_en": ["parkinson", "parkinson's disease", "parkinson disease", "known parkinson"],
+      "chronic_keywords_es": [],
+      "chronic_keywords_en": [],
+      "alternative_indication_for_drug_examples": [
+        "levodopa", "carbidopa", "ropinirole", "ropinirol", "pramipexole", "pramipexol", "rotigotine", "rotigotina"
+      ],
+      "diagnostic_note_es": "",
+      "diagnostic_note_en": "",
+      "source_cascade_ids": [],
+      "references": []
+    }
+  ]
+}

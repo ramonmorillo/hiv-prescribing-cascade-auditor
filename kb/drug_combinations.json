@@ -1,7 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fixed-dose combination products. Maps a brand/trade name to its individual active ingredients so the cascade-detection and classification pipeline can reason about each ingredient (drug class, cascade membership) while preserving traceability back to the prescribed brand (e.g. 'Biktarvy → bictegravir / emtricitabine / tenofovir alafenamide'). Track-independent, like drug_dictionary.json: lives at kb/ root, not inside a PROD/DEV subfolder.",
-  "last_updated": "2026-07-09",
+  "last_updated": "2026-09-14",
+  "changelog": [
+    "1.1.0 (2026-09-14): added Dovato, Triumeq, Juluca, Kivexa/Epzicom, Truvada, Descovy — these brands were previously miscatalogued in drug_dictionary.json as single-ingredient variants (Dovato/Triumeq/Juluca collapsed to dolutegravir only; Kivexa/Epzicom collapsed to abacavir only) or in app.js MANUAL_ALIASES with a factually incomplete/incorrect single ingredient (Truvada and Descovy were both mapped to tenofovir disoproxil fumarate alone; Descovy actually contains tenofovir ALAFENAMIDE, not disoproxil fumarate). See kb/CHANGELOG.md for the full audit rationale."
+  ],
   "combinations": [
     {
       "brand": "Biktarvy",
@@ -14,6 +17,85 @@
       "activeIngredients": ["bictegravir", "emtricitabine", "tenofovir alafenamide"],
       "therapeuticClass_es": "INSTI + pareja de INTI (backbone)",
       "therapeuticClass_en": "INSTI + NRTI backbone",
+      "hivDrug": true
+    },
+    {
+      "brand": "Dovato",
+      "aliases": [
+        "dovato",
+        "dtg/3tc",
+        "dolutegravir/lamivudina",
+        "dolutegravir/lamivudine"
+      ],
+      "activeIngredients": ["dolutegravir", "lamivudine"],
+      "therapeuticClass_es": "INSTI + INTI (biterapia)",
+      "therapeuticClass_en": "INSTI + NRTI (two-drug regimen)",
+      "hivDrug": true
+    },
+    {
+      "brand": "Triumeq",
+      "aliases": [
+        "triumeq",
+        "dtg/abc/3tc",
+        "dolutegravir/abacavir/lamivudina",
+        "dolutegravir/abacavir/lamivudine"
+      ],
+      "activeIngredients": ["dolutegravir", "abacavir", "lamivudine"],
+      "therapeuticClass_es": "INSTI + pareja de INTI (backbone)",
+      "therapeuticClass_en": "INSTI + NRTI backbone",
+      "hivDrug": true
+    },
+    {
+      "brand": "Juluca",
+      "aliases": [
+        "juluca",
+        "dtg/rpv",
+        "dolutegravir/rilpivirina",
+        "dolutegravir/rilpivirine"
+      ],
+      "activeIngredients": ["dolutegravir", "rilpivirine"],
+      "therapeuticClass_es": "INSTI + INNTI (biterapia)",
+      "therapeuticClass_en": "INSTI + NNRTI (two-drug regimen)",
+      "hivDrug": true
+    },
+    {
+      "brand": "Kivexa",
+      "aliases": [
+        "kivexa",
+        "epzicom",
+        "abc/3tc",
+        "abacavir/lamivudina",
+        "abacavir/lamivudine"
+      ],
+      "activeIngredients": ["abacavir", "lamivudine"],
+      "therapeuticClass_es": "Pareja de INTI (backbone)",
+      "therapeuticClass_en": "NRTI backbone pair",
+      "hivDrug": true
+    },
+    {
+      "brand": "Truvada",
+      "aliases": [
+        "truvada",
+        "ftc/tdf",
+        "emtricitabina/tenofovir disoproxilo",
+        "emtricitabine/tenofovir disoproxil fumarate"
+      ],
+      "activeIngredients": ["emtricitabine", "tenofovir disoproxil fumarate"],
+      "therapeuticClass_es": "Pareja de INTI (backbone)",
+      "therapeuticClass_en": "NRTI backbone pair",
+      "hivDrug": true
+    },
+    {
+      "brand": "Descovy",
+      "aliases": [
+        "descovy",
+        "ftc/taf",
+        "emtricitabina/tenofovir alafenamida",
+        "emtricitabine/tenofovir alafenamide"
+      ],
+      "activeIngredients": ["emtricitabine", "tenofovir alafenamide"],
+      "therapeuticClass_es": "Pareja de INTI (backbone)",
+      "therapeuticClass_en": "NRTI backbone pair",
       "hivDrug": true
     },
     {

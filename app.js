@@ -221,6 +221,42 @@ const UI_STRINGS = {
     preliminary_group: function (n) { return '2) Se&ntilde;ales farmacol&oacute;gicas preliminares (' + n + ')'; },
     no_preliminary:    'Sin se&ntilde;ales preliminares activas.',
 
+    /* ── Cascade classification (5-level, never "confirmada") ──
+       See clinical-engine.js classifyCascadeSignal() / KB_REFERENCE.md. */
+    classification_supported_possible_cascade: 'Posible cascada con evidencia suficiente para revisión',
+    classification_possible_but_incomplete:    'Posible cascada, información incompleta',
+    classification_pharmacological_match_only: 'Coincidencia farmacológica de baja certeza',
+    classification_not_evaluable:               'No evaluable por falta de cronología',
+    classification_discarded:                   'Descartada por el sistema (evidencia incompatible)',
+    classification_manual_discarded:            'Descartada tras validación profesional',
+    classification_reason_lbl:                  'Motivo de la clasificación:',
+    classification_group_count:                 function (n) { return n + ' señal' + (n === 1 ? '' : 'es'); },
+
+    /* Evidence / traceability detail list */
+    evidence_details_toggle:        'Ver procedencia y evidencia de esta señal',
+    evidence_index_drug:            function (d) { return 'Fármaco índice presente en la nota: ' + d + ' (explícito).'; },
+    evidence_cascade_drug:          function (d) { return 'Fármaco posterior presente en la nota: ' + d + ' (explícito).'; },
+    evidence_problem_unverifiable:  'No hay en la base de conocimiento un enlace que permita verificar el problema intermedio de esta regla.',
+    evidence_problem_not_mentioned: 'El problema clínico intermedio no se menciona en la nota.',
+    evidence_problem_status:        function (status, span) { return 'Problema intermedio: ' + status + (span ? ' (“' + span + '”)' : '') + '.'; },
+    problem_status_active:          'activo / explícito',
+    problem_status_history:         'antecedente / crónico',
+    problem_status_negated:         'negado explícitamente',
+    problem_status_suspected:       'solo sospechado',
+    problem_status_none:            'no mencionado',
+    evidence_measurement_discordant:  'La medición clínica disponible no alcanza el umbral diagnóstico habitual: discordancia entre el dato objetivo y el diagnóstico consignado.',
+    evidence_measurement_supportive:  'La medición clínica disponible es compatible con el umbral diagnóstico habitual.',
+    evidence_temporality_supportive:  'Cronología compatible con una secuencia causal.',
+    evidence_temporality_weak:        'Cronología sugiere un problema preexistente/crónico.',
+    evidence_temporality_unknown:     'La nota no aporta cronología suficiente.',
+    evidence_alt_indication:          function (reason) { return 'Indicación alternativa documentada: ' + reason + '.'; },
+    evidence_merged_rule:             function (ids) { return 'Regla consolidada en auditoría KB (fusionada con: ' + ids + ').'; },
+
+    /* Global medication alerts / missing information (Fase 6) */
+    section_global_alerts: 'Otros hallazgos relevantes de la medicación',
+    no_global_alerts:      'Sin otros hallazgos relevantes de la medicación en esta nota.',
+    missing_information_lbl: 'Información ausente que limita la valoración:',
+
     /* Export buttons */
     btn_copy_record:  '&#128203;&nbsp;Copiar para historia cl&iacute;nica',
     btn_save_pdf:     '&#128438;&nbsp;Guardar como PDF',
@@ -514,6 +550,39 @@ const UI_STRINGS = {
     preliminary_group: function (n) { return '2) Preliminary pharmacological signals (' + n + ')'; },
     no_preliminary:    'No active preliminary signals.',
 
+    /* ── Cascade classification (5-level, never "confirmed") ── */
+    classification_supported_possible_cascade: 'Possible cascade with sufficient evidence for review',
+    classification_possible_but_incomplete:    'Possible cascade, incomplete information',
+    classification_pharmacological_match_only: 'Low-certainty pharmacological coincidence',
+    classification_not_evaluable:               'Not evaluable due to missing chronology',
+    classification_discarded:                   'Discarded by the system (incompatible evidence)',
+    classification_manual_discarded:            'Discarded after professional validation',
+    classification_reason_lbl:                  'Reason for this classification:',
+    classification_group_count:                 function (n) { return n + ' signal' + (n === 1 ? '' : 's'); },
+
+    evidence_details_toggle:        'View provenance and evidence for this signal',
+    evidence_index_drug:            function (d) { return 'Index drug present in the note: ' + d + ' (explicit).'; },
+    evidence_cascade_drug:          function (d) { return 'Later drug present in the note: ' + d + ' (explicit).'; },
+    evidence_problem_unverifiable:  'The knowledge base has no link allowing this rule’s intermediate problem to be verified.',
+    evidence_problem_not_mentioned: 'The intermediate clinical problem is not mentioned in the note.',
+    evidence_problem_status:        function (status, span) { return 'Intermediate problem: ' + status + (span ? ' (“' + span + '”)' : '') + '.'; },
+    problem_status_active:          'active / explicit',
+    problem_status_history:         'prior / chronic',
+    problem_status_negated:         'explicitly negated',
+    problem_status_suspected:       'only suspected',
+    problem_status_none:            'not mentioned',
+    evidence_measurement_discordant:  'The available clinical measurement does not reach the usual diagnostic threshold: discordance between the objective data point and the recorded diagnosis.',
+    evidence_measurement_supportive:  'The available clinical measurement is compatible with the usual diagnostic threshold.',
+    evidence_temporality_supportive:  'Chronology compatible with a causal sequence.',
+    evidence_temporality_weak:        'Chronology suggests a pre-existing/chronic problem.',
+    evidence_temporality_unknown:     'The note does not provide enough chronology.',
+    evidence_alt_indication:          function (reason) { return 'Documented alternative indication: ' + reason + '.'; },
+    evidence_merged_rule:             function (ids) { return 'Rule consolidated in KB audit (merged with: ' + ids + ').'; },
+
+    section_global_alerts: 'Other relevant medication findings',
+    no_global_alerts:      'No other relevant medication findings in this note.',
+    missing_information_lbl: 'Missing information that limits assessment:',
+
     /* Export buttons */
     btn_copy_record:  '&#128203;&nbsp;Copy to medical record',
     btn_save_pdf:     '&#128438;&nbsp;Save as PDF',
@@ -655,7 +724,12 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, drugCombinations: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null, clinicalProblems: null, drugDictionary: null, drugCombinations: null },
+  /* Cached CaseModel from ClinicalEngine.buildCaseModel() — invalidated
+     whenever the note or KB changes. This is now the single source of
+     truth for medications/activeProblems/possibleCascades/globalMedicationAlerts;
+     Step 2-6 all read from it instead of re-deriving their own view. */
+  caseModel: null,
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
   /* Step 2 — rule-based clinical problems (e.g. urologic/renal) found in the
@@ -708,6 +782,17 @@ function loadState() {
     if (Array.isArray(saved.symptomsDetected))                 state.symptomsDetected       = saved.symptomsDetected;
     if (saved.cascadeClassifications && typeof saved.cascadeClassifications === 'object' &&
         !Array.isArray(saved.cascadeClassifications))          state.cascadeClassifications = saved.cascadeClassifications;
+    /* Migrate clinician verdicts recorded against a cascade id that the
+       2026-09-14 KB audit merged into another (CC061→CC001, CC050→CC033;
+       see kb/CHANGELOG.md). Without this, a verdict a clinician already
+       recorded would silently stop applying because the merged id no
+       longer appears in possibleCascades. */
+    var CASCADE_ID_MIGRATIONS = { CC061: 'CC001', CC050: 'CC033' };
+    Object.keys(CASCADE_ID_MIGRATIONS).forEach(function (oldId) {
+      if (state.cascadeClassifications[oldId] && !state.cascadeClassifications[CASCADE_ID_MIGRATIONS[oldId]]) {
+        state.cascadeClassifications[CASCADE_ID_MIGRATIONS[oldId]] = state.cascadeClassifications[oldId];
+      }
+    });
   } catch (err) {
     console.error('[Storage] Could not load state:', err);
   }
@@ -729,6 +814,7 @@ function clearState() {
     state.symptomsDetected = [];
     state.cascadeClassifications = {};
     state.detectedCascades = null;
+    state.caseModel = null;
     state.drugResolver = null;
   } catch (err) {
     console.error('[Storage] Could not clear state:', err);
@@ -757,6 +843,12 @@ async function loadKB(track) {
     symptomDictionary: folder + '/kb_symptoms.json',
     clinicalModifiers:  folder + '/kb_clinical_modifiers.json',
     adeTreatmentMap:    folder + '/ade_treatment_map.json',
+    /* Active clinical problems (diagnoses/comorbidities) dictionary — added
+     * in the clinical-engine audit; drives CaseModel.activeProblems,
+     * cascade intermediate-problem verification, and alternative-indication
+     * detection (previously a hardcoded ALTERNATIVE_INDICATION_MAP in this
+     * file — see kb/CHANGELOG.md). */
+    clinicalProblems:  folder + '/clinical_problems.json',
     /* Shared drug name dictionary — lives at kb/ root, not inside a track
      * subfolder, because variant/brand-name mappings are track-independent. */
     drugDictionary:    'kb/drug_dictionary.json',
@@ -1046,1355 +1138,127 @@ function downloadJSON(obj, filename) {
 }
 
 /* ============================================================
-   Cascade Detection Engine
+   Cascade Detection Engine — thin UI-layer bridge to clinical-engine.js
+   ============================================================
+   All clinical logic (normalization, drug resolution, active-problem
+   extraction, cascade evaluation and classification, global medication
+   alerts) now lives in clinical-engine.js as pure, DOM-free functions —
+   see that file for the full documentation and kb/CHANGELOG.md /
+   KB_REFERENCE.md for the audit that produced this split.
+
+   This section keeps the small set of function NAMES the rest of this
+   file (Step 2-6 rendering, self-tests, export) already calls, but each
+   is now a thin wrapper that delegates to window.ClinicalEngine and/or
+   caches the result on `state`. Nothing below this comment block
+   re-implements clinical logic; it only adapts calling conventions
+   (e.g. supplying `state.kb` / the cached drug resolver implicitly, so
+   existing single-argument call sites keep working unchanged) and caches
+   expensive results on `state`.
    ============================================================ */
 
-/* ============================================================
-   CLINICAL TEXT NORMALIZATION — conservative typo correction
-   ============================================================
-   Applied once, ahead of drug / symptom / clinical-problem detection.
-   Deliberately narrow in scope: whole-word (or fixed-phrase) exact
-   substitutions only, no fuzzy/edit-distance matching. This keeps the
-   correction fully auditable — every substitution the tool can ever make
-   is listed below — and prevents the normalizer from ever inventing or
-   guessing at content that is not in the KB reference list. */
+var CE = window.ClinicalEngine;
 
-/**
- * Frequent misspellings observed in free-text clinical notes, mapped to
- * their correction. Extend only with typos confirmed in real notes —
- * this is not a general spell-checker.
- */
-var CLINICAL_TYPO_CORRECTIONS = {
-  'vral': 'viral',
-  'izqueirdo': 'izquierdo',
-  'izuqierdo': 'izquierdo',
-  'dolro': 'dolor',
-  'palapcion': 'palpacion',
-  'sintomatologia': 'sintomatologia',
-  'puñopercusion': 'punopercusion',
-  'capo': 'comp',
-  'q comp': '1 comp'
-};
+function normalizeClinicalText(text) { return CE.normalizeClinicalText(text); }
+function normalizeDrugText(text) { return CE.normalizeDrugText(text); }
+function normalizeSymptomText(text) { return CE.normalizeSymptomText(text); }
+function findTermInNote(noteText, term) { return CE.findTermInNote(noteText, term); }
+function isNegatedSymptom(noteText, matchIndex, matchLength) { return CE.isNegatedSymptom(noteText, matchIndex, matchLength); }
+function extractSentenceSnippet(text, index, length) { return CE.extractSentenceSnippet(text, index, length); }
+function findClinicalFinding(originalText, normalizedText, term) { return CE.findClinicalFinding(originalText, normalizedText, term); }
+function detectTimeCues(noteText, matchIndex) { return CE.detectTimeCues(noteText, matchIndex); }
+function getIndexExamples(cascade) { return CE.getIndexExamples(cascade); }
+function getCascadeExamples(cascade) { return CE.getCascadeExamples(cascade); }
 
-/**
- * Apply conservative clinical-text normalization: fixes the whole-word
- * misspellings in CLINICAL_TYPO_CORRECTIONS and collapses redundant
- * whitespace. Case, accents and wording are otherwise left untouched —
- * case/diacritic-insensitive matching is handled separately downstream by
- * normalizeDrugText() / normalizeSymptomText(). Multi-word phrases are
- * substituted before single-word ones so a phrase key is never fragmented
- * by an earlier single-word replacement.
- *
- * Never mutates the input; the caller's original note text (e.g.
- * state.clinicalNote, shown to the user and used for export) is always
- * preserved untouched — only the copy passed to the detection pipeline is
- * corrected.
- *
- * @param {string} text
- * @returns {string} corrected copy of `text`
- */
-function normalizeClinicalText(text) {
-  if (!text) return '';
-  var corrected = text;
-
-  Object.keys(CLINICAL_TYPO_CORRECTIONS).forEach(function (typo) {
-    if (typo.indexOf(' ') === -1) return; /* phrases only, this pass */
-    var escaped = typo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    corrected = corrected.replace(new RegExp(escaped, 'gi'), CLINICAL_TYPO_CORRECTIONS[typo]);
-  });
-
-  Object.keys(CLINICAL_TYPO_CORRECTIONS).forEach(function (typo) {
-    if (typo.indexOf(' ') !== -1) return; /* single words only, this pass */
-    var escaped = typo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    corrected = corrected.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), CLINICAL_TYPO_CORRECTIONS[typo]);
-  });
-
-  /* Normalise runs of spaces/tabs (not newlines, so paragraph structure —
-     and therefore character offsets used by the sentence-snippet extractor
-     below — stay predictable). */
-  return corrected.replace(/[ \t]+/g, ' ');
-}
-
-/**
- * Drug mention resolver (Phase 1):
- * - text normalization (NFC + diacritic folding + punctuation simplification)
- * - aliases / abbreviations / frequent brand names
- * - slash combinations support
- *
- * Output shape for each mention:
- * {
- *   mention, canonical, drug_class,
- *   match_type: 'exact'|'alias'|'combo'|'normalized',
- *   confidence: 'high'|'medium'
- * }
- */
-function normalizeDrugText(text) {
-  var raw = (text || '');
-  if (raw.normalize) {
-    raw = raw.normalize('NFC').normalize('NFD').replace(/[̀-ͯ]/g, '');
-  }
-  return raw
-    .toLowerCase()
-    .replace(/[’'`´]/g, '')
-    .replace(/[‐-―]/g, '-')
-    .replace(/[\(\)\[\],;:]/g, ' ')
-    .replace(/\s*\/\s*/g, '/')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function buildDrugResolver() {
-  var resolver = {
-    byVariant: {},
-    variantPattern: null
-  };
-
-  var allCascades = [].concat(
-    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
-    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
-  );
-
-  var MANUAL_ALIASES = {
-    'azt': 'zidovudine',
-    'tdf': 'tenofovir disoproxil fumarate',
-    'dtg': 'dolutegravir',
-    /* 'biktarvy' is intentionally NOT mapped here as a single-drug alias —
-     * it is a fixed-dose combination handled by the combosByVariant logic
-     * below (kb/drug_combinations.json), which expands it to all three
-     * active ingredients instead of collapsing it to just bictegravir. */
-    'descovy': 'tenofovir disoproxil fumarate',
-    'truvada': 'tenofovir disoproxil fumarate',
-    'kaletra': 'lopinavir/ritonavir',
-    'prezista': 'darunavir',
-    'rezolsta': 'darunavir/cobicistat',
-    'symtuza': 'darunavir/cobicistat',
-    'evotaz': 'atazanavir/cobicistat',
-    'reyataz': 'atazanavir',
-    'norvir': 'ritonavir',
-    'isentress': 'raltegravir',
-    'tivicay': 'dolutegravir'
-  };
-
-  function addVariant(rawVariant, canonical, drugClass, matchType, confidence) {
-    var normVariant = normalizeDrugText(rawVariant);
-    if (!normVariant || normVariant.length < 2) return;
-
-    var current = resolver.byVariant[normVariant];
-    if (!current || (current.confidence !== 'high' && confidence === 'high')) {
-      resolver.byVariant[normVariant] = {
-        variant: rawVariant,
-        canonical: canonical,
-        drug_class: drugClass || '',
-        match_type: matchType,
-        confidence: confidence
-      };
-    }
-  }
-
-  allCascades.forEach(function (cascade) {
-    var idxClass = cascade.index_drug_class ||
-      (Array.isArray(cascade.index_drug_classes) ? cascade.index_drug_classes[0] : '') || '';
-    var casClass = cascade.cascade_drug_class || '';
-
-    getIndexExamples(cascade).forEach(function (drug) {
-      addVariant(drug, drug, idxClass, 'exact', 'high');
-      addVariant(drug.replace(/\//g, ' / '), drug, idxClass, 'combo', 'high');
-      drug.split('/').forEach(function (part) {
-        addVariant(part.trim(), drug, idxClass, 'combo', 'medium');
-      });
-    });
-
-    getCascadeExamples(cascade).forEach(function (drug) {
-      addVariant(drug, drug, casClass, 'exact', 'high');
-      addVariant(drug.replace(/\//g, ' / '), drug, casClass, 'combo', 'high');
-      drug.split('/').forEach(function (part) {
-        addVariant(part.trim(), drug, casClass, 'combo', 'medium');
-      });
-    });
-  });
-
-  Object.keys(MANUAL_ALIASES).forEach(function (alias) {
-    var canonical = MANUAL_ALIASES[alias];
-    var canonicalMeta = resolver.byVariant[normalizeDrugText(canonical)] || null;
-    addVariant(alias, canonical, canonicalMeta ? canonicalMeta.drug_class : '', 'alias', 'medium');
-  });
-
-  /* ── Drug dictionary (kb/drug_dictionary.json) ──────────────────────────
-   * Each entry declares a canonical English INN and a list of variants that
-   * should resolve to it: Spanish INNs (e.g. "amlodipino"), alternate
-   * spellings, and common brand names.  Normalisation is applied to every
-   * variant so that diacritics or mixed-case in free text still match.
-   * Entries are added at 'high' confidence so they take priority over the
-   * 'medium' combo-split matches produced from cascade examples above. */
-  var dictEntries = (state.kb.drugDictionary && state.kb.drugDictionary.entries) || [];
-  dictEntries.forEach(function (entry) {
-    if (!entry.canonical) return;
-    var drugClass = entry.drug_class || '';
-    /* Register the canonical name itself so it is always found */
-    addVariant(entry.canonical, entry.canonical, drugClass, 'dict', 'high');
-    /* Register each declared variant → canonical */
-    (entry.variants || []).forEach(function (variant) {
-      if (variant) addVariant(variant, entry.canonical, drugClass, 'dict', 'high');
-    });
-  });
-
-  /* ── Fixed-dose combination products (kb/drug_combinations.json) ────────
-   * A brand like "Biktarvy" or "Gibiter Easyhaler" mentions ONE surface
-   * form but denotes SEVERAL active ingredients. byVariant only supports a
-   * single canonical per variant string, so combo brand/aliases are kept in
-   * a separate lookup (combosByVariant) that resolveDrugMentions() checks
-   * FIRST; when a match is a combo, it is expanded into one mention per
-   * active ingredient (see resolveDrugMentions below) instead of collapsing
-   * to a single drug. The alias is still registered in byVariant too so it
-   * participates in the shared matching regex built below; that byVariant
-   * entry is never actually consulted for a combo alias because the combo
-   * lookup always wins first. */
-  resolver.combosByVariant = {};
-  var combos = (state.kb.drugCombinations && state.kb.drugCombinations.combinations) || [];
-  combos.forEach(function (combo) {
-    if (!combo.brand || !Array.isArray(combo.activeIngredients) || !combo.activeIngredients.length) return;
-    var aliases = [combo.brand].concat(combo.aliases || []);
-    aliases.forEach(function (alias) {
-      var normAlias = normalizeDrugText(alias);
-      if (!normAlias || normAlias.length < 2) return;
-      resolver.combosByVariant[normAlias] = combo;
-      addVariant(alias, combo.activeIngredients[0], '', 'combo_brand', 'high');
-    });
-  });
-
-  var escaped = Object.keys(resolver.byVariant)
-    .sort(function (a, b) { return b.length - a.length; })
-    .map(function (term) { return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
-
-  if (escaped.length) {
-    resolver.variantPattern = new RegExp('(^|[^a-z0-9])(' + escaped.join('|') + ')(?=[^a-z0-9]|$)', 'gi');
-  }
-
-  return resolver;
-}
+function invalidateDrugResolver() { state.drugResolver = null; }
+function invalidateDetectedCascades() { state.detectedCascades = null; state.caseModel = null; }
 
 function getDrugResolver() {
-  if (!state.drugResolver) {
-    state.drugResolver = buildDrugResolver();
-  }
+  if (!state.drugResolver) state.drugResolver = CE.buildDrugResolver(state.kb);
   return state.drugResolver;
 }
 
-function resolveDrugMentions(noteText) {
-  if (!noteText || !noteText.trim()) return [];
-
-  var resolver = getDrugResolver();
-  if (!resolver.variantPattern) return [];
-
-  /* Normalization: apply the same pipeline used when building the resolver
-   * (NFC + diacritic stripping + punctuation simplification + lowercase).
-   * This lets "Amlodipino" match the stored variant "amlodipino" without
-   * needing case-sensitive entries for every capitalisation variant. */
-  var normalized = normalizeDrugText(noteText);
-  var mentions = [];
-  var seen = {};
-  var match;
-
-  /* Dictionary matching: the compiled regex tests every known variant (from
-   * KB cascade examples, manual aliases, and drug_dictionary.json) against
-   * the normalised note in one pass.  Each match's captured group [2] is the
-   * exact variant string; byVariant maps it to the canonical English INN and
-   * therapeutic class. */
-  while ((match = resolver.variantPattern.exec(normalized)) !== null) {
-    var variant = (match[2] || '').trim();
-    if (!variant) continue;
-
-    /* Combination product (e.g. "Biktarvy", "Gibiter Easyhaler"): expand
-     * the single surface match into one mention per active ingredient, so
-     * downstream classification/cascade logic sees each ingredient exactly
-     * as if it had been prescribed individually — while every mention still
-     * carries `brand`/`brand_ingredients` so the UI can show the original
-     * trade name and preserve "Biktarvy → bictegravir/emtricitabina/
-     * tenofovir alafenamida" traceability. */
-    var combo = resolver.combosByVariant && resolver.combosByVariant[variant];
-    if (combo) {
-      combo.activeIngredients.forEach(function (ingredient) {
-        var normIngredient = normalizeDrugText(ingredient);
-        var dedupeKey = normIngredient + '::' + match.index;
-        if (seen[dedupeKey]) return;
-        seen[dedupeKey] = true;
-        var ingredientMeta = resolver.byVariant[normIngredient];
-        mentions.push({
-          mention: variant,
-          canonical: ingredient,
-          drug_class: (ingredientMeta && ingredientMeta.drug_class) || '',
-          match_type: 'combo_brand',
-          confidence: 'high',
-          start_index: match.index,
-          brand: combo.brand,
-          brand_ingredients: combo.activeIngredients,
-          brand_therapeutic_class: getLocalizedField(combo, 'therapeuticClass', currentLanguage)
-        });
-      });
-      continue;
-    }
-
-    var meta = resolver.byVariant[variant];
-    if (!meta) continue;
-
-    /* Deduplicate: same canonical at the same offset is only reported once. */
-    var dedupeKey2 = meta.canonical + '::' + match.index;
-    if (seen[dedupeKey2]) continue;
-    seen[dedupeKey2] = true;
-
-    mentions.push({
-      mention: variant,        /* surface form found in note */
-      canonical: meta.canonical, /* normalised generic INN passed to cascade engine */
-      drug_class: meta.drug_class || '',
-      match_type: meta.match_type || 'normalized',
-      confidence: meta.confidence || 'medium',
-      start_index: match.index
-    });
-  }
-
-  mentions.sort(function (a, b) { return a.start_index - b.start_index; });
-  return mentions;
-}
-
-/**
- * Backward-compatible boolean matcher used by existing logic.
- */
-function drugFoundInNote(noteText, drug) {
-  var target = normalizeDrugText(drug);
-  return resolveDrugMentions(noteText).some(function (m) {
-    return normalizeDrugText(m.canonical) === target;
-  });
-}
-
-/* ============================================================
-   NLP RELIABILITY LAYER — negation, temporality, context
-   ============================================================ */
-
-/**
- * Return the first match position for `term` in `noteText` using the same
- * word-boundary logic as drugFoundInNote(), but yielding {index, length}.
- * Returns null if not found.
- *
- * Handles slash-separated compound names (lopinavir/ritonavir).
- */
-function findTermInNote(noteText, term) {
-  /* Normalise both strings to NFC so that decomposed Unicode characters
-   * (NFD form — e.g. n + combining-tilde instead of ñ U+00F1, or
-   * i + combining-acute instead of í U+00ED) still match their composed
-   * equivalents stored in the KB.  macOS clipboard and some browsers can
-   * produce NFD text; the KB JSON is always stored as NFC. */
-  var normNote = (noteText && noteText.normalize) ? noteText.normalize('NFC') : (noteText || '');
-  var parts = term.split('/');
-  for (var p = 0; p < parts.length; p++) {
-    var part = parts[p].trim();
-    if (!part) continue;
-    var normPart = part.normalize ? part.normalize('NFC') : part;
-    try {
-      var escaped = normPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      var m = new RegExp('\\b' + escaped + '\\b', 'i').exec(normNote);
-      if (m) return { index: m.index, length: m[0].length };
-    } catch (e) {
-      var idx = normNote.toLowerCase().indexOf(normPart.toLowerCase());
-      if (idx !== -1) return { index: idx, length: normPart.length };
-    }
-  }
-  return null;
-}
-
-/**
- * Determine whether a symptom mention at `matchIndex`…`matchIndex+matchLength`
- * is negated, historical, or resolved — and should therefore NOT be counted
- * as an active symptom.
- *
- * Strategy: extract a token window of ≤6 tokens before and ≤3 tokens after
- * the match and pattern-match against curated negation/resolution lists.
- *
- * @param {string} noteText
- * @param {number} matchIndex  character offset of match start
- * @param {number} matchLength character length of matched term
- * @returns {{ negated: boolean, reason: string }}
- */
-function isNegatedSymptom(noteText, matchIndex, matchLength) {
-  /* ---- pre-window: up to 80 chars / 6 tokens before match ---- */
-  var preRaw  = noteText.slice(Math.max(0, matchIndex - 80), matchIndex);
-  var preTokens = preRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(-6);
-  var preStr  = preTokens.join(' ').toLowerCase();
-
-  /* ---- post-window: up to 60 chars / 3 tokens after match ---- */
-  var postRaw = noteText.slice(matchIndex + matchLength,
-                               Math.min(noteText.length, matchIndex + matchLength + 60));
-  var postTokens = postRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(0, 3);
-  var postStr = postTokens.join(' ').toLowerCase();
-
-  /* ---- negation cues appearing BEFORE the term ---- */
-  var negBefore = [
-    /* English */
-    /\bno\b/, /\bnot\b/, /\bdenies\b/, /\bdenied\b/, /\bwithout\b/,
-    /\bnegative\s+for\b/, /\bfree\s+of\b/, /\brule\s*out\b/, /\br\/o\b/,
-    /\bunlikely\b/, /\?/,
-    /* Spanish */
-    /\bniega\b/, /\bsin\b/, /\bdescarta\b/, /\bnegativo\s+para\b/, /\bnegativa\s+para\b/,
-    /\bausencia\s+de\b/, /\bno\s+presenta\b/, /\bno\s+refiere\b/, /\bno\s+hay\b/
-  ];
-  for (var i = 0; i < negBefore.length; i++) {
-    if (negBefore[i].test(preStr)) {
-      return { negated: true, reason: 'negated before: "' + preTokens.slice(-3).join(' ') + '"' };
-    }
-  }
-
-  /* ---- resolved / historical cues appearing BEFORE the term ---- */
-  var histBefore = [
-    /* English */
-    /\bresolved\b/, /\bimproved\b/, /\bprevious\b/, /\bhistory\s+of\b/,
-    /\bhx\s+of\b/, /\bh\/o\b/, /\bprior\b/, /\bpast\b/, /\bused\s+to\b/,
-    /\bformer(?:ly)?\b/, /\bold\b/,
-    /* Spanish */
-    /\bantecedentes\s+de\b/, /\bhistoria\s+de\b/, /\bap\s+de\b/,
-    /\bprevio\b/, /\bprevia\b/, /\bpreviamente\b/, /\ben\s+el\s+pasado\b/
-  ];
-  for (var j = 0; j < histBefore.length; j++) {
-    if (histBefore[j].test(preStr)) {
-      return { negated: true, reason: 'historical before: "' + preTokens.slice(-3).join(' ') + '"' };
-    }
-  }
-
-  /* ---- resolved / past cues appearing AFTER the term ---- */
-  var resolvedAfter = [
-    /* English */
-    /\bresolved\b/, /\bimproved\b/, /\bcleared\b/, /\bgone\b/, /\babated\b/,
-    /* Spanish */
-    /\bresuelto\b/, /\bresuelta\b/, /\bmejor[ií]a\b/, /\bmejorado\b/, /\bmejorada\b/,
-    /\bcontrolado\b/, /\bcontrolada\b/, /\bcede\b/, /\bdesaparece\b/
-  ];
-  for (var k = 0; k < resolvedAfter.length; k++) {
-    if (resolvedAfter[k].test(postStr)) {
-      return { negated: true,
-               reason: 'resolved after: "' + noteText.slice(matchIndex, matchIndex + matchLength) +
-                       ' ' + postTokens.slice(0, 2).join(' ') + '"' };
-    }
-  }
-
-  /* ---- bare "negative/negativo/negativa" result cues appearing AFTER the
-     term ---- Spanish clinical notes very commonly report a negative test
-     result *after* naming the test/finding ("Tira de orina: NEGATIVO",
-     "puñopercusión renal negativa"), rather than negating it beforehand.
-     The pre-window cues above only catch "negativo/negativa para X"; this
-     catches the equally common bare post-cue form. */
-  var negAfter = [
-    /* English */
-    /\bnegative\b/,
-    /* Spanish */
-    /\bnegativo\b/, /\bnegativa\b/, /\bnegativos\b/, /\bnegativas\b/
-  ];
-  for (var n = 0; n < negAfter.length; n++) {
-    if (negAfter[n].test(postStr)) {
-      return { negated: true,
-               reason: 'negative result after: "' + noteText.slice(matchIndex, matchIndex + matchLength) +
-                       ' ' + postTokens.slice(0, 2).join(' ') + '"' };
-    }
-  }
-
-  return { negated: false, reason: '' };
-}
-
-/**
- * Extract a readable, real (never synthesised) excerpt from `text` around a
- * match at [index, index+length): expands left to the previous sentence/
- * clause boundary (. , ; : or newline) and right to the next clause boundary
- * (. , ; or newline — deliberately NOT ':', so a leading label like "Tira de
- * orina:" doesn't get separated from its result). Used to build the
- * traceable evidence quotes shown for detected clinical problems — every
- * piece of evidence is a literal quote from the note, not a generated
- * description, so a clinician can always see exactly what triggered it.
- *
- * @param {string} text
- * @param {number} index
- * @param {number} length
- * @returns {string}
- */
-function extractSentenceSnippet(text, index, length) {
-  var start = index;
-  while (start > 0 && !/[.,;:\n]/.test(text.charAt(start - 1))) start--;
-  var end = index + length;
-  while (end < text.length && !/[.,;\n]/.test(text.charAt(end))) end++;
-  return text.slice(start, end).replace(/\s+/g, ' ').trim();
-}
-
-/**
- * Locate `term` in `normalizedText` (an accent/case-normalised copy of
- * `originalText` — see normalizeSymptomText(), which preserves character
- * offsets 1:1 with the original) and classify it as active or negated.
- * Returns null when the term is not present at all.
- *
- * @param {string} originalText    typo-corrected note, original case/accents
- * @param {string} normalizedText  normalizeSymptomText(originalText)
- * @param {string} term            lowercase, accent-free search term
- * @returns {{active: boolean, snippet: string}|null}
- */
-function findClinicalFinding(originalText, normalizedText, term) {
-  var pos = findTermInNote(normalizedText, term);
-  if (!pos) return null;
-  var neg = isNegatedSymptom(normalizedText, pos.index, pos.length);
-  return {
-    active: !neg.negated,
-    snippet: extractSentenceSnippet(originalText, pos.index, pos.length)
-  };
-}
-
-/**
- * Scan ±40 characters (≈ ±8 tokens) around `matchIndex` for temporal cues
- * that hint at whether a drug was recently started, a symptom is new, or a
- * treatment was recently added.  Also flags "chronic/long-term" patterns that
- * suggest the finding is pre-existing.
- *
- * Returns a plain object — never throws.
- *
- * @param {string} noteText
- * @param {number} matchIndex character offset of the term being evaluated
- * @returns {{ drugStartHint: boolean, symptomNewHint: boolean,
- *             treatmentAddedHint: boolean, chronicHint: boolean,
- *             details: string }}
- */
-function detectTimeCues(noteText, matchIndex) {
-  var R = 40; /* radius in characters */
-  var start = Math.max(0, matchIndex - R);
-  var end   = Math.min(noteText.length, matchIndex + R);
-  var ctx   = noteText.slice(start, end).toLowerCase();
-
-  return {
-    /* EN: started/initiated/… | ES: inicia/se inicia/se empezó/tras iniciar/… */
-    drugStartHint: (
-      /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx) ||
-      /\b(inicia|se\s+inicia|se\s+empez[oó]|tras\s+iniciar|al\s+iniciar|comienza|se\s+pauta)\b/.test(ctx)
-    ),
-    /* EN: since/after/worsened/new/… | ES: nuevo/reciente/empeora/presenta/aparece/desde hace */
-    symptomNewHint: (
-      /\b(since|after|worsened|new|recent|developed|onset|appearing|presenting\s+with|new[- ]onset)\b/.test(ctx) ||
-      /\b(nuevo|nueva|reciente|recientemente|empeora|presenta|aparece|desde\s+hace|de\s+nueva\s+aparici[oó]n)\b/.test(ctx)
-    ),
-    /* EN: added/given/prescribed/… | ES: se añade/se pauta/se prescribe/se inicia/a demanda/prn */
-    treatmentAddedHint: (
-      /\b(added|given|prescribed|initiated|started|commenced|prn\s+started|increased)\b/.test(ctx) ||
-      /\b(se\s+a[nñ]ade|se\s+pauta|se\s+prescribe|se\s+inicia|a\s+demanda|prn)\b/.test(ctx)
-    ),
-    /* EN: chronic/long-term/… | ES: crónico/de base/habitual/desde hace años/largo tiempo */
-    chronicHint: (
-      /\b(chronic|long[- ]term|longstanding|long\s+standing|baseline|ongoing|persistent|established|years|months|pre[- ]existing)\b/.test(ctx) ||
-      /\b(cr[oó]nic[oa]|de\s+base|habitual|desde\s+hace\s+a[nñ]os|de\s+a[nñ]os|largo\s+tiempo|de\s+larga\s+evoluci[oó]n)\b/.test(ctx)
-    ),
-    details: ctx.trim().slice(0, 80)
-  };
-}
-
-/**
- * Return the index drug examples for a cascade entry, handling both the
- * singular field name used in kb_core_cascades.json ("index_drug_examples")
- * and the plural form used in kb_vih_modifiers.json ("index_drugs_examples").
- */
-function getIndexExamples(cascade) {
-  return cascade.index_drug_examples || cascade.index_drugs_examples || [];
-}
-
-/**
- * Return the cascade drug examples for a cascade entry, handling both the
- * singular field name used in kb_core_cascades.json ("cascade_drug_examples")
- * and the plural form used in kb_vih_modifiers.json ("cascade_drugs_examples").
- */
-function getCascadeExamples(cascade) {
-  return cascade.cascade_drug_examples || cascade.cascade_drugs_examples || [];
-}
-
-/**
- * Scan `noteText` for clinical context terms defined in kb_clinical_modifiers.json.
- * Returns an array of matched modifier objects (augmented with the KB entry).
- *
- * @param {string} noteText
- * @returns {Array<Object>} Matched modifier entries from the KB
- */
-function detectClinicalContextModifiers(noteText) {
-  if (!noteText || !noteText.trim()) return [];
-  var modifiers = (state.kb.clinicalModifiers && state.kb.clinicalModifiers.clinical_modifiers) || [];
-  if (!modifiers.length) return [];
-
-  var normalizedNote = normalizeDrugText(noteText);
-  var matched = [];
-
-  modifiers.forEach(function (mod) {
-    var keywords = [];
-    if (mod.trigger_context) {
-      keywords = keywords.concat(mod.trigger_context.keywords_en || []);
-      keywords = keywords.concat(mod.trigger_context.keywords_es || []);
-    }
-    for (var ki = 0; ki < keywords.length; ki++) {
-      var kw = normalizeDrugText(keywords[ki]);
-      if (kw && normalizedNote.indexOf(kw) !== -1) {
-        matched.push(mod);
-        return; /* one match per modifier is enough */
-      }
-    }
-  });
-
-  return matched;
-}
-
-/**
- * Post-process detected cascade signals by applying clinical context modifiers.
- * For each active modifier:
- *   - Upgrades signal confidence by one level (low→medium, medium→high)
- *   - Appends a context message to clinical_hint / clinical_hint_es
- *
- * @param {Array} signals   Output of detectCascades (before modifier pass)
- * @param {Array} modifiers Output of detectClinicalContextModifiers
- * @returns {Array} Signals with updated confidence and appended context messages
- */
-function applyClinicalModifiers(signals, modifiers) {
-  if (!signals.length || !modifiers.length) return signals;
-
-  var CONFIDENCE_UPGRADE = { 'low': 'medium', 'medium': 'high', 'high': 'high' };
-
-  return signals.map(function (sig) {
-    var upgraded = Object.assign({}, sig);
-    var appendedEn = [];
-    var appendedEs = [];
-
-    modifiers.forEach(function (mod) {
-      if (!mod.effect || !mod.effect.priority_upgrade) return;
-
-      /* Upgrade confidence one level */
-      var current = (upgraded.confidence || 'low').toLowerCase();
-      upgraded.confidence = CONFIDENCE_UPGRADE[current] || current;
-
-      /* Collect context messages */
-      if (mod.message_en) appendedEn.push('[' + mod.name_en + '] ' + mod.message_en);
-      if (mod.message_es) appendedEs.push('[' + mod.name_es + '] ' + mod.message_es);
-
-      /* Tag which modifiers contributed */
-      if (!upgraded.clinical_modifiers) upgraded.clinical_modifiers = [];
-      upgraded.clinical_modifiers.push(mod.id);
-    });
-
-    if (appendedEn.length) {
-      upgraded.clinical_hint = (upgraded.clinical_hint ? upgraded.clinical_hint + ' | ' : '') + appendedEn.join(' | ');
-    }
-    if (appendedEs.length) {
-      upgraded.clinical_hint_es = (upgraded.clinical_hint_es ? upgraded.clinical_hint_es + ' | ' : '') + appendedEs.join(' | ');
-    }
-
-    return upgraded;
-  });
-}
-
-/**
- * Scan `noteText` against every loaded cascade entry (core + HIV modifiers).
- * A signal fires when at least one index_drug_example AND at least one
- * cascade_drug_example are both found in the note (case-insensitive whole-word
- * match via drugFoundInNote).
- *
- * Handles both KB field-name variants via getIndexExamples / getCascadeExamples.
- * Handles both confidence-field names: "confidence" (core) / "plausibility" (VIH).
- *
- * @param {string} noteText
- * @returns {Array<{
- *   cascade_id, cascade_name,
- *   index_drug, cascade_drug,
- *   confidence, risk_focus,
- *   ade_en, appropriateness,
- *   ddi_warning, clinical_hint
- * }>}
- */
-function detectCascades(noteText) {
-  if (!noteText || !noteText.trim()) return [];
-  noteText = normalizeClinicalText(noteText);
-
-  var mentions = resolveDrugMentions(noteText);
-  var mentionByCanonical = {};
-  mentions.forEach(function (m) {
-    var key = normalizeDrugText(m.canonical);
-    if (!mentionByCanonical[key]) mentionByCanonical[key] = [];
-    mentionByCanonical[key].push(m);
-  });
-
-  var allCascades = [].concat(
-    (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
-    (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
-  );
-
-  var detected = [];
-
-  allCascades.forEach(function (cascade) {
-    var indexExamples   = getIndexExamples(cascade);
-    var cascadeExamples = getCascadeExamples(cascade);
-
-    var foundIndex = null;
-    var foundIndexMeta = null;
-    indexExamples.some(function (d) {
-      var hit = mentionByCanonical[normalizeDrugText(d)];
-      if (hit && hit.length) {
-        foundIndex = d;
-        foundIndexMeta = hit[0];
-        return true;
-      }
-      return false;
-    });
-
-    var foundCascade = null;
-    var foundCascadeMeta = null;
-    cascadeExamples.some(function (d) {
-      var hit = mentionByCanonical[normalizeDrugText(d)];
-      if (hit && hit.length) {
-        foundCascade = d;
-        foundCascadeMeta = hit[0];
-        return true;
-      }
-      return false;
-    });
-
-    if (!foundIndex || !foundCascade) return;
-
-    detected.push({
-      cascade_id:    cascade.id,
-      cascade_name:  cascade.name_en || cascade.id,
-      cascade_name_es: cascade.name_es || '',
-      signal_type:   'drug_drug',
-      index_drug:    foundIndex,
-      cascade_drug:  foundCascade,
-      drug_resolution: {
-        index: foundIndexMeta,
-        cascade: foundCascadeMeta
-      },
-      confidence:    cascade.confidence || cascade.plausibility || 'low',
-      risk_focus:    cascade.risk_focus || [],
-      ade_en:        cascade.ade_en || '',
-      ade_es:        cascade.ade_es || '',
-      appropriateness: cascade.appropriateness || '',
-      ddi_warning:   cascade.ddi_warning_en || '',
-      ddi_warning_es: cascade.ddi_warning_es || '',
-      clinical_hint: cascade.clinical_note_en || cascade.recommended_first_action_en || '',
-      clinical_hint_es: cascade.clinical_note_es || cascade.recommended_first_action_es || ''
-    });
-  });
-
-  var allSignals = detected.concat(detectSymptomCascades(noteText, mentionByCanonical));
-
-  /* Post-process: apply clinical context modifiers (priority upgrade + messages) */
-  var activeModifiers = detectClinicalContextModifiers(noteText);
-  if (activeModifiers.length) {
-    allSignals = applyClinicalModifiers(allSignals, activeModifiers);
-  }
-
-  /* ── Deduplication: suppress near-duplicate signals ────────────────────
-   * After modifiers have been applied (so final confidence is known), remove
-   * signals that share the same (index_drug, cascade_drug) pair, keeping only
-   * the strongest one.  Suppressed IDs are stored on the winner for JSON export.
-   * ─────────────────────────────────────────────────────────────────────── */
-  allSignals = suppressDuplicateSignals(allSignals);
-
-  return allSignals;
-}
-
-/**
- * Symptom-bridge cascade detection.
- * Fires when ALL THREE of these are present in `noteText`:
- *   1. A drug listed in a symptom's caused_by_drug_examples
- *   2. The symptom itself (detected via state.symptomsDetected)
- *   3. A drug listed in the same symptom's treated_by_drug_examples
- *
- * Uses state.symptomsDetected if already populated (e.g. by Step 2);
- * otherwise runs extractSymptoms() so Step 4 works independently.
- *
- * @param {string} noteText
- * @returns {Array} Same signal shape as detectCascades()
- */
-function detectSymptomCascades(noteText, mentionByCanonical) {
-  if (!noteText || !noteText.trim()) return [];
-
-  var symEntries = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
-  if (!symEntries.length) return [];
-
-  /* Use cached results from Step 2, or run fresh if not yet populated.
-     Backward-compat: if saved state has old string-array format, re-extract. */
-  var detectedSymptoms = state.symptomsDetected.length
-    ? state.symptomsDetected
-    : extractSymptoms(noteText);
-  /* Migrate legacy format: array of strings → skip, just re-extract */
-  if (detectedSymptoms.length && typeof detectedSymptoms[0] === 'string') {
-    detectedSymptoms = extractSymptoms(noteText);
-  }
-
-  if (!detectedSymptoms.length) return [];
-
-  var signals = [];
-
-  var mentionMap = mentionByCanonical || {};
-
-  detectedSymptoms.forEach(function (ds) {
-    /* ── Gate 1: symptom must be contextually active ── */
-    if (ds.active === false) return;
-
-    var entry = symEntries.find(function (s) { return s.id === ds.id; });
-    if (!entry) return;
-
-    var causedBy  = entry.caused_by_drug_examples  || [];
-    var treatedBy = entry.treated_by_drug_examples || [];
-    if (!causedBy.length || !treatedBy.length) return;
-
-    /* Find cause and treatment drugs and their positions */
-    var foundCause = null; var causePos = null; var foundCauseMeta = null;
-    for (var ci = 0; ci < causedBy.length; ci++) {
-      var cKey = normalizeDrugText(causedBy[ci]);
-      var cHit = mentionMap[cKey];
-      if (cHit && cHit.length) {
-        foundCause = causedBy[ci];
-        foundCauseMeta = cHit[0];
-        causePos = { index: foundCauseMeta.start_index || 0, length: foundCauseMeta.mention.length };
-        break;
-      }
-      var cp = findTermInNote(noteText, causedBy[ci]);
-      if (cp) { foundCause = causedBy[ci]; causePos = cp; break; }
-    }
-    var foundTreatment = null; var treatPos = null; var foundTreatmentMeta = null;
-    for (var ti = 0; ti < treatedBy.length; ti++) {
-      var tKey = normalizeDrugText(treatedBy[ti]);
-      var tHit = mentionMap[tKey];
-      if (tHit && tHit.length) {
-        foundTreatment = treatedBy[ti];
-        foundTreatmentMeta = tHit[0];
-        treatPos = { index: foundTreatmentMeta.start_index || 0, length: foundTreatmentMeta.mention.length };
-        break;
-      }
-      var tp = findTermInNote(noteText, treatedBy[ti]);
-      if (tp) { foundTreatment = treatedBy[ti]; treatPos = tp; break; }
-    }
-    if (!foundCause || !foundTreatment) return;
-
-    /* ── Gate 2: temporality heuristics ── */
-    var symIdx   = typeof ds.startIndex === 'number' ? ds.startIndex : 0;
-    var timeSym   = detectTimeCues(noteText, symIdx);
-    var timeCause = detectTimeCues(noteText, causePos.index);
-    var timeTreat = detectTimeCues(noteText, treatPos.index);
-
-    /* Determine confidence adjustment */
-    var confidence = 'medium';
-    var rationaleLines = [];
-
-    /* Positive signals → upgrade */
-    var supportive = (timeCause.drugStartHint || timeCause.treatmentAddedHint) &&
-                     (timeSym.symptomNewHint  || timeTreat.treatmentAddedHint);
-    if (supportive) {
-      confidence = 'high';
-      rationaleLines.push('Supportive temporality: index drug started + new symptom/treatment noted.');
-    }
-
-    /* Chronic/pre-existing signal → downgrade */
-    var chronic = timeSym.chronicHint || timeTreat.chronicHint;
-    if (chronic) {
-      confidence = confidence === 'high' ? 'medium' : 'low';
-      rationaleLines.push('Possible pre-existing condition (chronic/long-term cue detected).');
-    }
-
-    /* Unknown temporality — leave as-is, note it */
-    if (!supportive && !chronic) {
-      rationaleLines.push('Temporality unknown; confidence not adjusted.');
-    }
-
-    /* Capitalise first letter of symptom term for display */
-    var symLabel = ds.term.charAt(0).toUpperCase() + ds.term.slice(1);
-
-    signals.push({
-      cascade_id:      ds.id + ':' + foundCause + ':' + foundTreatment,
-      cascade_name:    foundCause + ' \u2192 ' + symLabel + ' \u2192 ' + foundTreatment,
-      index_drug:      foundCause,
-      cascade_drug:    foundTreatment,
-      signal_type:     'symptom_bridge',
-      drug_resolution: { index: foundCauseMeta || null, cascade: foundTreatmentMeta || null },
-      confidence:      confidence,
-      risk_focus:      [ds.category],
-      ade_en:          ds.term,
-      appropriateness: '',
-      ddi_warning:     '',
-      clinical_hint:   entry.cascade_relevance || '',
-      /* Rationale for clinician transparency */
-      rationale: {
-        symptomActive:   true,
-        negationReason:  ds.reason || '',
-        timeHints: {
-          symptom:   timeSym,
-          causeDrug: timeCause,
-          treatDrug: timeTreat
-        },
-        explanation: rationaleLines.join(' ')
-      }
-    });
-  });
-
-  return signals;
-}
-
-/**
- * Cached wrapper around detectCascades().
- * Returns the cached result if the note hasn't changed; otherwise calls
- * detectCascades() and stores the result in state.detectedCascades.
- * Call invalidateDetectedCascades() to force a re-run.
- */
-function getDetectedCascades(noteText) {
-  if (!state.detectedCascades) {
-    state.detectedCascades = detectCascades(noteText);
-  }
-  return state.detectedCascades;
-}
-
-function invalidateDetectedCascades() {
-  state.detectedCascades = null;
-}
-
-function invalidateDrugResolver() {
-  state.drugResolver = null;
-}
-
-/**
- * Scan `noteText` for any drug name present in the KB (both index and cascade
- * drug examples across all loaded cascade entries).
- *
- * @param {string} noteText
- * @returns {string[]} Unique drug names found (in KB casing)
- */
-function extractDrugs(noteText) {
-  if (!noteText || !noteText.trim()) return [];
-  noteText = normalizeClinicalText(noteText);
-
-  var seen   = {};
-  var result = [];
-
-  resolveDrugMentions(noteText).forEach(function (mention) {
-    var canonical = mention.canonical;
-    var key = normalizeDrugText(canonical);
-    if (!seen[key]) {
-      seen[key] = true;
-      result.push(canonical);
-    }
-  });
-
+function resolveDrugMentions(noteText) { return CE.resolveDrugMentions(noteText, getDrugResolver()); }
+function drugFoundInNote(noteText, drug) { return CE.drugFoundInNote(noteText, drug, getDrugResolver()); }
+function extractDrugs(noteText) { return CE.extractDrugs(noteText, getDrugResolver()); }
+
+function extractSymptoms(noteText) {
+  var result = CE.extractSymptoms(noteText, state.kb);
+  state.symptomsDetected = result;
   return result;
 }
 
-/* ============================================================
-   SYMPTOM NORMALISATION LAYER
-   Converts free-text clinical expressions to canonical ADE labels
-   before cascade matching, improving recall for:
-     – accented / diacritic variants ("náuseas" → "nausea")
-     – Spanish synonyms ("estreñimiento" → "constipation")
-     – Any synonym listed in kb_symptoms.json
-   ============================================================ */
-
-/**
- * Normalise a symptom string for diacritic-insensitive matching:
- *  1. NFC-compose (consistent Unicode form before any operation)
- *  2. Lowercase (case-fold)
- *  3. NFD-decompose + strip all combining diacritical marks (U+0300–U+036F)
- *     so "náuseas" == "nauseas", "estreñimiento" ~ "estrenimiento".
- *  4. Collapse runs of whitespace (multi-word expressions stay intact).
- * Punctuation and word boundaries are preserved so \b regexes still work.
- *
- * @param {string} str
- * @returns {string}
- */
-function normalizeSymptomText(str) {
-  if (!str) return '';
-  /* Step 1-3: compose → lowercase → decompose → strip combining marks */
-  var s = str.normalize('NFC').toLowerCase().normalize('NFD')
-             .replace(/[\u0300-\u036f]/g, '');
-  /* Step 4: normalise internal whitespace */
-  return s.replace(/\s+/g, ' ').trim();
-}
-
-/**
- * Build a lookup map from every normalised synonym (and canonical term)
- * in the symptom dictionary to its canonical ADE label (sym.term).
- *
- * Used by extractSymptoms() to map any matched free-text expression
- * directly to the canonical label used in kb_core_cascades.json (ade_en).
- *
- * @param {Array} symptoms  Array of symptom entries from kb_symptoms.json
- * @returns {Object}  normalizedText → canonical term string
- */
-function buildSynonymMap(symptoms) {
-  var map = {};
-  (symptoms || []).forEach(function (sym) {
-    /* Include the canonical term itself plus all listed synonyms */
-    var allTerms = [sym.term].concat(sym.synonyms || []);
-    allTerms.forEach(function (t) {
-      var key = normalizeSymptomText(t);
-      /* First writer wins — canonical term registers itself first */
-      if (key && !map[key]) {
-        map[key] = sym.term; /* value is always the canonical ADE label */
-      }
-    });
-  });
-  return map;
-}
-
-/**
- * Scan `noteText` for symptom terms defined in kb_symptoms.json.
- * Uses the same drugFoundInNote() whole-word match as extractDrugs().
- * Each symptom's `term` and `synonyms` are all tested; the first match wins.
- *
- * Normalisation flow (new):
- *  1. A diacritic-stripped version of noteText is pre-computed once.
- *  2. A synonym → canonical label map is built from the KB at call time.
- *  3. For each symptom, matching is attempted on the original note first
- *     (preserving existing behaviour); if that fails, a second attempt is
- *     made against the normalised note using the normalised KB term —
- *     catching cases where the clinician omitted accents or used a variant
- *     Unicode form.
- *  4. The canonical ADE label (sym.term) is always stored in detected[].term
- *     so downstream cascade matching compares like-for-like labels.
- *
- * Results are also cached in state.symptomsDetected so other steps can
- * read them without re-running extraction.
- *
- * @param {string} noteText
- * @returns {Array<{id, term, matched_term, category, cascade_relevance}>}
- */
-function extractSymptoms(noteText) {
-  if (!noteText || !noteText.trim()) {
-    state.symptomsDetected = [];
-    return [];
-  }
-  noteText = normalizeClinicalText(noteText);
-
-  var symptoms = (state.kb.symptomDictionary && state.kb.symptomDictionary.symptoms) || [];
-
-  /* Pre-compute a diacritic-free lowercase copy of the note once for all
-   * symptom iterations (avoid repeated normalisation inside the loop). */
-  var normalizedNote = normalizeSymptomText(noteText);
-
-  /* Build synonym → canonical term map for ADE label resolution */
-  var synonymMap = buildSynonymMap(symptoms);
-
-  var detected = [];
-
-  symptoms.forEach(function (sym) {
-    var allTerms = [sym.term].concat(sym.synonyms || []);
-
-    /* Find the first matching term AND its position in the note.
-     * Pass 1: match against original noteText (backward-compatible path).
-     * Pass 2: if no match found, retry against the normalised note using the
-     *         normalised KB term — catches diacritic/casing mismatches. */
-    var matchResult = null;
-    var matchedTerm = null;
-    for (var ti = 0; ti < allTerms.length; ti++) {
-      /* Pass 1 — original text (preserves existing behaviour) */
-      var pos = findTermInNote(noteText, allTerms[ti]);
-      if (pos) { matchResult = pos; matchedTerm = allTerms[ti]; break; }
-
-      /* Pass 2 — normalised fallback (new: diacritic-insensitive) */
-      var normTerm = normalizeSymptomText(allTerms[ti]);
-      if (normTerm) {
-        var normPos = findTermInNote(normalizedNote, normTerm);
-        if (normPos) {
-          /* Record position relative to original note (offsets match because
-           * normalizeSymptomText only strips combining marks, not base chars,
-           * so character positions are preserved). */
-          matchResult = normPos;
-          matchedTerm = allTerms[ti]; /* keep original KB term for display */
-          break;
-        }
-      }
-    }
-    if (!matchResult) return; /* term not in note at all */
-
-    /* Negation / historical context check (always on original noteText) */
-    var negCheck = isNegatedSymptom(noteText, matchResult.index, matchResult.length);
-
-    /* Map matched expression → canonical ADE label via synonymMap.
-     * Falls back to sym.term (which is always correct) if not found. */
-    var canonicalTerm = synonymMap[normalizeSymptomText(matchedTerm)] || sym.term;
-
-    detected.push({
-      id:                sym.id,
-      term:              canonicalTerm,  /* canonical ADE label for cascade matching */
-      matched_term:      matchedTerm,    /* raw KB expression that triggered the match */
-      category:          sym.category          || '',
-      cascade_relevance: sym.cascade_relevance || '',
-      /* reliability fields */
-      active:            !negCheck.negated,
-      reason:            negCheck.reason,
-      startIndex:        matchResult.index
-    });
-  });
-
-  state.symptomsDetected = detected;
-  invalidateDetectedCascades();
-  return detected;
-}
-
-/* ============================================================
-   CLINICAL PROBLEM DETECTION
-   ============================================================
-   Rule-based detection of active/suspected CLINICAL PROBLEMS — distinct
-   from the ADE symptom dictionary above (kb_symptoms.json / extractSymptoms),
-   which only detects symptoms that bridge two drugs into a prescribing
-   cascade. A clinical problem here is a complaint + work-up pattern (e.g.
-   flank pain worked up with urine tests / imaging / an alpha-blocker) that
-   is clinically active on its own, independent of any cascade.
-
-   Design principles (see README/KB_REFERENCE for the app's broader ones):
-     - Every rule is a small, hand-curated, fully auditable pattern list —
-       no external services, no fuzzy/statistical inference.
-     - Every detected problem always carries the literal note text that
-       triggered it (`evidence`) and any negated findings it ruled out
-       (`negatedFindings`), so a clinician can see exactly why it fired.
-     - `certainty` is never 'confirmed' by this module — it only ever
-       proposes 'symptom' or 'suspected' signals for clinician review; it
-       never asserts a diagnosis.
-   ============================================================ */
-
-/**
- * Rule: urologic_renal_problem.
- *
- * "Anchor" findings (flank pain, renal colic, urolithiasis, haematuria,
- * urinary obstruction, stone passage) are, on their own, specific enough to
- * raise a 'symptom' level signal. "Support" findings (urine tests/imaging
- * ordered, positive dipstick/punch sign, other urinary symptoms) are too
- * nonspecific alone but raise the signal to 'suspected' when combined with
- * an anchor — or with each other, since e.g. "urocultivo + ecografía renal"
- * together already indicate an active urologic work-up.
- *
- * Tamsulosin is handled as pure CONTEXT (never a diagnosis trigger by
- * itself, per clinical-safety requirement): it only contributes a support
- * signal when at least one other urologic/renal element is already present
- * in the note. "Tamsulosina 400 mcg 1 comp/día" with nothing else urologic
- * in the note therefore produces NO problem at all.
- *
- * Every positive/negated match is resolved through findClinicalFinding(),
- * which in turn uses the shared isNegatedSymptom() reliability layer — so
- * "No sintomatología miccional", "Tira de orina: NEGATIVO" and
- * "puñopercusión renal negativa" are recorded as negated findings, never as
- * active evidence.
- *
- * @param {string} noteText  already typo-corrected clinical text
- * @returns {object|null}
- */
-function detectUrologicRenalProblem(noteText) {
-  if (!noteText || !noteText.trim()) return null;
-
-  var original = noteText;
-  var text = normalizeSymptomText(noteText); /* lowercase, accent-free, offsets preserved */
-
-  /* Anatomically-specific complaints — sufficient on their own for a
-     'symptom' level signal. */
-  var ANCHOR_TERMS = ['flanco', 'colico renal', 'litiasis', 'hematuria', 'obstruccion urinaria', 'expulsion de calculo'];
-
-  /* Corroborating context: tests/imaging ordered, or other urinary
-     symptoms. Individually nonspecific; raise certainty when combined with
-     an anchor or with each other. NOTE: "sistematico" is matched bare
-     (rather than requiring the full "sistemático de orina") because notes
-     routinely elide it, e.g. "solicitud de urocultivo y sistemático [de
-     orina] y ecografía abdominal". */
-  var SUPPORT_TERMS = [
-    'urocultivo', 'sistematico', 'ecografia abdominal', 'ecografia renal',
-    'disuria', 'polaquiuria', 'tenesmo', 'retencion urinaria', 'sintomatologia miccional'
-  ];
-
-  var evidence = [];
-  var negatedFindings = [];
-  var hasAnchor = false;
-  var supportCount = 0;
-
-  ANCHOR_TERMS.forEach(function (term) {
-    var f = findClinicalFinding(original, text, term);
-    if (!f) return;
-    if (f.active) { hasAnchor = true; evidence.push(f.snippet); }
-    else negatedFindings.push(f.snippet);
-  });
-
-  SUPPORT_TERMS.forEach(function (term) {
-    var f = findClinicalFinding(original, text, term);
-    if (!f) return;
-    if (f.active) { supportCount++; evidence.push(f.snippet); }
-    else negatedFindings.push(f.snippet);
-  });
-
-  /* Puñopercusión and "tira de orina" get the same active/negated handling,
-     kept separate only because they read best as their own labelled checks. */
-  var punopercusion = findClinicalFinding(original, text, 'punopercusion');
-  if (punopercusion) {
-    if (punopercusion.active) { supportCount++; evidence.push(punopercusion.snippet); }
-    else negatedFindings.push(punopercusion.snippet);
-  }
-
-  var tiraOrina = findClinicalFinding(original, text, 'tira de orina');
-  if (tiraOrina) {
-    if (tiraOrina.active) { supportCount++; evidence.push(tiraOrina.snippet); }
-    else negatedFindings.push(tiraOrina.snippet);
-  }
-
-  /* Tamsulosin: contextual signal ONLY — never sufficient by itself. */
-  if (drugFoundInNote(original, 'tamsulosin') && (hasAnchor || supportCount > 0)) {
-    supportCount++;
-    evidence.push(currentLanguage === 'es' ? 'tamsulosina prescrita' : 'tamsulosin prescribed');
-  }
-
-  if (!hasAnchor && supportCount === 0) return null; /* nothing urologic/renal at all */
-
-  var certainty = hasAnchor ? (supportCount > 0 ? 'suspected' : 'symptom') : 'suspected';
-
-  var problem = hasAnchor
-    ? (currentLanguage === 'es'
-        ? 'Dolor de flanco / problema urológico-renal en estudio'
-        : 'Flank pain / urologic-renal problem under study')
-    : (currentLanguage === 'es'
-        ? 'Problema urológico/renal en estudio'
-        : 'Urologic/renal problem under study');
-
-  /* De-duplicate: the same sentence can legitimately satisfy several
-     patterns at once (e.g. one sentence mentions urocultivo, sistemático
-     AND ecografía abdominal together) — show it once. */
-  function uniqueInOrder(arr) {
-    var seen = {};
-    return arr.filter(function (s) { return seen[s] ? false : (seen[s] = true); });
-  }
-
-  return {
-    id: 'CP_UROLOGIC_RENAL',
-    category: 'urologic_renal_problem',
-    category_label: currentLanguage === 'es' ? 'Urológico/Renal' : 'Urologic/Renal',
-    problem: problem,
-    certainty: certainty, /* 'symptom' | 'suspected' — this rule never confirms a diagnosis */
-    evidence: uniqueInOrder(evidence),
-    negatedFindings: uniqueInOrder(negatedFindings)
-  };
-}
-
-/**
- * Run all clinical-problem rules against `noteText` and return every
- * problem detected. Currently a single rule (urologic_renal_problem);
- * kept as an array so further rules (e.g. GI, cardiovascular) can be added
- * later without changing this function's contract.
- *
- * @param {string} noteText  raw clinical note — normalization is applied here
- * @returns {Array<object>}
- */
 function detectClinicalProblems(noteText) {
-  if (!noteText || !noteText.trim()) {
-    state.clinicalProblemsDetected = [];
-    return [];
-  }
-  var corrected = normalizeClinicalText(noteText);
-  var problems = [];
+  var result = CE.detectActiveProblems(noteText, state.kb, currentLanguage, getDrugResolver());
+  state.clinicalProblemsDetected = result;
+  return result;
+}
 
-  var urologic = detectUrologicRenalProblem(corrected);
-  if (urologic) problems.push(urologic);
-
-  state.clinicalProblemsDetected = problems;
-  return problems;
+function detectUrologicRenalProblem(noteText) {
+  return CE.detectUrologicRenalProblem(noteText, currentLanguage, getDrugResolver());
 }
 
 /**
  * Map an array of drug names to their canonical drug classes using the KB.
+ * Ported unchanged from the pre-audit implementation (two-pass priority:
+ * index-drug roles first, then cascade-drug roles fill in the rest) — see
+ * clinical-engine.js's getIndexExamples/getCascadeExamples for the field-
+ * name-variant handling this relies on.
  *
- * Two-pass priority: index-drug roles are resolved first (a drug acting as a
- * cascade trigger is labelled with its index class), then cascade-drug roles
- * fill in any drug not yet mapped.  This ensures, e.g., that amlodipine is
- * labelled "Calcium channel blocker" (its index role in CC004) rather than
- * the less specific "Antihypertensive" it receives as a cascade drug in CC001.
- *
- * Handles both KB field-name variants:
- *   index_drug_classes  (array)  — kb_core_cascades.json
- *   index_drug_class    (string) — kb_vih_modifiers.json
- *
- * @param {string[]} drugs  Output of extractDrugs()
- * @returns {Array<{drug: string, class: string}>} One entry per input drug
+ * @param {string[]} drugs
+ * @returns {Array<{drug: string, class: string}>}
  */
 function normalizeDrugs(drugs) {
   if (!drugs || !drugs.length) return [];
-
-  var drugToClass = {};   // key: drug.toLowerCase() → first canonical class string
-
+  var drugToClass = {};
   var allCascades = [].concat(
     (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
     (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
-  );
+  ).filter(function (c) { return c.status !== 'merged'; });
 
-  /* Pass 1 — index drugs get priority (causal / trigger role) */
   allCascades.forEach(function (cascade) {
-    /* index_drug_classes is an array in core cascades;
-       index_drug_class   is a string  in VIH modifiers  */
-    var idxArr = cascade.index_drug_classes ||
-                 (cascade.index_drug_class ? [cascade.index_drug_class] : []);
+    var idxArr = cascade.index_drug_classes || (cascade.index_drug_class ? [cascade.index_drug_class] : []);
     var idxClass = idxArr.length ? idxArr[0] : '';
-
-    getIndexExamples(cascade).forEach(function (drug) {
+    CE.getIndexExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClass[key] && idxClass) drugToClass[key] = idxClass;
     });
   });
-
-  /* Pass 2 — cascade drugs fill in anything not yet mapped */
   allCascades.forEach(function (cascade) {
     var casClass = cascade.cascade_drug_class || '';
-
-    getCascadeExamples(cascade).forEach(function (drug) {
+    CE.getCascadeExamples(cascade).forEach(function (drug) {
       var key = drug.toLowerCase();
       if (!drugToClass[key] && casClass) drugToClass[key] = casClass;
     });
   });
 
   return drugs.map(function (drug) {
-    return {
-      drug:  drug,
-      class: drugToClass[drug.toLowerCase()] || ''
-    };
+    return { drug: drug, class: drugToClass[drug.toLowerCase()] || '' };
   });
 }
 
-/**
- * Look up a full cascade entry by its ID across both loaded KB files.
- *
- * @param {string} cascadeId  e.g. "CC001" or "VIH001"
- * @returns {Object|null}
- */
-function findCascadeEntry(cascadeId) {
-  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
-  var vihCascades  = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
-  var all = [].concat(coreCascades, vihCascades);
-  for (var i = 0; i < all.length; i++) {
-    if (all[i].id === cascadeId) return all[i];
-  }
-  return null;
-}
+function findCascadeEntry(cascadeId) { return CE.findCascadeEntry(cascadeId, state.kb); }
+function findCascadeEntryForSignal(signal) { return CE.findCascadeEntryForSignal(signal, state.kb); }
 
 /**
- * Find the KB cascade entry for any signal type.
- * For drug_drug signals: exact ID lookup (existing behaviour).
- * For symptom_bridge signals: the cascade_id is a synthetic key
- * (e.g. "SYM001:pregabalin:furosemide") that won't match any KB entry
- * directly, so we search for an entry whose index_drug_examples contains
- * the signal's index_drug AND whose cascade_drug_examples contains the
- * signal's cascade_drug.
+ * Cached wrapper around ClinicalEngine.buildCaseModel() — the single
+ * source of truth for medications / activeProblems / clinicalMeasurements
+ * / possibleCascades / globalMedicationAlerts / missingInformation.
+ * Invalidated (state.caseModel = null) whenever the note or KB changes —
+ * see invalidateDetectedCascades(), called from every place that used to
+ * invalidate the old detectedCascades cache.
  */
-function findCascadeEntryForSignal(signal) {
-  if (signal.signal_type !== 'symptom_bridge') {
-    return findCascadeEntry(signal.cascade_id);
+function getCaseModel(noteText) {
+  if (!state.caseModel) {
+    state.caseModel = CE.buildCaseModel(noteText, state.kb, { lang: currentLanguage });
   }
-  var coreCascades = (state.kb.coreCascades && state.kb.coreCascades.cascades) || [];
-  var vihCascades  = (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || [];
-  var all = [].concat(coreCascades, vihCascades);
-  var normIndex   = normalizeDrugText(signal.index_drug);
-  var normCascade = normalizeDrugText(signal.cascade_drug);
-  for (var i = 0; i < all.length; i++) {
-    var kbEntry = all[i];
-    var idxMatch = getIndexExamples(kbEntry).some(function (d) {
-      return normalizeDrugText(d) === normIndex;
-    });
-    var casMatch = getCascadeExamples(kbEntry).some(function (d) {
-      return normalizeDrugText(d) === normCascade;
-    });
-    if (idxMatch && casMatch) return kbEntry;
-  }
-  return null;
+  return state.caseModel;
 }
 
+/** Back-compat name: Step 4/6 and the self-test call getDetectedCascades()
+ * expecting the flat signal array (possibleCascades). */
+function getDetectedCascades(noteText) {
+  return getCaseModel(noteText).possibleCascades;
+}
 /* ============================================================
    Step 5 — clinician classification handler
    Called via inline onclick: classifyCascade(id, value)
@@ -2828,7 +1692,19 @@ const STEP_CONTENT = {
         '</div>'
       );
 
-      var detected = getDetectedCascades(state.clinicalNote);
+      var model = getCaseModel(state.clinicalNote);
+      var detected = model.possibleCascades;
+
+      /* ── Otros hallazgos relevantes de la medicación (Fase 6) ──
+         Always shown, even with zero cascades — these are independent of
+         cascade detection (e.g. anticholinergic burden, NSAID duplicity). */
+      var globalAlertsHtml = (
+        '<div style="margin-top:1rem;">' +
+          '<h3 style="margin:0 0 .5rem;font-size:.93rem;color:#2c3e50;">' + tUI('section_global_alerts') + '</h3>' +
+          renderGlobalAlertsSection(model.globalMedicationAlerts) +
+        '</div>'
+      );
+      var missingInfoHtml = renderMissingInformationSection(model.missingInformation);
 
       if (detected.length === 0) {
         return (
@@ -2836,141 +1712,27 @@ const STEP_CONTENT = {
           '<div class="callout callout-success" style="margin-top:.75rem;">' +
             '<strong>' + tUI('no_cascades_title') + '</strong> ' +
             tUI('no_cascades_detail') +
-          '</div>'
+          '</div>' +
+          globalAlertsHtml + missingInfoHtml
         );
       }
 
-      /* --- Badge helpers ------------------------------------------ */
-      var confidenceBadge = function (conf) {
-        var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
-        var label = tUI('conf_' + conf) || conf;
+      /* Grouped by classification, most-actionable first — never a single
+         flat "7 cascades" list with no distinction between them. */
+      var groups = CLASSIFICATION_ORDER.map(function (level) {
+        return { level: level, items: detected.filter(function (c) { return c.classification === level; }) };
+      }).filter(function (g) { return g.items.length > 0; });
+
+      var groupsHtml = groups.map(function (g) {
         return (
-          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
-            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
-            'text-transform:uppercase;letter-spacing:.03em;">' +
-            escHtml(label) +
-          '</span>'
+          '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
+            'border:1px solid #e0e0e0;border-radius:5px;">' +
+            classificationBadgeHtml(g.level) +
+            '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', g.items.length) + '</strong>' +
+          '</div>' +
+          g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
         );
-      };
-
-      var appropriatenessBadge = function (val) {
-        if (!val) return '';
-        var label = val === 'often_inappropriate' ? tUI('appr_often_inappropriate')
-                  : val === 'often_appropriate'   ? tUI('appr_often_appropriate')
-                  : tUI('appr_context_dependent');
-        var color = val === 'often_inappropriate' ? '#c0392b'
-                  : val === 'often_appropriate'   ? '#1e8449'
-                  : '#7f8c8d';
-        return (
-          '<span style="font-size:.68rem;font-weight:600;color:' + color + ';' +
-            'border:1px solid ' + color + ';border-radius:3px;padding:.08rem .38rem;' +
-            'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
-            escHtml(label) +
-          '</span>'
-        );
-      };
-
-      /* --- Signal cards ------------------------------------------- */
-      var rows = detected.map(function (c) {
-        /* Resolve localized fields for display */
-        var displayName = (currentLanguage === 'es' && c.cascade_name_es)
-          ? c.cascade_name_es : c.cascade_name;
-        var adeDisplay = (currentLanguage === 'es' && c.ade_es)
-          ? c.ade_es : (c.ade_en || '');
-        var ddiDisplay = (currentLanguage === 'es' && c.ddi_warning_es)
-          ? c.ddi_warning_es : c.ddi_warning;
-        var hintDisplay = (currentLanguage === 'es' && c.clinical_hint_es)
-          ? c.clinical_hint_es : c.clinical_hint;
-
-        /* Cascade chain: index drug → [ADE] → cascade drug */
-        var chain = (
-          '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
-            'flex-wrap:wrap;gap:.2rem;">' +
-            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
-              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
-              escHtml(c.index_drug) +
-            '</span>' +
-            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
-            '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
-              'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' +
-              escHtml(adeDisplay || 'ADE') +
-            '</span>' +
-            '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
-            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
-              'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' +
-              escHtml(c.cascade_drug) +
-            '</span>' +
-          '</div>'
-        );
-
-        /* Risk focus chips */
-        var riskTags = c.risk_focus.length
-          ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;">' +
-              '<span style="font-size:.72rem;color:#888;">' + tUI('risk_label') + '</span>' +
-              c.risk_focus.map(function (r) {
-                return '<span style="font-size:.72rem;background:#f0f0f0;border-radius:3px;' +
-                  'padding:.08rem .38rem;color:#555;">' + escHtml(r) + '</span>';
-              }).join('') +
-            '</div>'
-          : '';
-
-        /* DDI warning — red alert box */
-        var ddiBox = ddiDisplay
-          ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;' +
-              'border-left:3px solid #e74c3c;padding:.35rem .65rem;background:#fdedec;' +
-              'border-radius:0 3px 3px 0;">' +
-              '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiDisplay) +
-            '</div>'
-          : '';
-
-        /* Clinical hint — blue note box */
-        var hintBox = hintDisplay
-          ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;' +
-              'border-left:3px solid #2980b9;padding:.35rem .65rem;background:#eaf4fb;' +
-              'border-radius:0 3px 3px 0;">' +
-              '<strong>' + tUI('clinical_action') + '</strong>&nbsp;' + escHtml(hintDisplay) +
-            '</div>'
-          : '';
-
-        /* Rationale box (symptom-bridge only) — grey/olive tint */
-        var rationaleBox = '';
-        if (c.rationale && c.rationale.explanation) {
-          rationaleBox = (
-            '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;' +
-              'border-left:3px solid #aab7b8;padding:.3rem .6rem;background:#f4f6f7;' +
-              'border-radius:0 3px 3px 0;">' +
-              '<strong>' + tUI('detection_reason') + '</strong>&nbsp;' +
-              escHtml(c.rationale.explanation) +
-            '</div>'
-          );
-        }
-
-        return (
-          '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-            'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
-
-            /* Header row: name + badges + ID */
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
-              'flex-wrap:wrap;gap:.4rem;">' +
-              '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
-                escHtml(displayName) +
-                confidenceBadge(c.confidence) +
-                appropriatenessBadge(c.appropriateness) +
-                (c.signal_type === 'symptom_bridge'
-                  ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;' +
-                      'border:1px solid #a569bd;border-radius:3px;padding:.08rem .38rem;' +
-                      'margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' + tUI('via_symptom') + '</span>'
-                  : '') +
-              '</span>' +
-              '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' +
-                escHtml(c.cascade_id) +
-              '</code>' +
-            '</div>' +
-
-            chain + riskTags + ddiBox + hintBox + rationaleBox +
-          '</div>'
-        );
-      });
+      }).join('');
 
       return (
         kbInfo +
@@ -2978,11 +1740,12 @@ const STEP_CONTENT = {
           '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
             tUI('cascade_count', detected.length) +
           '</h3>' +
-          rows.join('') +
+          groupsHtml +
         '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
           tUI('pharmacist_only_warning') +
-        '</div>'
+        '</div>' +
+        globalAlertsHtml + missingInfoHtml
       );
     }
   },
@@ -3208,138 +1971,32 @@ const STEP_CONTENT = {
         );
       }
 
-      /* ── Drug chips ── */
-      function chips(arr, bg, border, color) {
-        if (!arr.length) return '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>';
-        return arr.map(function (d) {
-          return (
-            '<span style="display:inline-block;background:' + bg + ';border:1px solid ' + border + ';' +
-              'border-radius:4px;padding:.18rem .55rem;font-size:.82rem;color:' + color + ';' +
-              'margin:.18rem .2rem .18rem 0;">' + escHtml(d) + '</span>'
-          );
-        }).join('');
-      }
-
-      /* ── Verification status badge ── */
-      function verBadge(status) {
-        var map = {
-          confirmed:   { bg: '#1e8449', fg: '#fff', label: tUI('ver_confirmed')   },
-          possible:    { bg: '#e67e22', fg: '#fff', label: tUI('ver_possible')     },
-          not_cascade: { bg: '#bdc3c7', fg: '#555', label: tUI('ver_not_cascade') },
-          unreviewed:  { bg: '#f0f0f0', fg: '#888', label: tUI('ver_unreviewed')  }
-        };
-        var s = map[status] || map.unreviewed;
-        return (
-          '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';' +
-            'border-radius:3px;padding:.1rem .42rem;white-space:nowrap;">' +
-            escHtml(s.label) + '</span>'
-        );
-      }
-
-      /* ── Clinical summary ── */
       var summary = r.clinical_summary || {
-        total_cascades: r.cascade_count,
-        plausible_cascades: 0,
-        high_priority_cascades: 0,
-        top_interventions: [],
-        validation_warning: tUI('validation_warning')
+        total_cascades: r.cascade_count, supported_cascades: 0, incomplete_cascades: 0,
+        top_interventions: [], validation_warning: tUI('validation_warning')
       };
 
-      function priorityBadge(priorityLevel) {
-        var map = {
-          alta:       { bg: '#b71c1c', fg: '#fff', label: tUI('prio_high')   },
-          intermedia: { bg: '#ef6c00', fg: '#fff', label: tUI('prio_medium') },
-          baja:       { bg: '#546e7a', fg: '#fff', label: tUI('prio_low')    }
-        };
-        var p = map[priorityLevel] || map.baja;
-        return '<span style="font-size:.74rem;font-weight:700;background:' + p.bg + ';color:' + p.fg + ';' +
-          'border-radius:4px;padding:.16rem .5rem;white-space:nowrap;">' + escHtml(p.label) + '</span>';
-      }
-
-      function confidenceBadge(conf) {
-        var label = tUI('conf_' + conf) || conf;
-        return '<span style="font-size:.74rem;font-weight:700;color:#fff;border-radius:4px;padding:.16rem .5rem;' +
-          'background:' + (conf === 'high' ? '#1e8449' : conf === 'medium' ? '#e67e22' : '#7f8c8d') + ';">' + escHtml(label) + '</span>';
-      }
-
+      /* ── Cascade findings, grouped by classification (never a flat, undifferentiated list) ── */
       var cascadeContent;
       if (r.cascades.length === 0) {
         cascadeContent = (
-          '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' +
-            tUI('no_cascades_report') +
-          '</p>'
+          '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' + tUI('no_cascades_report') + '</p>'
         );
       } else {
-        function sortForDisplay(items) {
-          return items.slice().sort(function (a, b) {
-            var byPriority = priorityRank(b.pharmacy_priority_level) - priorityRank(a.pharmacy_priority_level);
-            if (byPriority !== 0) return byPriority;
-            var aLevel = a.finding_level === 'plausible_cascade' ? 1 : 0;
-            var bLevel = b.finding_level === 'plausible_cascade' ? 1 : 0;
-            if (bLevel !== aLevel) return bLevel - aLevel;
-            return confidenceRank(b.confidence) - confidenceRank(a.confidence);
-          });
-        }
+        var groups = CLASSIFICATION_ORDER.map(function (level) {
+          return { level: level, items: r.cascades.filter(function (c) { return c.classification === level; }) };
+        }).filter(function (g) { return g.items.length > 0; });
 
-        function levelBadge(c) {
-          var map = {
-            plausible_cascade:  { bg: '#1e8449', fg: '#fff' },
-            preliminary_signal: { bg: '#7f8c8d', fg: '#fff' }
-          };
-          var s = map[c.finding_level] || map.preliminary_signal;
-          var label = c.finding_level === 'plausible_cascade' ? tUI('level_plausible_label') : tUI('level_preliminary_label');
-          return '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';border-radius:4px;padding:.14rem .45rem;">' + escHtml(label) + '</span>';
-        }
-
-        function renderCards(items) {
-          return items.map(function (c) {
-            var factorsInFavor  = (c.factors_in_favor  || []).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
-            var factorsToVerify = (c.factors_to_verify || []).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
-            var levelLabel = c.finding_level === 'plausible_cascade' ? tUI('level_plausible_label') : tUI('level_preliminary_label');
-            var prioLabel  = c.pharmacy_priority_level === 'alta' ? tUI('prio_high')
-                           : c.pharmacy_priority_level === 'intermedia' ? tUI('prio_medium') : tUI('prio_low');
-            return (
-              '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.9rem 1rem;margin:.75rem 0;background:#fff;">' +
-                '<div style="display:flex;justify-content:space-between;gap:.45rem;align-items:flex-start;flex-wrap:wrap;">' +
-                  '<div>' +
-                    '<div style="font-weight:700;color:#2c3e50;">' + escHtml(c.cascade_name) + '</div>' +
-                    '<div style="font-size:.75rem;color:#8a8a8a;margin-top:.2rem;">' + tUI('tech_id') + ' ' + escHtml(c.cascade_id) + '</div>' +
-                  '</div>' +
-                  '<div style="display:flex;gap:.35rem;flex-wrap:wrap;">' +
-                    levelBadge(c) + priorityBadge(c.pharmacy_priority_level) + confidenceBadge(c.confidence) + verBadge(c.verification_status) +
-                  '</div>' +
-                '</div>' +
-                '<div style="margin-top:.55rem;font-size:.83rem;"><strong>' + tUI('pharmacological_sequence') + '</strong> ' + escHtml(c.sequence) + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('finding_level_lbl') + '</strong> ' + escHtml(levelLabel) + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('pharmacy_priority_lbl') + '</strong> ' + escHtml(prioLabel) + '</div>' +
-                '<div style="margin-top:.35rem;font-size:.82rem;"><strong>' + tUI('what_supports') + '</strong> ' + escHtml(c.support_summary || '\u2014') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('what_missing') + '</strong> ' + escHtml(c.missing_summary || '\u2014') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;"><strong>' + tUI('level_assigned') + '</strong> ' + escHtml(c.level_reason || '\u2014') + '</div>' +
-                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>' + tUI('clinical_interpretation_lbl') + '</strong> ' + escHtml(c.clinical_interpretation || '\u2014') + '</div>' +
-                '<div style="margin-top:.4rem;font-size:.83rem;"><strong>' + tUI('trigger_signal') + '</strong> ' + escHtml(c.trigger_explanation || '\u2014') + '</div>' +
-                '<div style="margin-top:.45rem;font-size:.82rem;">' +
-                  '<strong>' + tUI('factors_in_favor') + '</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsInFavor + '</ul>' +
-                '</div>' +
-                '<div style="margin-top:.32rem;font-size:.82rem;">' +
-                  '<strong>' + tUI('factors_to_verify') + '</strong><ul style="margin:.28rem 0 .2rem 1rem;">' + factorsToVerify + '</ul>' +
-                '</div>' +
-                '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;"><strong>' + tUI('suggested_intervention_lbl') + '</strong> ' +
-                  escHtml(c.suggested_intervention || c.clinical_recommendation || '\u2014') + '</div>' +
-                '<div style="margin-top:.3rem;font-size:.82rem;color:#1f4f2a;"><strong>' + tUI('brief_recommendation_lbl') + '</strong> ' +
-                  escHtml(c.clinical_recommendation || c.suggested_intervention || '\u2014') + '</div>' +
-                '<div style="margin-top:.35rem;font-size:.8rem;color:#666;"><strong>' + tUI('certainty_gap_lbl') + '</strong> ' + escHtml(c.certainty_gap || '\u2014') + '</div>' +
-              '</div>'
-            );
-          }).join('');
-        }
-
-        var plausible = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; }));
-        var preliminary = sortForDisplay(r.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; }));
-        cascadeContent =
-          '<div style="margin-bottom:.8rem;padding:.45rem .6rem;background:#eaf7ef;border:1px solid #b7dfc3;border-radius:5px;"><strong>' + tUI('plausible_group', plausible.length) + '</strong></div>' +
-          (plausible.length ? renderCards(plausible) : '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_plausible') + '</p>') +
-          '<div style="margin:.9rem 0 .8rem;padding:.45rem .6rem;background:#f3f4f6;border:1px solid #d6d9dd;border-radius:5px;"><strong>' + tUI('preliminary_group', preliminary.length) + '</strong></div>' +
-          (preliminary.length ? renderCards(preliminary) : '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_preliminary') + '</p>');
+        cascadeContent = groups.map(function (g) {
+          return (
+            '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
+              'border:1px solid #e0e0e0;border-radius:5px;">' +
+              classificationBadgeHtml(g.level) +
+              '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', g.items.length) + '</strong>' +
+            '</div>' +
+            g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
+          );
+        }).join('');
       }
 
       var summaryInterventions = (summary.top_interventions || []).length
@@ -3347,6 +2004,7 @@ const STEP_CONTENT = {
             summary.top_interventions.map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('') +
           '</ul>'
         : '<p style="margin:.35rem 0 0;color:#6b7280;font-size:.82rem;">' + tUI('no_dominant_interventions') + '</p>';
+
       /* ── Export buttons ── */
       var exportRow = (
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
@@ -3399,12 +2057,7 @@ const STEP_CONTENT = {
           section(tUI('section_drugs', r.drugs_detected.length),
             (r.drugs_detected.length
               ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + r.drugs_detected.map(function (d) { return '<li>' + escHtml(d) + '</li>'; }).join('') + '</ul>'
-              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>') +
-            (r.diagnostics && r.diagnostics.inferredDrugsFromCascades
-              ? '<p style="margin:.4rem 0 0;font-size:.75rem;color:#7f8c8d;">' +
-                  tUI('inferred_drugs', r.diagnostics.inferredDrugCount) +
-                '</p>'
-              : '')
+              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>')
           ) +
 
           section(tUI('section_classes', r.drug_classes.length),
@@ -3416,8 +2069,7 @@ const STEP_CONTENT = {
           section(tUI('section_summary'),
             '<div style="font-size:.84rem;line-height:1.45;">' +
               '<div><strong>' + tUI('total_findings') + '</strong> ' + summary.total_cascades + '</div>' +
-              '<div><strong>' + tUI('label_plausible') + '</strong> ' + (summary.plausible_cascades || 0) + '</div>' +
-              '<div><strong>' + tUI('label_high_priority') + '</strong> ' + summary.high_priority_cascades + '</div>' +
+              '<div><strong>' + tUI('label_plausible') + '</strong> ' + (summary.supported_cascades || 0) + '</div>' +
               '<div style="margin-top:.4rem;"><strong>' + tUI('main_interventions') + '</strong></div>' +
               summaryInterventions +
               '<div class="callout callout-warning" style="margin-top:.5rem;font-size:.8rem;">&#9888;&nbsp;' + escHtml(summary.validation_warning) + '</div>' +
@@ -3425,6 +2077,10 @@ const STEP_CONTENT = {
           ) +
 
           section(tUI('section_findings', r.cascade_count), cascadeContent) +
+
+          section(tUI('section_global_alerts'), renderGlobalAlertsSection(r.globalMedicationAlerts)) +
+
+          renderMissingInformationSection(r.missingInformation) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
             tUI('decision_support_warning') +
@@ -3520,536 +2176,305 @@ function exportJSON() {
   }
 }
 
-/* ── reconcileDrugsWithCascades ────────────────────────────────────────────
- * Merges cascade index_drug / cascade_drug into the drugs array so that
- * drugs_detected can never be empty while cascades are shown.
- *
- * Why: extractDrugs() scans the note against KB example lists; the cascade
- * engine can match drugs via symptom-bridge or Spanish INN variants that
- * extractDrugs() misses.  This function is the single authoritative fix.
- *
- * Contract:
- *   - Returns a new string[] (original array not mutated).
- *   - Deduplication is case-insensitive; original casing is preserved.
- *   - Only index_drug and cascade_drug are used; ADE/symptom terms are never
- *     added (they live in detectedCascades[*].ade_en, not the drug fields).
- *   - detectedCascades entries with falsy drug fields are silently skipped.
- * ──────────────────────────────────────────────────────────────────────── */
-function reconcileDrugsWithCascades(drugs, detectedCascades) {
-  var result = drugs.slice();               /* copy — never mutate input */
-  var seen   = {};
-  result.forEach(function (d) { seen[d.toLowerCase()] = true; });
+function hasText(value) { return !!(value && String(value).trim()); }
+function confidenceRank(conf) { return CE.confidenceRank(conf); }
+function priorityRank(priority) { return CE.priorityRank(priority); }
 
-  (detectedCascades || []).forEach(function (c) {
-    [c.index_drug, c.cascade_drug].forEach(function (drug) {
-      if (!drug || typeof drug !== 'string') return;
-      var key = drug.trim().toLowerCase();
-      if (key && !seen[key]) {
-        result.push(drug.trim());
-        seen[key] = true;
-      }
-    });
-  });
+/* ============================================================
+   Shared cascade-signal card renderer
+   ------------------------------------------------------------
+   Used by BOTH Step 4 (preview, before clinician review) and Step 6
+   (final report) so the two screens can never again show inconsistent
+   or cross-contaminated content for the same signal — see kb/CHANGELOG.md
+   for the pre-audit defect this fixes (anticholinergic/CNS-depressant
+   burden text leaking into an unrelated cardiovascular cascade card).
 
-  return result;
+   Every recommendation shown here comes from EITHER:
+     (a) the cascade's OWN KB entry (recommended_action_es/en), or
+     (b) the signal's own classification_reason (why the system graded it
+         the way it did),
+   and NEVER from a patient-level or drug-burden alert — those are always
+   rendered separately via renderGlobalAlertsSection().
+   ============================================================ */
+
+var CLASSIFICATION_STYLE = {
+  supported_possible_cascade: { bg: '#1e8449', fg: '#fff' },
+  possible_but_incomplete:    { bg: '#e67e22', fg: '#fff' },
+  pharmacological_match_only: { bg: '#7f8c8d', fg: '#fff' },
+  not_evaluable:               { bg: '#95a5a6', fg: '#fff' },
+  discarded:                   { bg: '#bdc3c7', fg: '#555' }
+};
+
+/** Prudent, non-diagnostic Spanish/English label for each classification
+ * level — see tUI() keys classification_* in UI_STRINGS. Never uses the
+ * word "confirmada"/"confirmed" for anything the system itself proposed;
+ * that word is reserved for the clinician's own manual verdict
+ * (state.cascadeClassifications[id] === 'confirmed', set via Step 5). */
+function classificationLabel(classification) {
+  return tUI('classification_' + classification) || classification;
 }
 
-function confidenceRank(conf) {
-  return conf === 'high' ? 3 : conf === 'medium' ? 2 : 1;
+function classificationBadgeHtml(classification) {
+  var s = CLASSIFICATION_STYLE[classification] || CLASSIFICATION_STYLE.not_evaluable;
+  return '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';' +
+    'border-radius:4px;padding:.14rem .5rem;white-space:nowrap;">' + escHtml(classificationLabel(classification)) + '</span>';
 }
 
-function priorityRank(priority) {
-  return priority === 'alta' ? 3 : priority === 'intermedia' ? 2 : 1;
+function confidenceBadgeHtml(conf) {
+  var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
+  var label = tUI('conf_' + conf) || conf;
+  return '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
+    'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
+    'text-transform:uppercase;letter-spacing:.03em;">' + escHtml(label) + '</span>';
 }
 
-function hasText(value) {
-  return !!(value && String(value).trim());
-}
+/** Itemized, traceable evidence list: what's explicit, what's inferred,
+ * what's missing, and why — the Fase 5 "procedencia y trazabilidad"
+ * requirement. Every line maps directly to a field on c.evidence. */
+function buildEvidenceListHtml(c) {
+  var lang = currentLanguage;
+  var items = [];
+  var ev = c.evidence || {};
 
-/* ── Alternative-indication map ────────────────────────────────────────────
- * Each entry describes a well-established clinical condition that provides a
- * plausible independent (non-cascade) reason for the cascade drug to have been
- * prescribed.  Used by detectAlternativeIndication() to apply a conservative
- * confidence penalty when such a condition is mentioned in the clinical note.
- * ─────────────────────────────────────────────────────────────────────────── */
-var ALTERNATIVE_INDICATION_MAP = [
-  {
-    keywords_es: ['artrosis', 'osteoartritis', 'artritis crónica', 'dolor musculoesquelético', 'dolor crónico musculoesquelético', 'lumbalgia crónica', 'coxartrosis', 'gonartrosis'],
-    keywords_en: ['osteoarthritis', 'arthrosis', 'chronic arthritis', 'musculoskeletal pain', 'chronic musculoskeletal pain', 'chronic low back pain'],
-    cascade_drugs: ['ibuprofen', 'naproxen', 'naproxeno', 'celecoxib', 'diclofenac', 'diclofenaco', 'meloxicam', 'indometacin', 'indomethacin', 'ketorolac'],
-    reason_es: 'artrosis/dolor musculoesquelético crónico',
-    reason_en: 'osteoarthritis / chronic musculoskeletal pain'
-  },
-  {
-    keywords_es: ['reflujo gastroesofágico', 'erge', 'dispepsia', 'gastritis', 'úlcera péptica', 'pirosis crónica', 'esofagitis', 'reflujo previo'],
-    keywords_en: ['gerd', 'gastroesophageal reflux', 'dyspepsia', 'gastritis', 'peptic ulcer', 'chronic heartburn', 'esophagitis', 'prior reflux'],
-    cascade_drugs: ['omeprazole', 'omeprazol', 'esomeprazole', 'esomeprazol', 'pantoprazole', 'pantoprazol', 'lansoprazole', 'lansoprazol', 'rabeprazole', 'rabeprazol'],
-    reason_es: 'ERGE/dispepsia/gastritis previa',
-    reason_en: 'prior GERD / dyspepsia / gastritis'
-  },
-  {
-    keywords_es: ['hipertensión esencial', 'hta esencial', 'hta previa', 'hipertensión arterial crónica', 'hipertensión conocida', 'hipertensión arterial esencial', 'hta conocida'],
-    keywords_en: ['essential hypertension', 'prior hypertension', 'known hypertension', 'chronic hypertension', 'pre-existing hypertension'],
-    cascade_drugs: ['amlodipine', 'amlodipino', 'enalapril', 'lisinopril', 'losartan', 'losartán', 'valsartan', 'valsartán', 'ramipril', 'telmisartan', 'perindopril'],
-    reason_es: 'hipertensión arterial esencial previa',
-    reason_en: 'pre-existing essential hypertension'
-  },
-  {
-    keywords_es: ['parkinson', 'enfermedad de parkinson', 'enfermedad de parkinson conocida'],
-    keywords_en: ['parkinson', "parkinson's disease", 'parkinson disease', 'known parkinson'],
-    cascade_drugs: ['levodopa', 'carbidopa', 'ropinirole', 'ropinirol', 'pramipexole', 'pramipexol', 'rotigotine', 'rotigotina'],
-    reason_es: 'enfermedad de Parkinson conocida',
-    reason_en: 'known Parkinson disease'
-  },
-  {
-    keywords_es: ['diabetes mellitus', 'dm2', 'dm tipo 2', 'diabetes tipo 2', 'diabetes conocida', 'diabetes previa', 'diabetes mellitus tipo 2'],
-    keywords_en: ['diabetes mellitus', 'type 2 diabetes', 'known diabetes', 'pre-existing diabetes', 'diabetes mellitus type 2'],
-    cascade_drugs: ['metformin', 'metformina', 'sitagliptin', 'sitagliptina', 'empagliflozin', 'dapagliflozin', 'liraglutide', 'liraglutida', 'glipizide', 'glibenclamide', 'glibenclamida'],
-    reason_es: 'diabetes mellitus tipo 2 conocida',
-    reason_en: 'known type 2 diabetes mellitus'
-  }
-];
+  items.push(tUI('evidence_index_drug', c.index_drug));
+  items.push(tUI('evidence_cascade_drug', c.cascade_drug));
 
-/**
- * Check whether the clinical note contains a plausible independent diagnosis
- * that could explain why the cascade drug was prescribed, independently of
- * any adverse drug event from the index drug.
- *
- * Uses ALTERNATIVE_INDICATION_MAP: a conservative list of well-established
- * diagnosis→drug relationships.  Returns { found: true } only when the note
- * explicitly mentions a recognised diagnosis keyword for that drug.
- *
- * @param {string} noteText
- * @param {string} cascadeDrug  Canonical cascade drug name
- * @returns {{ found: boolean, reason: string }}
- */
-function detectAlternativeIndication(noteText, cascadeDrug) {
-  if (!hasText(noteText) || !hasText(cascadeDrug)) return { found: false, reason: '' };
-  var normNote    = normalizeDrugText(noteText);
-  var normCascade = normalizeDrugText(cascadeDrug);
-
-  for (var i = 0; i < ALTERNATIVE_INDICATION_MAP.length; i++) {
-    var entry = ALTERNATIVE_INDICATION_MAP[i];
-
-    /* Does the cascade drug match this indication entry? */
-    var drugMatch = entry.cascade_drugs.some(function (d) {
-      return normalizeDrugText(d) === normCascade;
-    });
-    if (!drugMatch) continue;
-
-    /* Does the note explicitly mention the independent diagnosis? */
-    var allKeywords = (entry.keywords_es || []).concat(entry.keywords_en || []);
-    for (var ki = 0; ki < allKeywords.length; ki++) {
-      var kw = normalizeDrugText(allKeywords[ki]);
-      if (kw && normNote.indexOf(kw) !== -1) {
-        var reason = currentLanguage === 'es' ? entry.reason_es : entry.reason_en;
-        return { found: true, reason: reason };
-      }
-    }
-  }
-  return { found: false, reason: '' };
-}
-
-/**
- * Deduplication / overlap suppression layer.
- *
- * After all cascade signals (drug_drug + symptom_bridge) have been collected,
- * group them by their core pharmacological pair:
- *   key = normalized(index_drug) + '|' + normalized(cascade_drug)
- *
- * Within each group, keep only the BEST signal and suppress the others.
- * Selection preference (in order):
- *   1. Higher confidence rank (high > medium > low)
- *   2. More specific signal type (symptom_bridge > drug_drug)
- *   3. Classic ('often_inappropriate') over context-dependent
- *
- * Suppressed signal IDs are stored on the winner as suppressed_duplicates[]
- * for transparency in JSON export; they are not shown in the UI.
- *
- * @param {Array} signals
- * @returns {Array}
- */
-function suppressDuplicateSignals(signals) {
-  if (!signals || signals.length < 2) return signals;
-
-  /* Build groups keyed by (normalized index_drug | normalized cascade_drug) */
-  var groups = {};
-  signals.forEach(function (sig) {
-    var key = normalizeDrugText(sig.index_drug || '') + '|' + normalizeDrugText(sig.cascade_drug || '');
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sig);
-  });
-
-  var result = [];
-  Object.keys(groups).forEach(function (key) {
-    var group = groups[key];
-    if (group.length === 1) {
-      result.push(group[0]);
-      return;
-    }
-
-    /* Sort by preference: confidence → signal type → appropriateness */
-    group.sort(function (a, b) {
-      /* 1. Higher confidence wins */
-      var confDiff = confidenceRank(b.confidence) - confidenceRank(a.confidence);
-      if (confDiff !== 0) return confDiff;
-
-      /* 2. symptom_bridge is more specific than drug_drug */
-      var aSpec = a.signal_type === 'symptom_bridge' ? 1 : 0;
-      var bSpec = b.signal_type === 'symptom_bridge' ? 1 : 0;
-      if (bSpec !== aSpec) return bSpec - aSpec;
-
-      /* 3. 'often_inappropriate' (classic) beats context-dependent */
-      var aClassic = a.appropriateness === 'often_inappropriate' ? 1 : 0;
-      var bClassic = b.appropriateness === 'often_inappropriate' ? 1 : 0;
-      return bClassic - aClassic;
-    });
-
-    var winner = group[0];
-    /* Attach suppressed IDs to winner for JSON-export transparency */
-    winner.suppressed_duplicates = group.slice(1).map(function (s) { return s.cascade_id; });
-
-    result.push(winner);
-  });
-
-  return result;
-}
-
-function isNonspecificSymptom(symptomTerm) {
-  if (!hasText(symptomTerm)) return false;
-  var nonspecific = ['dizziness', 'nausea', 'insomnia'];
-  return nonspecific.indexOf(String(symptomTerm).trim().toLowerCase()) !== -1;
-}
-
-function detectDrugPairTemporality(noteText, signal) {
-  if (!hasText(noteText) || !signal) {
-    return { status: 'unknown', detail: tUI('temporality_no_data') };
-  }
-
-  var idxPos = signal.index_drug ? findTermInNote(noteText, signal.index_drug) : null;
-  var casPos = signal.cascade_drug ? findTermInNote(noteText, signal.cascade_drug) : null;
-  if (!idxPos && !casPos) {
-    return { status: 'unknown', detail: tUI('temporality_no_data') };
-  }
-
-  var idxCue = idxPos ? detectTimeCues(noteText, idxPos.index) : {};
-  var casCue = casPos ? detectTimeCues(noteText, casPos.index) : {};
-  var supportive = !!(idxCue.drugStartHint || casCue.treatmentAddedHint || idxCue.treatmentAddedHint);
-  var chronic = !!(idxCue.chronicHint || casCue.chronicHint);
-
-  if (supportive) return { status: 'supportive', detail: tUI('temporality_supportive') };
-  if (chronic)    return { status: 'weak',        detail: tUI('temporality_weak')       };
-  return            { status: 'unknown',           detail: tUI('temporality_unknown')   };
-}
-
-function buildEvidenceProfile(signal, recommendationText, noteText) {
-  var supports = [];
-  var missing = [];
-  var temporality = detectDrugPairTemporality(noteText, signal);
-  var symptomMatch = false;
-  var explicitKbIntervention = hasText(recommendationText) || signal.appropriateness === 'often_inappropriate';
-  var explicitEvidence = hasText(signal.ddi_warning);
-
-  if (signal.signal_type === 'symptom_bridge') {
-    supports.push(tUI('symptom_detected'));
-  } else {
-    var matchedSymptoms = (state.symptomsDetected || []).filter(function (s) {
-      /* Use normalizeSymptomText() so diacritic variants and mixed-case ADE
-       * labels compare equal (e.g. "Oedema" === "oedema", "náuseas" === "nauseas"). */
-      return hasText(signal.ade_en) && s && hasText(s.term) &&
-             normalizeSymptomText(s.term) === normalizeSymptomText(signal.ade_en);
-    });
-    symptomMatch = matchedSymptoms.length > 0;
-    if (symptomMatch) supports.push(tUI('ade_detected', signal.ade_en));
-  }
-
-  if (temporality.status === 'supportive') supports.push(temporality.detail);
-  else missing.push(temporality.detail);
-
-  if (explicitKbIntervention) supports.push(tUI('kb_has_recommendation'));
-  if (explicitEvidence)       supports.push(tUI('explicit_kb_evidence'));
-
-  var noteDrivenSupport = symptomMatch || temporality.status === 'supportive' || explicitEvidence;
-  var hasClinicalSupport = signal.signal_type === 'symptom_bridge' || noteDrivenSupport;
-  if (signal.signal_type === 'drug_drug' && !hasClinicalSupport) {
-    missing.push(tUI('missing_clinical_support'));
-  }
-
-  /* ── Alternative-indication detection ──────────────────────────────────
-   * Check whether the note contains a plausible independent diagnosis that
-   * could explain the cascade drug without a prescribing cascade.
-   * Conservative: only fires when a well-known diagnosis keyword is present.
-   * When found, adds an explicit "Qué falta" item so clinicians see the caveat.
-   * ─────────────────────────────────────────────────────────────────────── */
-  var altIndication = detectAlternativeIndication(noteText, signal.cascade_drug);
-  if (altIndication.found) {
-    missing.push(tUI('alt_indication_note', altIndication.reason));
-  }
-
-  /* ── HIV modifier-only down-weighting ──────────────────────────────────
-   * A signal is "HIV-modifier-only" if it was upgraded by an HIV clinical
-   * context modifier but has NO direct ADE or symptom evidence in the note.
-   * These signals should not strongly outscore direct drug→ADE→drug patterns,
-   * so we flag them here and apply a scoring penalty in derivePharmacyPriority.
-   * ─────────────────────────────────────────────────────────────────────── */
-  var hivModifierOnly = !!(
-    signal.clinical_modifiers && signal.clinical_modifiers.length > 0 &&
-    signal.signal_type === 'drug_drug' &&
-    !symptomMatch && !explicitEvidence
-  );
-  if (hivModifierOnly) {
-    missing.push(tUI('hiv_modifier_only_note'));
-  }
-
-  var isPreliminary = signal.signal_type === 'drug_drug' && !hasClinicalSupport;
-  return {
-    level:       isPreliminary ? 'preliminary_signal' : 'plausible_cascade',
-    label:       isPreliminary ? tUI('level_preliminary_label') : tUI('level_plausible_label'),
-    levelReason: isPreliminary ? tUI('level_preliminary_reason') : tUI('level_plausible_reason'),
-    supports: supports,
-    missing: missing,
-    hasClinicalSupport: hasClinicalSupport,
-    temporality: temporality,
-    altIndicationPenalty: altIndication.found,   /* used by derivePharmacyPriority */
-    hivModifierOnly: hivModifierOnly             /* used by derivePharmacyPriority */
-  };
-}
-
-function derivePharmacyPriority(signal, recommendationText, evidence) {
-  var score = 0;
-  var reasons = [];
-
-  var confScore = confidenceRank(signal.confidence);
-  score += confScore;
-  reasons.push(tUI('prio_reason_probability', signal.confidence || 'low'));
-
-  var specificityScore = signal.signal_type === 'symptom_bridge' ? 2 : 1;
-  if (signal.signal_type === 'drug_drug' && hasText(signal.ade_en)) specificityScore += 1;
-  score += specificityScore;
-  reasons.push(
-    signal.signal_type === 'symptom_bridge'
-      ? tUI('prio_reason_symptom_bridge')
-      : tUI('prio_reason_pharmacological')
-  );
-
-  var hasClearIntervention = !!(recommendationText && recommendationText.trim()) ||
-    signal.appropriateness === 'often_inappropriate';
-  if (hasClearIntervention) {
-    score += 1;
-    reasons.push(tUI('prio_reason_actionable'));
-  } else {
-    reasons.push(tUI('prio_reason_less_defined'));
-  }
-
-  if (evidence) {
-    if (!evidence.hasClinicalSupport) {
-      score -= 2;
-      reasons.push(tUI('prio_reason_no_clinical'));
-    }
-    if (evidence.temporality.status === 'supportive') {
-      score += 1;
-      reasons.push(tUI('prio_reason_temp_good'));
-    } else if (evidence.temporality.status === 'weak') {
-      score -= 1;
-      reasons.push(tUI('prio_reason_temp_weak'));
+  if (ev.intermediate_problem) {
+    var ip = ev.intermediate_problem;
+    if (!ip.checked) {
+      items.push(tUI('evidence_problem_unverifiable'));
+    } else if (ip.status === 'none') {
+      items.push(tUI('evidence_problem_not_mentioned'));
     } else {
-      score -= 1;
-      reasons.push(tUI('prio_reason_no_temporal'));
+      var statusLabel = tUI('problem_status_' + ip.status) || ip.status;
+      items.push(tUI('evidence_problem_status', statusLabel, ip.evidence_span || ''));
     }
+    if (ip.diagnostic_note_es && lang === 'es') items.push(ip.diagnostic_note_es);
+    if (ip.diagnostic_note_en && lang === 'en') items.push(ip.diagnostic_note_en);
   }
 
-  var hasAdditionalSupport = !!(
-    evidence && evidence.temporality && evidence.temporality.status === 'supportive'
-  ) || signal.confidence === 'high';
-
-  if (signal.signal_type === 'symptom_bridge' && isNonspecificSymptom(signal.ade_en) && !hasAdditionalSupport) {
-    score -= 1;
-    reasons.push(tUI('prio_reason_nonspecific'));
+  if (ev.measurement_discordance && ev.measurement_discordance.applicable) {
+    items.push(ev.measurement_discordance.discordant
+      ? tUI('evidence_measurement_discordant')
+      : tUI('evidence_measurement_supportive'));
   }
 
-  /* ── Alternative-indication penalty ────────────────────────────────────
-   * If the note contains a plausible independent diagnosis that could explain
-   * the cascade drug on its own, reduce the score by 1.  This prevents the
-   * signal from being over-called when the cascade drug likely has a primary
-   * non-cascade indication.  Applied conservatively (-1 only).
-   * ─────────────────────────────────────────────────────────────────────── */
-  if (evidence && evidence.altIndicationPenalty) {
-    score -= 1;
-    reasons.push(tUI('prio_reason_alt_indication'));
+  if (ev.temporal_order) {
+    items.push(tUI('evidence_temporality_' + (ev.temporal_order.status || 'unknown')));
   }
 
-  /* ── HIV modifier-only down-weighting ──────────────────────────────────
-   * Signals driven mainly by an HIV clinical context modifier but lacking
-   * direct ADE evidence in the note should not outscore direct drug→ADE→drug
-   * patterns.  Apply a modest penalty (-1) to keep them correctly ranked.
-   * ─────────────────────────────────────────────────────────────────────── */
-  if (evidence && evidence.hivModifierOnly) {
-    score -= 1;
-    reasons.push(tUI('prio_reason_hiv_modifier_only'));
+  if (ev.alternative_indication && ev.alternative_indication.found) {
+    var reason = lang === 'es' ? ev.alternative_indication.reason_es : ev.alternative_indication.reason_en;
+    items.push(tUI('evidence_alt_indication', reason));
   }
 
-  if (score >= 6) return { level: 'alta',       label: tUI('prio_high'),   score: score, reasons: reasons };
-  if (score >= 4) return { level: 'intermedia',  label: tUI('prio_medium'), score: score, reasons: reasons };
-  return             { level: 'baja',            label: tUI('prio_low'),    score: score, reasons: reasons };
-}
-
-function buildVerificationItems(signal) {
-  var items = [
-    tUI('verif_chronology'),
-    tUI('verif_indication'),
-    tUI('verif_evolution')
-  ];
-
-  if (signal.signal_type === 'symptom_bridge') {
-    items.push(tUI('verif_symptom_active'));
-  }
-
-  if (!signal.ade_en) {
-    items.push(tUI('verif_no_ade'));
+  if (c.merged_from && c.merged_from.length) {
+    items.push(tUI('evidence_merged_rule', c.merged_from.map(function (m) { return m.id; }).join(', ')));
   }
 
   return items;
 }
 
-function buildSignalExplanation(signal) {
-  if (signal.signal_type === 'symptom_bridge') {
-    var temporal = signal.rationale && signal.rationale.explanation
-      ? ' ' + signal.rationale.explanation
-      : tUI('signal_bridge_incomplete');
-    return tUI('signal_bridge_base') + temporal;
-  }
+/**
+ * Render one cascade-signal card as an HTML string. Shared by Step 4 and
+ * Step 6 — see module comment above.
+ * @param {object} c  a possibleCascades[] entry from ClinicalEngine.buildCaseModel()
+ * @param {object} [opts]
+ * @param {boolean} [opts.showClassifyButtons=false]  Step 4 preview omits
+ *   the clinician verdict buttons (that is Step 5's job); Step 6's report
+ *   shows the clinician's already-recorded verdict as a badge, read-only.
+ */
+function renderCascadeCardHtml(c, opts) {
+  opts = opts || {};
+  var lang = currentLanguage;
+  var displayName = (lang === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name;
+  var adeDisplay = (lang === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
+  var ddiDisplay = (lang === 'es' && c.ddi_warning_es) ? c.ddi_warning_es : c.ddi_warning;
+  var recDisplay = (lang === 'es' ? c.recommended_action_es : c.recommended_action_en) || '';
+  var reasonDisplay = (lang === 'es' ? c.classification_reason_es : c.classification_reason_en) || '';
+  var manualVerdict = state.cascadeClassifications[c.cascade_id];
 
-  return tUI('signal_drug_drug');
+  var chain = (
+    '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
+      'flex-wrap:wrap;gap:.2rem;">' +
+      '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
+        'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' + escHtml(c.index_drug) + '</span>' +
+      '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+      '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
+        'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' + escHtml(adeDisplay || tUI('seq_potential_ade')) + '</span>' +
+      '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
+      '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
+        'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' + escHtml(c.cascade_drug) + '</span>' +
+    '</div>'
+  );
+
+  var ddiBox = ddiDisplay
+    ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;border-left:3px solid #e74c3c;' +
+        'padding:.35rem .65rem;background:#fdedec;border-radius:0 3px 3px 0;">' +
+        '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiDisplay) + '</div>'
+    : '';
+
+  var recBox = recDisplay
+    ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;border-left:3px solid #2980b9;' +
+        'padding:.35rem .65rem;background:#eaf4fb;border-radius:0 3px 3px 0;">' +
+        '<strong>' + tUI('clinical_action') + '</strong>&nbsp;' + escHtml(recDisplay) + '</div>'
+    : '';
+
+  var reasonBox = (
+    '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;border-left:3px solid #aab7b8;' +
+      'padding:.3rem .6rem;background:#f4f6f7;border-radius:0 3px 3px 0;">' +
+      '<strong>' + tUI('classification_reason_lbl') + '</strong>&nbsp;' + escHtml(reasonDisplay) + '</div>'
+  );
+
+  var evidenceItems = buildEvidenceListHtml(c).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
+  var evidenceBox = (
+    '<details style="margin-top:.5rem;font-size:.79rem;color:#444;">' +
+      '<summary style="cursor:pointer;color:#2980b9;">' + tUI('evidence_details_toggle') + '</summary>' +
+      '<ul style="margin:.35rem 0 0 1.1rem;">' + evidenceItems + '</ul>' +
+    '</details>'
+  );
+
+  var manualBadge = manualVerdict
+    ? '<span style="font-size:.68rem;font-weight:600;color:#2c3e50;border:1px solid #bbb;' +
+        'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
+        (manualVerdict === 'confirmed' ? tUI('ver_confirmed')
+          : manualVerdict === 'possible' ? tUI('ver_possible')
+          : tUI('classification_manual_discarded')) +
+      '</span>'
+    : '';
+
+  return (
+    '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
+      'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">' +
+        '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
+          escHtml(displayName) + confidenceBadgeHtml(c.confidence) +
+          (c.signal_type === 'symptom_bridge'
+            ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;border:1px solid #a569bd;' +
+                'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
+                tUI('via_symptom') + '</span>'
+            : '') +
+          manualBadge +
+        '</span>' +
+        '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' + escHtml(c.cascade_id) + '</code>' +
+      '</div>' +
+      '<div style="margin-top:.4rem;">' + classificationBadgeHtml(c.classification) + '</div>' +
+      chain + ddiBox + recBox + reasonBox + evidenceBox +
+    '</div>'
+  );
 }
 
-function buildClinicalInterpretation(signal, entry) {
-  /* Use currentLanguage to pick the preferred field, fall back to English */
-  var clinNote  = entry ? getLocalizedField(entry, 'clinical_note', currentLanguage) : '';
-  var recAction = entry ? getLocalizedField(entry, 'recommended_first_action', currentLanguage) : '';
-  if (clinNote)  return clinNote;
-  if (recAction) return recAction;
-  if (signal.clinical_hint) return signal.clinical_hint;
-  return tUI('default_interpretation');
+/**
+ * Otros hallazgos relevantes de la medicación (Fase 6): patient/drug-burden
+ * alerts and therapeutic duplicities. Structurally separate from
+ * possibleCascades — never merged into a cascade card's text.
+ */
+function renderGlobalAlertsSection(alerts) {
+  if (!alerts || !alerts.length) {
+    return '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_global_alerts') + '</p>';
+  }
+  var lang = currentLanguage;
+  return alerts.map(function (a) {
+    var msg = (lang === 'es' ? a.message_es : a.message_en) || a.message_es || '';
+    var name = (lang === 'es' ? a.name_es : a.name_en) || a.name_es || '';
+    return (
+      '<div style="border:1px solid #f5c16c;border-left:4px solid #e67e22;border-radius:0 6px 6px 0;' +
+        'padding:.6rem .85rem;margin-bottom:.6rem;background:#fffaf0;font-size:.84rem;">' +
+        '<div style="font-weight:700;color:#7d4a00;">' + escHtml(name) + '</div>' +
+        '<div style="margin-top:.25rem;color:#5c4326;">' + escHtml(msg) + '</div>' +
+        (a.drugs_involved && a.drugs_involved.length
+          ? '<div style="margin-top:.3rem;font-size:.75rem;color:#8a6d3b;">' + escHtml(a.drugs_involved.join(', ')) + '</div>'
+          : '') +
+      '</div>'
+    );
+  }).join('');
+}
+
+function renderMissingInformationSection(missing) {
+  if (!missing || !missing.length) return '';
+  var lang = currentLanguage;
+  var items = missing.map(function (m) {
+    var msg = (lang === 'es' ? m.message_es : m.message_en) || m.message_es || '';
+    return '<li>' + escHtml(msg) + '</li>';
+  }).join('');
+  return (
+    '<div style="margin-top:.6rem;padding:.5rem .8rem;background:#f4f6f7;border:1px solid #d6d9dd;' +
+      'border-radius:5px;font-size:.82rem;color:#444;">' +
+      '<strong>' + tUI('missing_information_lbl') + '</strong>' +
+      '<ul style="margin:.3rem 0 0 1.1rem;">' + items + '</ul>' +
+    '</div>'
+  );
 }
 
 /* ── buildReport ──────────────────────────────────────────────────────────
-   Assembles the full structured report object.
-   Used by the Step 6 display, JSON export, and CSV export so that all
-   three surfaces always show identical data.
+   Assembles the report object shown in Step 6 and used by JSON/CSV export.
+   Delegates ALL clinical logic to ClinicalEngine.buildCaseModel(); this
+   function only adds display-oriented derived fields (localized labels,
+   clinician verification status) on top of the CaseModel.
    ──────────────────────────────────────────────────────────────────────── */
 function buildReport() {
-  var drugs      = extractDrugs(state.clinicalNote);
-  var detected   = getDetectedCascades(state.clinicalNote);
+  var model = getCaseModel(state.clinicalNote);
 
-  /* Reconcile before normalization so drug_classes also cover cascade drugs */
-  var reconciledDrugs = reconcileDrugsWithCascades(drugs, detected);
-  var inferredCount   = reconciledDrugs.length - drugs.length;
-  var normalized      = normalizeDrugs(reconciledDrugs);
-
-  /* Unique drug classes, preserving first-seen order */
-  var uniqueClasses = [];
-  var _seenCls = {};
-  normalized.forEach(function (n) {
-    if (n.class && !_seenCls[n.class]) { _seenCls[n.class] = true; uniqueClasses.push(n.class); }
-  });
-
-  var cascades = detected.map(function (c) {
-    var entry = findCascadeEntryForSignal(c);
-    var rec   = entry
-      ? (getLocalizedField(entry, 'recommended_first_action', currentLanguage) ||
-         getLocalizedField(entry, 'clinical_note', currentLanguage))
-      : (c.clinical_hint || '');
-    var evidence = buildEvidenceProfile(c, rec, state.clinicalNote);
-    var priority = derivePharmacyPriority(c, rec, evidence);
-    var clinicalInterpretation = buildClinicalInterpretation(c, entry);
-    var adeDisplay = (currentLanguage === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
-    var factorsInFavor = [
-      'Secuencia detectada: ' + c.index_drug + ' \u2192 ' + (adeDisplay || tUI('seq_potential_ade')) + ' \u2192 ' + c.cascade_drug + '.',
-      buildSignalExplanation(c)
-    ].concat(priority.reasons, evidence.supports);
-
-    /* Resolve display id/name from the matched KB entry when available.
-     * This is critical for symptom_bridge signals whose synthetic cascade_id
-     * (e.g. "SYM001:pregabalin:furosemide") does not correspond to any KB
-     * entry — the true KB cascade (e.g. CC027) must be surfaced instead. */
-    var displayId   = (entry && entry.id) ? entry.id : c.cascade_id;
-    var displayName = entry
-      ? (getLocalizedField(entry, 'name', currentLanguage) || c.cascade_name)
-      : ((currentLanguage === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name);
-
-    return {
-      cascade_id:              displayId,
-      cascade_name:            displayName,
-      index_drug:              c.index_drug,
-      cascade_drug:            c.cascade_drug,
-      confidence:              c.confidence,
-      ade_en:                  c.ade_en  || '',
-      ade_display:             adeDisplay,
-      clinical_recommendation: rec,
-      verification_status:     state.cascadeClassifications[c.cascade_id] || 'unreviewed',
-      sequence:                c.index_drug + ' \u2192 ' + (adeDisplay || tUI('seq_potential_ade')) + ' \u2192 ' + c.cascade_drug,
-      clinical_interpretation: clinicalInterpretation,
-      factors_in_favor:        factorsInFavor,
-      factors_to_verify:       buildVerificationItems(c).concat(evidence.missing),
-      suggested_intervention:  rec || tUI('no_kb_intervention'),
-      pharmacy_priority:       priority.label,
-      pharmacy_priority_level: priority.level,
-      trigger_explanation:     buildSignalExplanation(c),
-      certainty_gap:           tUI('certainty_gap_text'),
-      finding_level:           evidence.level,
-      finding_label:           evidence.label,
-      support_summary:         evidence.supports.length ? evidence.supports.join(' | ') : tUI('no_support_summary'),
-      missing_summary:         evidence.missing.length ? evidence.missing.join(' | ') : tUI('no_missing_summary'),
-      level_reason:            evidence.levelReason,
-      temporal_support:        evidence.temporality.status
-    };
+  var cascades = model.possibleCascades.map(function (c) {
+    return Object.assign({}, c, {
+      verification_status: state.cascadeClassifications[c.cascade_id] || 'unreviewed',
+      /* Aliases for the plain-text/CSV export surfaces, which pre-date the
+         classification system and speak in terms of a single "recommendation"
+         / "temporal support" string rather than the richer evidence object. */
+      clinical_recommendation: (currentLanguage === 'es' ? c.recommended_action_es : c.recommended_action_en) || '',
+      temporal_support: (c.evidence && c.evidence.temporal_order && c.evidence.temporal_order.status) || 'unknown'
+    });
   });
 
   cascades.sort(function (a, b) {
-    var byPriority = priorityRank(b.pharmacy_priority_level) - priorityRank(a.pharmacy_priority_level);
-    if (byPriority !== 0) return byPriority;
-    var aLevel = a.finding_level === 'plausible_cascade' ? 1 : 0;
-    var bLevel = b.finding_level === 'plausible_cascade' ? 1 : 0;
-    if (bLevel !== aLevel) return bLevel - aLevel;
-    return confidenceRank(b.confidence) - confidenceRank(a.confidence);
+    return CE.classificationRank(b.classification) - CE.classificationRank(a.classification) ||
+      confidenceRank(b.confidence) - confidenceRank(a.confidence);
   });
 
-  var plausibleCount = cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; }).length;
-  var highPriorityCount = cascades.filter(function (c) { return c.pharmacy_priority_level === 'alta'; }).length;
+  var supportedCount = cascades.filter(function (c) { return c.classification === 'supported_possible_cascade'; }).length;
+  var incompleteCount = cascades.filter(function (c) { return c.classification === 'possible_but_incomplete'; }).length;
+
   var topInterventions = [];
   var seenInterventions = {};
   cascades.forEach(function (c) {
-    var key = (c.suggested_intervention || '').trim().toLowerCase();
+    var text = (currentLanguage === 'es' ? c.recommended_action_es : c.recommended_action_en) || '';
+    var key = text.trim().toLowerCase();
     if (!key || seenInterventions[key]) return;
     seenInterventions[key] = true;
-    topInterventions.push(c.suggested_intervention);
+    topInterventions.push(text);
   });
 
   return {
-    patient_id:         state.patientId || '',
-    generated_at:       new Date().toISOString(),
-    kb_version:         getKBVersion(),
-    kb_mode:            state.kbMode,
-    drugs_detected:     reconciledDrugs,
-    drug_classes:       uniqueClasses,
-    diagnostics: {
-      inferredDrugsFromCascades: inferredCount > 0,
-      inferredDrugCount:         inferredCount
-    },
-    symptoms_detected:  state.symptomsDetected.map(function (s) {
+    patient_id: state.patientId || '',
+    generated_at: new Date().toISOString(),
+    kb_version: getKBVersion(),
+    kb_mode: state.kbMode,
+    drugs_detected: model.medications.map(function (m) { return m.normalized_name; }),
+    drug_classes: model.drug_classes,
+    activeProblems: model.activeProblems,
+    clinicalMeasurements: model.clinicalMeasurements,
+    globalMedicationAlerts: model.globalMedicationAlerts,
+    missingInformation: model.missingInformation,
+    diagnostics: { inferredDrugsFromCascades: false, inferredDrugCount: 0 },
+    symptoms_detected: model.symptomsDetected.map(function (s) {
       return { id: s.id, term: s.term, matched_term: s.matched_term, category: s.category };
     }),
-    cascade_count:      detected.length,
-    cascades:           cascades,
+    cascade_count: cascades.length,
+    cascades: cascades,
     clinical_summary: {
-      total_cascades: detected.length,
-      plausible_cascades: plausibleCount,
-      high_priority_cascades: highPriorityCount,
+      total_cascades: cascades.length,
+      supported_cascades: supportedCount,
+      incomplete_cascades: incompleteCount,
       top_interventions: topInterventions.slice(0, 3),
       validation_warning: tUI('validation_warning')
     }
   };
 }
+
+var CLASSIFICATION_ORDER = [
+  'supported_possible_cascade', 'possible_but_incomplete',
+  'pharmacological_match_only', 'not_evaluable', 'discarded'
+];
 
 function formatReportForClinicalRecord(report) {
   var lines = [];
@@ -4060,8 +2485,7 @@ function formatReportForClinicalRecord(report) {
   lines.push('');
   lines.push(tUI('report_summary'));
   lines.push(tUI('report_total') + report.cascade_count);
-  lines.push(tUI('report_plausible_count') + (report.clinical_summary && report.clinical_summary.plausible_cascades ? report.clinical_summary.plausible_cascades : 0));
-  lines.push(tUI('report_high_prio') + (report.clinical_summary && report.clinical_summary.high_priority_cascades ? report.clinical_summary.high_priority_cascades : 0));
+  lines.push(tUI('report_plausible_count') + (report.clinical_summary && report.clinical_summary.supported_cascades ? report.clinical_summary.supported_cascades : 0));
   lines.push(tUI('report_drugs_list') + (report.drugs_detected.join(', ') || tUI('report_none')));
   lines.push(tUI('report_classes_list') + (report.drug_classes.join(', ') || tUI('report_not_classified')));
   lines.push('');
@@ -4069,36 +2493,32 @@ function formatReportForClinicalRecord(report) {
   if (!report.cascades.length) {
     lines.push(tUI('report_no_cascades'));
   } else {
-    var plausible = report.cascades.filter(function (c) { return c.finding_level === 'plausible_cascade'; });
-    var preliminary = report.cascades.filter(function (c) { return c.finding_level === 'preliminary_signal'; });
-    lines.push(tUI('report_plausible_section', plausible.length));
-    plausible.forEach(function (c, idx) {
-      lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
-      lines.push(tUI('report_seq') + c.sequence);
-      lines.push(tUI('report_finding') + c.finding_level);
-      lines.push(tUI('report_prio') + c.pharmacy_priority);
-      lines.push(tUI('report_verif') + c.verification_status);
-      lines.push(tUI('report_evidence') + (c.support_summary || tUI('report_no_support')));
-      lines.push(tUI('report_missing_conf') + (c.missing_summary || tUI('report_no_gaps')));
-      lines.push(tUI('report_rec') + (c.clinical_recommendation || c.suggested_intervention || tUI('report_no_rec')));
-    });
-
-    lines.push('');
-    lines.push(tUI('report_preliminary_section', preliminary.length));
-    preliminary.forEach(function (c, idx) {
-      lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
-      lines.push(tUI('report_seq') + c.sequence);
-      lines.push(tUI('report_finding') + c.finding_level);
-      lines.push(tUI('report_prio') + c.pharmacy_priority);
-      lines.push(tUI('report_verif') + c.verification_status);
-      lines.push(tUI('report_evidence') + (c.support_summary || tUI('report_no_support')));
-      lines.push(tUI('report_missing_conf') + (c.missing_summary || tUI('report_no_gaps')));
-      lines.push(tUI('report_rec') + (c.clinical_recommendation || c.suggested_intervention || tUI('report_no_rec')));
+    CLASSIFICATION_ORDER.forEach(function (level) {
+      var group = report.cascades.filter(function (c) { return c.classification === level; });
+      if (!group.length) return;
+      lines.push(tUI('classification_' + level) + ' (' + group.length + ')');
+      group.forEach(function (c, idx) {
+        lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
+        lines.push(tUI('report_seq') + c.sequence);
+        lines.push(tUI('report_verif') + c.verification_status);
+        lines.push(tUI('classification_reason_lbl') + ' ' +
+          ((currentLanguage === 'es' ? c.classification_reason_es : c.classification_reason_en) || ''));
+        lines.push(tUI('report_rec') + (c.clinical_recommendation || tUI('report_no_rec')));
+      });
+      lines.push('');
     });
   }
 
-  if (report.clinical_summary && report.clinical_summary.top_interventions && report.clinical_summary.top_interventions.length) {
+  if (report.globalMedicationAlerts && report.globalMedicationAlerts.length) {
+    lines.push(tUI('section_global_alerts'));
+    report.globalMedicationAlerts.forEach(function (a, idx) {
+      var msg = (currentLanguage === 'es' ? a.message_es : a.message_en) || a.message_es || '';
+      lines.push('  ' + (idx + 1) + ') ' + msg);
+    });
     lines.push('');
+  }
+
+  if (report.clinical_summary && report.clinical_summary.top_interventions && report.clinical_summary.top_interventions.length) {
     lines.push(tUI('report_actions'));
     report.clinical_summary.top_interventions.forEach(function (action, idx) {
       lines.push('  ' + (idx + 1) + ') ' + action);
@@ -4184,7 +2604,7 @@ window.exportReport = function (format) {
       'patient_id', 'generated_at', 'kb_version',
       'cascade_id', 'cascade_name',
       'index_drug', 'cascade_drug', 'confidence', 'ade_en',
-      'clinical_recommendation', 'verification_status', 'finding_level', 'temporal_support'
+      'clinical_recommendation', 'verification_status', 'classification', 'temporal_support'
     ];
     /* RFC 4180 cell quoting: wrap in " and double any inner " */
     function csvCell(v) {
@@ -4214,7 +2634,7 @@ window.exportReport = function (format) {
           csvCell(c.ade_en),
           csvCell(c.clinical_recommendation),
           csvCell(c.verification_status),
-          csvCell(c.finding_level),
+          csvCell(c.classification),
           csvCell(c.temporal_support)
         ].join(','));
       });
@@ -4297,6 +2717,7 @@ function importCase(file) {
       /* Reset derived state that depends on the imported note */
       state.symptomsDetected = [];
       state.detectedCascades = null;
+      state.caseModel = null;
 
       var pidEl = document.getElementById('patient-id');
       if (pidEl) pidEl.value = state.patientId;
@@ -4401,17 +2822,22 @@ window.runNlpSelfTest = function () {
     ok ? PASS++ : FAIL++;
   }
 
+  /* symptom_bridge-only view over getCaseModel(), for the probes below. */
+  function detectSymptomCascades(noteText) {
+    return getCaseModel(noteText).possibleCascades.filter(function (s) { return s.signal_type === 'symptom_bridge'; });
+  }
+
   /* Helper: run extractSymptoms on a scratch note without touching state */
   function probeSymptoms(note) {
     var savedNote   = state.clinicalNote;
     var savedSym    = state.symptomsDetected;
-    var savedCache  = state.detectedCascades;
+    var savedCache  = state.caseModel;
     state.clinicalNote    = note;
     state.symptomsDetected = [];
     var result = extractSymptoms(note);
     state.clinicalNote    = savedNote;
     state.symptomsDetected = savedSym;
-    state.detectedCascades = savedCache;
+    state.caseModel = savedCache;
     return result;
   }
 
@@ -4419,15 +2845,15 @@ window.runNlpSelfTest = function () {
   function probeCascades(note) {
     var savedNote  = state.clinicalNote;
     var savedSym   = state.symptomsDetected;
-    var savedCache = state.detectedCascades;
+    var savedCache = state.caseModel;
     state.clinicalNote     = note;
     state.symptomsDetected = [];
-    state.detectedCascades = null;
+    state.caseModel = null;
     var syms = extractSymptoms(note);
     var sigs = detectSymptomCascades(note);
     state.clinicalNote     = savedNote;
     state.symptomsDetected = savedSym;
-    state.detectedCascades = savedCache;
+    state.caseModel = savedCache;
     return { syms: syms, sigs: sigs };
   }
 
@@ -4505,39 +2931,7 @@ window.runNlpSelfTest = function () {
 
   console.groupEnd();
 
-  /* ── Priority penalty checks for non-specific symptoms ── */
-  console.group('C2. Priority penalty — non-specific symptoms');
 
-  var p1 = probeCascades(
-    'Patient reports dizziness. Amlodipine and meclizine are listed with no clear temporal relation.'
-  );
-  var p1s = p1.sigs.find(function (s) { return s.ade_en === 'dizziness'; });
-  var p1e = p1s ? buildEvidenceProfile(p1s, p1s.clinical_hint || '', 'Patient reports dizziness. Amlodipine and meclizine are listed with no clear temporal relation.') : null;
-  var p1p = p1s ? derivePharmacyPriority(p1s, p1s.clinical_hint || '', p1e) : null;
-  assert('P1: dizziness + unknown temporality gets additional penalty (score <= 4)',
-         p1p ? p1p.score <= 4 : null, true);
-
-  var p2 = probeCascades(
-    'After starting amlodipine the patient developed new dizziness. Meclizine was added.'
-  );
-  var p2s = p2.sigs.find(function (s) { return s.ade_en === 'dizziness'; });
-  var p2e = p2s ? buildEvidenceProfile(p2s, p2s.clinical_hint || '', 'After starting amlodipine the patient developed new dizziness. Meclizine was added.') : null;
-  var p2p = p2s ? derivePharmacyPriority(p2s, p2s.clinical_hint || '', p2e) : null;
-  assert('P2: dizziness + supportive temporality avoids extra penalty (score >= 5)',
-         p2p ? p2p.score >= 5 : null, true);
-
-  var p3 = probeCascades(
-    'New onset oedema after amlodipine start. Furosemide prescribed due to persistent ankle swelling.'
-  );
-  var p3s = p3.sigs.find(function (s) { return s.ade_en === 'oedema'; });
-  var p3e = p3s ? buildEvidenceProfile(p3s, p3s.clinical_hint || '', 'New onset oedema after amlodipine start. Furosemide prescribed due to persistent ankle swelling.') : null;
-  var p3p = p3s ? derivePharmacyPriority(p3s, p3s.clinical_hint || '', p3e) : null;
-  assert('P3: specific symptom with clinical support keeps higher score (>=5)',
-         p3p ? p3p.score >= 5 : null, true);
-
-  console.groupEnd();
-
-  /* ── Spanish assertions ── */
   console.group('D. Spanish — negation / historical');
 
   var es1 = probeSymptoms('Niega estreñimiento. No caídas.');
@@ -4585,212 +2979,6 @@ window.runNlpSelfTest = function () {
     assert('ES6: chronic ES estreñimiento+lactulosa → low confidence',
            es6s.confidence, 'low');
   }
-
-  console.groupEnd();
-
-  /* ── Group F: strict/operational split, non-mutation, richer report ──── */
-  console.group('F — Bilingual strict/operational + fallback report');
-  (function () {
-    /* Factory — each test gets a fresh source so mutations never bleed across */
-    function makeMinimalKB() {
-      return {
-        version: '0.0.1-test',
-        cascades: [
-          {
-            id: 'CC_T1',
-            name_en: 'Drug A \u2192 ADE A \u2192 Treatment A',
-            index_drug_classes: ['ClassA'],
-            index_drug_examples: ['druga'],
-            ade_en: 'Adverse effect alpha',
-            cascade_drug_examples: ['treatmenta'],
-            confidence: 'high', age_sensitivity: 'low',
-            risk_focus: ['metabolic'],
-            differential_hints: ['hint1','hint2','hint3'],
-            appropriateness: 'context_dependent'
-          },
-          {
-            id: 'CC_T2',
-            name_en: 'Drug B \u2192 ADE B \u2192 Treatment B',
-            /* name_es present, ade_es missing — partial translation */
-            name_es: 'Fármaco B \u2192 EAM B \u2192 Tratamiento B',
-            index_drug_classes: ['ClassB'],
-            index_drug_examples: ['drugb'],
-            ade_en: 'Adverse effect beta',
-            cascade_drug_examples: ['treatmentb'],
-            confidence: 'medium', age_sensitivity: 'medium',
-            risk_focus: ['cardiovascular'],
-            differential_hints: ['hint1','hint2','hint3'],
-            appropriateness: 'often_appropriate'
-          }
-        ]
-      };
-    }
-
-    if (typeof validateKBStrict !== 'function' || typeof validateKBOperational !== 'function') {
-      assert('F0: validateKBStrict + validateKBOperational available', false, true);
-      return;
-    }
-
-    /* F1 — strict fails when *_es missing */
-    var strictR = validateKBStrict(makeMinimalKB());
-    assert('F1: strict.ok = false (missing name_es/ade_es)', strictR.ok, false);
-    assert('F1: strict errors mention _es fields',
-      strictR.errors.some(function(e){ return /name_es|ade_es/.test(e); }), true);
-
-    /* F2 — operational passes; richer fallback report */
-    var opR = validateKBOperational(makeMinimalKB());
-    assert('F2: operational.ok = true', opR.ok, true);
-    /* CC_T1 needs both name_es + ade_es; CC_T2 already has name_es, needs only ade_es */
-    assert('F2: fallbackCascadeCount = 2', opR.fallbackCascadeCount, 2);
-    assert('F2: fallbackFieldCount = 3',   opR.fallbackFieldCount,   3);
-    assert('F2: fallbackByField.name_es = 1 (only CC_T1 missing it)',
-      opR.fallbackByField && opR.fallbackByField['name_es'], 1);
-    assert('F2: fallbackByField.ade_es = 2 (both cascades missing it)',
-      opR.fallbackByField && opR.fallbackByField['ade_es'], 2);
-    assert('F2: fallbackByFieldIds.ade_es includes CC_T1',
-      opR.fallbackByFieldIds && opR.fallbackByFieldIds['ade_es'] &&
-      opR.fallbackByFieldIds['ade_es'].indexOf('CC_T1') !== -1, true);
-    assert('F2: fallbackByFieldIds.ade_es includes CC_T2',
-      opR.fallbackByFieldIds && opR.fallbackByFieldIds['ade_es'] &&
-      opR.fallbackByFieldIds['ade_es'].indexOf('CC_T2') !== -1, true);
-
-    /* F3 — non-mutating: source unchanged after operational */
-    var srcKb = makeMinimalKB();
-    validateKBOperational(srcKb);
-    assert('F3: source name_es not filled', srcKb.cascades[0].name_es, undefined);
-    assert('F3: source __i18n not set',     srcKb.cascades[0].__i18n,  undefined);
-
-    /* F4 — idempotent: two calls on same source give identical results */
-    var iKb = makeMinimalKB();
-    var r4a = validateKBOperational(iKb);
-    var r4b = validateKBOperational(iKb);
-    assert('F4: idempotent ok',                r4a.ok,                 r4b.ok);
-    assert('F4: idempotent fallbackCascadeCount', r4a.fallbackCascadeCount, r4b.fallbackCascadeCount);
-    assert('F4: idempotent fallbackFieldCount',   r4a.fallbackFieldCount,   r4b.fallbackFieldCount);
-    assert('F4: source clean after 2 calls',   iKb.cascades[0].__i18n, undefined);
-
-    /* F5 — export: source has no __i18n after operational (safe to export as-is) */
-    var eKb = makeMinimalKB();
-    validateKBOperational(eKb);
-    assert('F5: source exportable — no __i18n on entry', eKb.cascades[0].__i18n, undefined);
-
-    /* F6 — structuredClone used when available */
-    var usesStructuredClone = (typeof globalThis !== 'undefined' &&
-                               typeof globalThis.structuredClone === 'function');
-    var scKb = makeMinimalKB();
-    validateKBOperational(scKb);
-    assert('F6: clone path (structuredClone=' + usesStructuredClone + ') preserves non-mutation',
-      scKb.cascades[0].__i18n, undefined);
-
-    /* F7 — empty-string *_es triggers fill (missing-value semantics) */
-    var f7Kb = makeMinimalKB();
-    f7Kb.cascades[0].name_es = '';       /* explicit empty — should be treated as missing */
-    f7Kb.cascades[1].ade_es  = '';
-    var f7R = validateKBOperational(f7Kb);
-    assert('F7: operational.ok = true with empty-string _es', f7R.ok, true);
-    assert('F7: empty name_es filled (cascadeCount ≥ 1)', f7R.fallbackCascadeCount >= 1, true);
-    assert('F7: fallbackByField.name_es counts empty-string entry',
-      f7R.fallbackByField && (f7R.fallbackByField['name_es'] || 0) >= 1, true);
-
-    /* F8 — whitespace-only *_es triggers fill */
-    var f8Kb = makeMinimalKB();
-    f8Kb.cascades[0].name_es = '   ';   /* whitespace-only — must be treated as missing */
-    f8Kb.cascades[0].ade_es  = '\t';
-    var f8R = validateKBOperational(f8Kb);
-    assert('F8: operational.ok = true with whitespace _es', f8R.ok, true);
-    assert('F8: whitespace name_es filled', f8R.fallbackByField && f8R.fallbackByField['name_es'] >= 1, true);
-    assert('F8: whitespace ade_es filled',  f8R.fallbackByField && f8R.fallbackByField['ade_es']  >= 1, true);
-    /* Confirm source is still whitespace (non-mutating) */
-    assert('F8: source name_es still whitespace', f8Kb.cascades[0].name_es, '   ');
-
-    /* F9 — fallbackByFieldIds are sorted deterministically */
-    /* Build KB with IDs intentionally out of lexical order: ZZ before AA */
-    var f9Kb = {
-      version: '0.0.1-test',
-      cascades: [
-        { id: 'CC_ZZ', name_en: 'Z drug', index_drug_classes:['C'], index_drug_examples:['z'],
-          ade_en:'Z ade', cascade_drug_examples:['zt'], confidence:'low', age_sensitivity:'low',
-          risk_focus:['metabolic'], differential_hints:['h1','h2','h3'], appropriateness:'context_dependent' },
-        { id: 'CC_AA', name_en: 'A drug', index_drug_classes:['C'], index_drug_examples:['a'],
-          ade_en:'A ade', cascade_drug_examples:['at'], confidence:'low', age_sensitivity:'low',
-          risk_focus:['metabolic'], differential_hints:['h1','h2','h3'], appropriateness:'context_dependent' }
-      ]
-    };
-    var f9R = validateKBOperational(f9Kb);
-    var f9Ids = f9R.fallbackByFieldIds && f9R.fallbackByFieldIds['name_es'];
-    assert('F9: IDs sorted — CC_AA before CC_ZZ',
-      f9Ids && f9Ids.length === 2 && f9Ids[0] === 'CC_AA' && f9Ids[1] === 'CC_ZZ', true);
-
-    /* F10 — requireTranslations: true causes ok:false when fills applied */
-    var f10R = validateKBOperational(makeMinimalKB(), { requireTranslations: true });
-    assert('F10: requireTranslations + fills → ok = false', f10R.ok, false);
-    assert('F10: errors mention requireTranslations',
-      f10R.errors.some(function(e){ return e.indexOf('requireTranslations') === 0; }), true);
-    assert('F10: error names the missing field',
-      f10R.errors.some(function(e){ return /name_es|ade_es/.test(e); }), true);
-
-    /* F11 — requireTranslations: true passes when all *_es present */
-    var f11Kb = makeMinimalKB();
-    /* Fill in all required ES fields explicitly */
-    f11Kb.cascades[0].name_es = 'Fármaco A → EAM A → Tratamiento A';
-    f11Kb.cascades[0].ade_es  = 'Efecto adverso alfa';
-    f11Kb.cascades[1].ade_es  = 'Efecto adverso beta';
-    var f11R = validateKBOperational(f11Kb, { requireTranslations: true });
-    assert('F11: requireTranslations + no fills → ok = true', f11R.ok, true);
-    assert('F11: fallbackFieldCount = 0 when all ES present', f11R.fallbackFieldCount, 0);
-  })();
-  console.groupEnd();
-
-  /* ── Group G: reconcileDrugsWithCascades ─────────────────────────────── */
-  console.group('G — Drug-cascade reconciliation');
-
-  /* G1: drugs already present are NOT duplicated */
-  var g1 = reconcileDrugsWithCascades(
-    ['amlodipine'],
-    [{ index_drug: 'Amlodipine', cascade_drug: 'furosemide' }]
-  );
-  assert('G1: existing drug not duplicated (case-insensitive)', g1.filter(function(d){
-    return d.toLowerCase() === 'amlodipine';
-  }).length, 1);
-  assert('G1: cascade_drug added when missing', g1.indexOf('furosemide') >= 0, true);
-
-  /* G2: empty drugs + cascade with both drugs → both back-filled */
-  var g2 = reconcileDrugsWithCascades(
-    [],
-    [{ index_drug: 'amlodipino', cascade_drug: 'furosemida' }]
-  );
-  assert('G2: index_drug added when drugs empty', g2.indexOf('amlodipino') >= 0, true);
-  assert('G2: cascade_drug added when drugs empty', g2.indexOf('furosemida') >= 0, true);
-  assert('G2: length is 2', g2.length, 2);
-
-  /* G3: ADE/symptom terms must NOT appear — cascade has no ADE field used */
-  var g3 = reconcileDrugsWithCascades(
-    [],
-    [{ index_drug: 'amlodipino', cascade_drug: 'furosemida', ade_en: 'oedema' }]
-  );
-  assert('G3: ade_en "oedema" NOT in result', g3.indexOf('oedema'), -1);
-  assert('G3: result length still 2',          g3.length, 2);
-
-  /* G4: null / undefined drug fields are skipped gracefully */
-  var g4 = reconcileDrugsWithCascades(
-    [],
-    [{ index_drug: null, cascade_drug: undefined }]
-  );
-  assert('G4: null/undefined drugs → empty result', g4.length, 0);
-
-  /* G5: buildReport() diagnostics populated when cascades add drugs.
-   * We use reconcileDrugsWithCascades directly (no live note needed). */
-  var g5in  = [];
-  var g5cas = [{ index_drug: 'metoprolol', cascade_drug: 'salbutamol' }];
-  var g5out = reconcileDrugsWithCascades(g5in, g5cas);
-  var g5cnt = g5out.length - g5in.length;
-  assert('G5: inferredCount = 2 when both drugs back-filled', g5cnt, 2);
-
-  /* G6: original input array is NOT mutated */
-  var g6orig = ['atenolol'];
-  var g6     = reconcileDrugsWithCascades(g6orig, [{ index_drug: 'bisoprolol', cascade_drug: 'furosemide' }]);
-  assert('G6: original drugs array not mutated', g6orig.length, 1);
-  assert('G6: returned array has all three',     g6.length,     3);
 
   console.groupEnd();
 
@@ -5121,6 +3309,9 @@ function wireEvents() {
   function applyLanguage(lang) {
     currentLanguage = lang;
     try { localStorage.setItem(LS_LANG_KEY, lang); } catch (e) { /* ignore */ }
+    /* Re-run detection so language-specific free-text fields (e.g. the
+       urologic/renal problem label) reflect the new language too. */
+    invalidateDetectedCascades();
     /* Update button active states */
     if (btnLangEs) {
       btnLangEs.setAttribute('aria-pressed', String(lang === 'es'));

@@ -243,8 +243,7 @@
       "name_en": "Zidovudine (AZT) → Anemia/Myelotoxicity → Erythropoietin/Transfusion",
       "index_drug_class": "NRTI",
       "index_drugs_examples": [
-        "zidovudine",
-        "AZT"
+        "zidovudine"
       ],
       "ade_mechanism_es": "Inhibición de timidina cinasa mitocondrial → supresión de médula ósea → anemia macrocítica",
       "ade_mechanism_en": "Mitochondrial thymidine kinase inhibition → bone marrow suppression → macrocytic anemia",
@@ -1020,7 +1019,6 @@
       "index_drug_class": "NRTI (thymidine analogue)",
       "index_drugs_examples": [
         "zidovudine",
-        "AZT",
         "stavudine (d4T)"
       ],
       "ade_mechanism_es": "Inhibición mitocondrial en tejido adiposo subcutáneo → pérdida de grasa subcutánea periférica (cara, extremidades, glúteos) con acumulación de grasa visceral → síndrome lipodistrófico",
