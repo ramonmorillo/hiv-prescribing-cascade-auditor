@@ -305,9 +305,17 @@ function buildDrugResolver(kb) {
   dictEntries.forEach(function (entry) {
     if (!entry.canonical) return;
     var drugClass = entry.drug_class || '';
-    addVariant(entry.canonical, entry.canonical, drugClass, 'dict', 'high');
+    /* The curated dictionary is authoritative for display taxonomy; cascade
+       classes describe rule roles and must not overwrite a medicine's class. */
+    resolver.byVariant[normalizeDrugText(entry.canonical)] = {
+      variant: entry.canonical, canonical: entry.canonical, drug_class: drugClass,
+      match_type: 'dict', confidence: 'high'
+    };
     (entry.variants || []).forEach(function (variant) {
-      if (variant) addVariant(variant, entry.canonical, drugClass, 'dict', 'high');
+      if (variant) resolver.byVariant[normalizeDrugText(variant)] = {
+        variant: variant, canonical: entry.canonical, drug_class: drugClass,
+        match_type: 'dict', confidence: 'high'
+      };
     });
   });
 
@@ -379,6 +387,40 @@ function resolveDrugMentions(noteText, resolver) {
 
   mentions.sort(function (a, b) { return a.start_index - b.start_index; });
   return mentions;
+}
+
+/* Medication assertion is deliberately evaluated at the mention, rather than
+ * at drug-dictionary level.  The clause boundary at an adversative conjunction
+ * prevents "no toma X, pero toma Y" from leaking negation into Y, while a
+ * coordinated "X ni Y" remains in one clause and therefore negates both. */
+function classifyMedicationMention(noteText, mention) {
+  var text = noteText || '';
+  var index = Math.max(0, mention.actual_start_index != null ? mention.actual_start_index : (mention.start_index || 0));
+  var before = text.slice(0, index);
+  var boundary = Math.max(before.lastIndexOf('.'), before.lastIndexOf(';'), before.lastIndexOf('\n'));
+  var adversatives = /\bpero(?:\s+s[ií])?\b/gi;
+  var adv;
+  while ((adv = adversatives.exec(before)) !== null) boundary = Math.max(boundary, adv.index + adv[0].length);
+  var clauseBefore = normalizeDrugText(before.slice(boundary + 1));
+  var sentenceEnd = text.slice(index).search(/[.;\n]/);
+  var sentence = normalizeDrugText(text.slice(boundary + 1, sentenceEnd < 0 ? text.length : index + sentenceEnd));
+
+  var assertion = 'affirmed', status = 'active', temporality = 'current';
+  if (/\bsi\s+(desarrolla|presenta|aparece|ocurre)\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea)\b/.test(sentence)) {
+    assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
+    status = 'planned'; temporality = 'future';
+  } else if (/\b(se )?(suspendio|suspendi[oó]|retirado|retirada|interrumpio|interrumpi[oó])\b/.test(sentence) ||
+             /\b(tomo|tom[oó]|recibio|recibi[oó])\b/.test(clauseBefore) && /\bhasta\b/.test(sentence)) {
+    assertion = 'affirmed'; status = 'discontinued'; temporality = 'historical';
+  } else if (/\b(no|ni)\s+(toma|tomaba|recibe|recibia|usa|utiliza|esta tomando|est[aá] tomando)\b/.test(clauseBefore) ||
+             /\bno\s+(?:toma|recibe|usa)[^.;]*\bni\b/.test(clauseBefore)) {
+    assertion = 'negated'; status = 'not_taking'; temporality = 'current';
+  }
+  return { assertion: assertion, status: status, temporality: temporality };
+}
+
+function isActiveMedication(medication) {
+  return !!medication && medication.assertion === 'affirmed' && medication.status === 'active';
 }
 
 function drugFoundInNote(noteText, drug, resolver) {
@@ -1442,6 +1484,61 @@ function allRequiredEntitiesPresent(requiredGroups, presentCanonicals) {
   });
 }
 
+function parseInteractionParticipants(value) {
+  return (value || '').replace(/\([^)]*\)/g, '').split(/\s*\/\s*|\s*,\s*/)
+    .map(function (v) { return normalizeDrugText(v); }).filter(Boolean);
+}
+
+/* DDI activation is a single, auditable gateway. Ingredient rules require an
+ * exact canonical participant on both sides; class matching is only available
+ * to rules explicitly marked class_based. */
+function evaluateCurrentInteractions(kb, activeMedications) {
+  var meds = activeMedications || [];
+  var names = meds.map(function (m) { return normalizeDrugText(m.normalized_name); });
+  var classes = meds.map(function (m) { return normalizeDrugText(m.drug_class); });
+  return (((kb || {}).ddiWatchlist || {}).interactions || []).filter(function (rule) {
+    var scope = rule.match_scope || 'ingredient_specific';
+    if (scope === 'class_based') {
+      return classes.indexOf(normalizeDrugText(rule.drug_a_class)) !== -1 &&
+        classes.indexOf(normalizeDrugText(rule.drug_b_class)) !== -1;
+    }
+    if (scope === 'regimen_based') return false; // requires a dedicated regimen matcher
+    return parseInteractionParticipants(rule.drug_a).some(function (n) { return names.indexOf(n) !== -1; }) &&
+      parseInteractionParticipants(rule.drug_b).some(function (n) { return names.indexOf(n) !== -1; });
+  }).map(function (rule) {
+    var participants = names.filter(function (n) {
+      return parseInteractionParticipants(rule.drug_a).concat(parseInteractionParticipants(rule.drug_b)).indexOf(n) !== -1;
+    });
+    return Object.assign({}, rule, { match_scope: rule.match_scope || 'ingredient_specific', active_participants: participants });
+  });
+}
+
+function getRecommendationPresentation(classification, rule, professionalValidation) {
+  var actionEs = getLocalizedField(rule || {}, 'recommended_first_action', 'es') || getLocalizedField(rule || {}, 'clinical_note', 'es') || '';
+  var actionEn = getLocalizedField(rule || {}, 'recommended_first_action', 'en') || getLocalizedField(rule || {}, 'clinical_note', 'en') || '';
+  if (professionalValidation === 'confirmed') {
+    return { mode: 'validated_action', applicable: true, action_es: actionEs, action_en: actionEn, theoretical_es: '', theoretical_en: '' };
+  }
+  if (classification === 'supported_possible_cascade') {
+    return { mode: classification, applicable: true, action_es: actionEs, action_en: actionEn, theoretical_es: '', theoretical_en: '' };
+  }
+  var textEs = classification === 'discarded'
+    ? 'No procede intervención por esta señal con la información disponible.'
+    : classification === 'not_evaluable'
+      ? 'No evaluable: deben aportarse los datos esenciales ausentes antes de proponer una intervención.'
+      : classification === 'pharmacological_match_only'
+        ? 'Coincidencia farmacológica de baja certeza: documentar el problema intermedio y una cronología compatible antes de evaluarla.'
+        : 'Posible señal incompleta: verificar el problema intermedio, la indicación y la cronología antes de considerar cambios terapéuticos.';
+  var textEn = classification === 'discarded'
+    ? 'No intervention is indicated for this signal with the available information.'
+    : classification === 'not_evaluable'
+      ? 'Not evaluable: obtain the missing essential data before proposing an intervention.'
+      : classification === 'pharmacological_match_only'
+        ? 'Low-certainty pharmacological match: document the intermediate problem and compatible chronology before assessment.'
+        : 'Possible incomplete signal: verify the intermediate problem, indication and chronology before considering treatment changes.';
+  return { mode: classification, applicable: false, action_es: textEs, action_en: textEn, theoretical_es: actionEs, theoretical_en: actionEn };
+}
+
 function confidenceRank(conf) { return conf === 'high' ? 3 : conf === 'medium' ? 2 : 1; }
 function priorityRank(priority) { return priority === 'alta' ? 3 : priority === 'intermedia' ? 2 : 1; }
 function classificationRank(c) {
@@ -1480,7 +1577,10 @@ function selectTopInterventions(signals, lang, limit) {
   var out = [];
   (signals || []).forEach(function (c) {
     if (ACTIONABLE_CLASSIFICATIONS.indexOf(c.classification) === -1) return;
-    var text = (lang === 'en' ? c.recommended_action_en : c.recommended_action_es) || '';
+    var presentation = c.recommendation_presentation;
+    var text = presentation
+      ? (lang === 'en' ? presentation.action_en : presentation.action_es)
+      : ((lang === 'en' ? c.recommended_action_en : c.recommended_action_es) || '');
     var key = text.trim().toLowerCase();
     if (!key || seen[key]) return;
     seen[key] = true;
@@ -1902,7 +2002,9 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
        metformin in the note" (VIH003) and the same pattern in the other
        rules audited in kb/CHANGELOG.md. Rules with ddi_required_drugs still
        empty (not yet reviewed) keep their pre-audit unconditional display. */
-    var ddiVisible = allRequiredEntitiesPresent(cascade.ddi_required_drugs, presentCanonicals);
+    var ddiVisible = allRequiredEntitiesPresent(cascade.ddi_required_drugs, presentCanonicals) &&
+      (!cascade.ddi_required_index_drugs || cascade.ddi_required_index_drugs.map(normalizeDrugText)
+        .indexOf(normalizeDrugText(foundIndex)) !== -1);
 
     signals.push({
       cascade_id: cascade.id,
@@ -2085,7 +2187,8 @@ function buildCaseModel(noteText, kb, options) {
 
   if (!noteText || !noteText.trim()) {
     return {
-      medications: [], activeProblems: [], clinicalMeasurements: [], events: [],
+      medications: [], activeMedications: [], allMedicationMentions: [], inactiveOrNegatedMedications: [],
+      currentInteractions: [], activeProblems: [], clinicalMeasurements: [], events: [],
       possibleCascades: [], globalMedicationAlerts: [], missingInformation: [],
       drug_classes: []
     };
@@ -2094,8 +2197,25 @@ function buildCaseModel(noteText, kb, options) {
   var corrected = normalizeClinicalText(noteText);
   var resolver = buildDrugResolver(kb);
   var mentions = resolveDrugMentions(corrected, resolver);
-  var mentionByCanonical = {};
   mentions.forEach(function (m) {
+    var escaped = (m.mention || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var candidates = [], hit, re = new RegExp(escaped, 'gi');
+    while ((hit = re.exec(corrected)) !== null) candidates.push(hit.index);
+    m.actual_start_index = candidates.reduce(function (best, candidate) {
+      var distance = Math.abs(normalizeDrugText(corrected.slice(0, candidate)).length - m.start_index);
+      return !best || distance < best.distance ? { index: candidate, distance: distance } : best;
+    }, null);
+    m.actual_start_index = m.actual_start_index ? m.actual_start_index.index : m.start_index;
+  });
+  mentions.forEach(function (m) {
+    var state = classifyMedicationMention(corrected, m);
+    m.assertion = state.assertion; m.status = state.status; m.temporality = state.temporality;
+  });
+  var activeMentions = mentions.filter(function (m) {
+    return isActiveMedication({ assertion: m.assertion, status: m.status });
+  });
+  var mentionByCanonical = {};
+  activeMentions.forEach(function (m) {
     var key = normalizeDrugText(m.canonical);
     if (!mentionByCanonical[key]) mentionByCanonical[key] = [];
     mentionByCanonical[key].push(m);
@@ -2112,18 +2232,18 @@ function buildCaseModel(noteText, kb, options) {
      evaluateDrugDrugCascades so every candidate rule can check whether its
      proposed cascade_drug already has an incompatible explicit indication
      (Fase 3). */
-  var reconciledDrugCanonicals = mentions.map(function (m) { return m.canonical; })
+  var reconciledDrugCanonicals = activeMentions.map(function (m) { return m.canonical; })
     .filter(function (v, i, a) { return a.indexOf(v) === i; });
   var positionByCanonical = {};
   var indicationByCanonical = {};
   reconciledDrugCanonicals.forEach(function (canonical) {
-    var m = mentions.find(function (x) { return x.canonical === canonical; });
-    var pos = findTermInNote(corrected, m.mention) || { index: 0, length: (m.mention || '').length };
+    var m = activeMentions.find(function (x) { return x.canonical === canonical; });
+    var pos = { index: m.actual_start_index, length: (m.mention || '').length };
     positionByCanonical[canonical] = pos;
     indicationByCanonical[normalizeDrugText(canonical)] = extractExplicitIndicationForMedication(corrected, pos, kb);
   });
 
-  var drugDrug = evaluateDrugDrugCascades(corrected, kb, mentions, activeProblems, measurements, indicationByCanonical);
+  var drugDrug = evaluateDrugDrugCascades(corrected, kb, activeMentions, activeProblems, measurements, indicationByCanonical);
   var symptomBridge = evaluateSymptomBridgeCascades(corrected, kb, mentionByCanonical, symptomsDetected);
 
   var allSignals = drugDrug.signals.concat(symptomBridge);
@@ -2134,7 +2254,7 @@ function buildCaseModel(noteText, kb, options) {
 
   allSignals = suppressDuplicateSignals(allSignals);
 
-  var globalAlertsResult = buildGlobalMedicationAlerts(corrected, kb, mentions);
+  var globalAlertsResult = buildGlobalMedicationAlerts(corrected, kb, activeMentions);
 
   /* NSAID/COX-inhibitor concurrent-exposure duplicity — a distinct "other
      finding", never a cascade (no intermediate problem, no third drug). */
@@ -2146,7 +2266,7 @@ function buildCaseModel(noteText, kb, options) {
       getIndexExamples(c).forEach(function (d) { if (nsaidCanonicals.indexOf(d) === -1) nsaidCanonicals.push(d); });
     }
   });
-  var nsaidsPresent = mentions.filter(function (m) {
+  var nsaidsPresent = activeMentions.filter(function (m) {
     return nsaidCanonicals.indexOf(m.canonical) !== -1;
   }).map(function (m) { return m.canonical; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
   if (nsaidsPresent.length > 1) {
@@ -2199,7 +2319,12 @@ function buildCaseModel(noteText, kb, options) {
       dose: posology.dose, frequency: posology.frequency, route: null,
       start_date: startDate ? startDate.raw : null,
       prn: posology.prn,
-      current_status: 'active',
+      ingredient_id: normalizeDrugText(canonical).replace(/\s+/g, '-'),
+      assertion: m.assertion,
+      status: m.status,
+      current_status: m.status,
+      temporality: m.temporality,
+      end_date: null,
       explicit_indication: indication && indication.found ? indication : null,
       source: m.match_type === 'combo_brand' ? 'inferred' : 'explicit',
       confidence: m.confidence || 'medium',
@@ -2210,8 +2335,32 @@ function buildCaseModel(noteText, kb, options) {
   var uniqueClasses = [];
   medications.forEach(function (m) { if (m.drug_class && uniqueClasses.indexOf(m.drug_class) === -1) uniqueClasses.push(m.drug_class); });
 
+  var allMedicationMentions = mentions.map(function (m) {
+    var pos = { index: m.actual_start_index, length: (m.mention || '').length };
+    var date = extractDateNear(corrected, pos.index, pos.length);
+    return {
+      original_text: m.mention, normalized_name: m.canonical,
+      ingredient_id: normalizeDrugText(m.canonical).replace(/\s+/g, '-'), brand: m.brand || null,
+      assertion: m.assertion, status: m.status, current_status: m.status,
+      temporality: m.temporality, start_date: date ? date.raw : null, end_date: null,
+      evidence_span: extractSentenceSnippet(corrected, pos.index, pos.length),
+      source: m.match_type === 'combo_brand' ? 'inferred' : 'explicit', confidence: m.confidence || 'medium',
+      drug_class: m.drug_class || ''
+    };
+  });
+  var inactiveOrNegatedMedications = allMedicationMentions.filter(function (m) { return !isActiveMedication(m); });
+  var currentInteractions = evaluateCurrentInteractions(kb, medications);
+
+  allSignals.forEach(function (signal) {
+    signal.recommendation_presentation = getRecommendationPresentation(signal.classification, findCascadeEntryForSignal(signal, kb));
+  });
+
   return {
     medications: medications,
+    activeMedications: medications,
+    allMedicationMentions: allMedicationMentions,
+    inactiveOrNegatedMedications: inactiveOrNegatedMedications,
+    currentInteractions: currentInteractions,
     drug_classes: uniqueClasses,
     activeProblems: activeProblems,
     clinicalMeasurements: measurements,
@@ -2235,6 +2384,8 @@ return {
   normalizeSymptomText: normalizeSymptomText,
   buildDrugResolver: buildDrugResolver,
   resolveDrugMentions: resolveDrugMentions,
+  classifyMedicationMention: classifyMedicationMention,
+  isActiveMedication: isActiveMedication,
   drugFoundInNote: drugFoundInNote,
   extractDrugs: extractDrugs,
   findTermInNote: findTermInNote,
@@ -2267,6 +2418,8 @@ return {
   detectDrugPairTemporality: detectDrugPairTemporality,
   mapConfidenceToRelevance: mapConfidenceToRelevance,
   allRequiredEntitiesPresent: allRequiredEntitiesPresent,
+  evaluateCurrentInteractions: evaluateCurrentInteractions,
+  getRecommendationPresentation: getRecommendationPresentation,
   selectTopInterventions: selectTopInterventions,
   scoreAnticholinergicBurden: scoreAnticholinergicBurden,
   buildGlobalMedicationAlerts: buildGlobalMedicationAlerts,

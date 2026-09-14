@@ -120,7 +120,11 @@
         [
           "metformin"
         ]
-      ]
+      ],
+      "ddi_required_index_drugs": [
+        "dolutegravir"
+      ],
+      "ddi_match_scope": "ingredient_specific"
     },
     {
       "id": "VIH004",

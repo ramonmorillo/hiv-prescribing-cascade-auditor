@@ -43,19 +43,20 @@
     },
     {
       "id": "DDI003",
-      "drug_a": "Dolutegravir / Bictegravir",
-      "drug_a_class": "INSTI",
+      "drug_a": "Dolutegravir",
+      "drug_a_class": "INSTI (unboosted)",
+      "match_scope": "ingredient_specific",
       "drug_b": "Metformin",
       "drug_b_class": "Biguanide antidiabetic",
       "severity": "MODERATE",
-      "mechanism_es": "Inhibición del transportador OCT2/MATE por DTG/BIC → reducción de eliminación renal de metformina → aumento de niveles de metformina",
-      "mechanism_en": "OCT2/MATE transporter inhibition by DTG/BIC → reduced renal metformin elimination → increased metformin levels",
+      "mechanism_es": "Inhibición del transportador OCT2/MATE por dolutegravir → reducción de eliminación renal de metformina → aumento de niveles de metformina",
+      "mechanism_en": "OCT2/MATE transporter inhibition by dolutegravir → reduced renal metformin elimination → increased metformin levels",
       "consequence_es": "Acidosis láctica por metformina (raro pero grave), hipoglucemia",
       "consequence_en": "Metformin-induced lactic acidosis (rare but serious), hypoglycemia",
       "management_es": "Monitorizar función renal. Considerar reducción de dosis de metformina. Evitar metformina si TFGe <45.",
       "management_en": "Monitor renal function. Consider reducing metformin dose. Avoid metformin if eGFR <45.",
-      "cascade_relevance_es": "Cascada: INSTI → ganancia de peso/DM2 → metformina. La combinación requiere vigilancia.",
-      "cascade_relevance_en": "Cascade: INSTI → weight gain/T2DM → metformin. Combination requires vigilance."
+      "cascade_relevance_es": "La interacción específica dolutegravir–metformina requiere vigilancia; no se extrapola a otros INSTI.",
+      "cascade_relevance_en": "The specific dolutegravir–metformin interaction requires monitoring; it is not extrapolated to other INSTIs."
     },
     {
       "id": "DDI004",

@@ -1962,7 +1962,7 @@
     },
     {
       "canonical": "dolutegravir",
-      "drug_class": "Antiretroviral / INSTI",
+      "drug_class": "Antiretroviral / Unboosted INSTI",
       "variants": [
         "dolutegravir",
         "dtg",
@@ -1980,7 +1980,7 @@
     },
     {
       "canonical": "raltegravir",
-      "drug_class": "Antiretroviral / INSTI",
+      "drug_class": "Antiretroviral / Unboosted INSTI",
       "variants": [
         "raltegravir",
         "isentress"
@@ -1988,7 +1988,7 @@
     },
     {
       "canonical": "bictegravir",
-      "drug_class": "Antiretroviral / INSTI",
+      "drug_class": "Antiretroviral / Unboosted INSTI",
       "variants": [
         "bictegravir"
       ]
@@ -2005,7 +2005,7 @@
     },
     {
       "canonical": "lopinavir/ritonavir",
-      "drug_class": "Antiretroviral / PI",
+      "drug_class": "Antiretroviral / Boosted PI",
       "variants": [
         "lopinavir ritonavir",
         "lopinavir/ritonavir",

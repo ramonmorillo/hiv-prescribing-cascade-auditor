@@ -12,7 +12,8 @@ const suites = [
   './temporal-events.test.js',
   './regression.test.js',
   './legacy-nlp.test.js',
-  './kb-audit.test.js'
+  './kb-audit.test.js',
+  './medication-status-interactions.test.js'
 ];
 
 let allOk = true;
