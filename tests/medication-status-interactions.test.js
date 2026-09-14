@@ -18,7 +18,7 @@ function run() {
   const cases = [
     ['Paciente tratado con dolutegravir. No toma metformina.', 'negated', 'not_taking'],
     ['Tomó metformina hasta enero de 2025, cuando fue suspendida. Actualmente recibe dolutegravir.', 'affirmed', 'discontinued'],
-    ['Si desarrolla diabetes, se valorará iniciar metformina.', 'conditional', 'planned']
+    ['Si desarrolla diabetes, se valorará iniciar metformina.', 'conditional', 'conditional_future']
   ];
   cases.forEach(([note,a,s]) => { const x=CE.buildCaseModel(note,kb); const mm=x.allMedicationMentions.find(v=>v.normalized_name==='metformin'); assert(note, mm && mm.assertion===a && mm.status===s && !x.medications.some(v=>v.normalized_name==='metformin') && x.currentInteractions.length===0); });
   const coordinated=CE.buildCaseModel('No toma metformina ni insulina, pero sí sitagliptina.',kb);

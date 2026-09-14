@@ -13,7 +13,8 @@ const suites = [
   './regression.test.js',
   './legacy-nlp.test.js',
   './kb-audit.test.js',
-  './medication-status-interactions.test.js'
+  './medication-status-interactions.test.js',
+  './final-adjustments.test.js'
 ];
 
 let allOk = true;
