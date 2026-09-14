@@ -232,6 +232,26 @@ const UI_STRINGS = {
     classification_reason_lbl:                  'Motivo de la clasificación:',
     classification_group_count:                 function (n) { return n + ' señal' + (n === 1 ? '' : 'es'); },
 
+    /* ── Four-dimension label system (Fase 7) ──
+       Every possibleCascades signal carries FOUR independent judgments that
+       must never be shown as bare, unlabeled badges next to each other —
+       see docs/clinical-engine-fix-audit.md §1.4 for the "ALTO / Confirmada
+       / Coincidencia farmacológica de baja certeza" contradiction this
+       replaces. */
+    dim_relevance_lbl:        'Relevancia clínica potencial (bibliografía/KB):',
+    dim_knowledge_lbl:        'Estado de validación del conocimiento:',
+    dim_assessment_lbl:       'Valoración automatizada de este caso:',
+    dim_professional_lbl:     'Validación profesional:',
+    dim_professional_pending: 'Pendiente de revisión por el profesional',
+    knowledge_reviewed_source: 'Fuente bibliográfica revisada',
+    knowledge_pending_review:  'Pendiente de revisión bibliográfica',
+    dim_legend_title:         'Cómo leer estas etiquetas',
+    dim_legend_text:          'Cada señal muestra cuatro juicios independientes que no deben confundirse entre sí: ' +
+      '(1) la relevancia clínica potencial de la asociación según la bibliografía/KB, con independencia de este paciente; ' +
+      '(2) si esa asociación de la KB cuenta con una fuente bibliográfica revisada; ' +
+      '(3) la valoración automatizada que el sistema hace de ESTE caso concreto a partir de los datos de la nota; y ' +
+      '(4) la validación profesional, el único juicio con valor clínico definitivo, que solo puede emitir un clínico.',
+
     /* Evidence / traceability detail list */
     evidence_details_toggle:        'Ver procedencia y evidencia de esta señal',
     evidence_index_drug:            function (d) { return 'Fármaco índice presente en la nota: ' + d + ' (explícito).'; },
@@ -306,7 +326,6 @@ const UI_STRINGS = {
     report_seq:          '   - Secuencia: ',
     report_finding:      '   - Nivel de hallazgo: ',
     report_prio:         '   - Prioridad farmac\u00E9utica: ',
-    report_verif:        '   - Estado de verificaci\u00F3n: ',
     report_evidence:     '   - Evidencia a favor: ',
     report_missing_conf: '   - Qu\u00E9 falta para confirmar: ',
     report_rec:          '   - Recomendaci\u00F3n cl\u00EDnica breve: ',
@@ -560,6 +579,21 @@ const UI_STRINGS = {
     classification_reason_lbl:                  'Reason for this classification:',
     classification_group_count:                 function (n) { return n + ' signal' + (n === 1 ? '' : 's'); },
 
+    /* ── Four-dimension label system (Fase 7) ── */
+    dim_relevance_lbl:        'Potential clinical relevance (literature/KB):',
+    dim_knowledge_lbl:        'Knowledge validation status:',
+    dim_assessment_lbl:       'Automated assessment of this case:',
+    dim_professional_lbl:     'Professional validation:',
+    dim_professional_pending: 'Pending professional review',
+    knowledge_reviewed_source: 'Reviewed literature source',
+    knowledge_pending_review:  'Pending literature review',
+    dim_legend_title:         'How to read these labels',
+    dim_legend_text:          'Each signal shows four independent judgments that must not be conflated: ' +
+      '(1) the potential clinical relevance of the association per the literature/KB, independent of this patient; ' +
+      '(2) whether that KB association has a reviewed literature source; ' +
+      '(3) the system’s automated assessment of THIS specific case based on the note’s data; and ' +
+      '(4) professional validation, the only judgment with definitive clinical value, which only a clinician can issue.',
+
     evidence_details_toggle:        'View provenance and evidence for this signal',
     evidence_index_drug:            function (d) { return 'Index drug present in the note: ' + d + ' (explicit).'; },
     evidence_cascade_drug:          function (d) { return 'Later drug present in the note: ' + d + ' (explicit).'; },
@@ -632,7 +666,6 @@ const UI_STRINGS = {
     report_seq:          '   - Sequence: ',
     report_finding:      '   - Finding level: ',
     report_prio:         '   - Pharmacy priority: ',
-    report_verif:        '   - Verification status: ',
     report_evidence:     '   - Evidence in favour: ',
     report_missing_conf: '   - What is missing to confirm: ',
     report_rec:          '   - Brief clinical recommendation: ',
@@ -724,7 +757,7 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null, clinicalProblems: null, drugDictionary: null, drugCombinations: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null, clinicalProblems: null, drugDictionary: null, drugCombinations: null, anticholinergicBurdenScale: null },
   /* Cached CaseModel from ClinicalEngine.buildCaseModel() — invalidated
      whenever the note or KB changes. This is now the single source of
      truth for medications/activeProblems/possibleCascades/globalMedicationAlerts;
@@ -854,7 +887,12 @@ async function loadKB(track) {
     drugDictionary:    'kb/drug_dictionary.json',
     /* Fixed-dose combination products (brand → active ingredients), also
      * track-independent — see kb/drug_combinations.json for rationale. */
-    drugCombinations:  'kb/drug_combinations.json'
+    drugCombinations:  'kb/drug_combinations.json',
+    /* Sourced ACB (Anticholinergic Cognitive Burden) scale used by
+     * ClinicalEngine.scoreAnticholinergicBurden — replaces the old
+     * CM006 keyword-trigger alert (see kb/CHANGELOG.md, Fase 6). Also
+     * track-independent: the scale itself doesn't vary by KB track. */
+    anticholinergicBurdenScale: 'kb/anticholinergic_burden_scale.json'
   };
 
   /* cache:'no-cache' sends a conditional GET on each load — the browser still
@@ -1725,11 +1763,7 @@ const STEP_CONTENT = {
 
       var groupsHtml = groups.map(function (g) {
         return (
-          '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
-            'border:1px solid #e0e0e0;border-radius:5px;">' +
-            classificationBadgeHtml(g.level) +
-            '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', g.items.length) + '</strong>' +
-          '</div>' +
+          classificationGroupHeaderHtml(g.level, g.items.length) +
           g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
         );
       }).join('');
@@ -1740,6 +1774,7 @@ const STEP_CONTENT = {
           '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
             tUI('cascade_count', detected.length) +
           '</h3>' +
+          renderDimensionLegendHtml() +
           groupsHtml +
         '</div>' +
         '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
@@ -1987,13 +2022,9 @@ const STEP_CONTENT = {
           return { level: level, items: r.cascades.filter(function (c) { return c.classification === level; }) };
         }).filter(function (g) { return g.items.length > 0; });
 
-        cascadeContent = groups.map(function (g) {
+        cascadeContent = renderDimensionLegendHtml() + groups.map(function (g) {
           return (
-            '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
-              'border:1px solid #e0e0e0;border-radius:5px;">' +
-              classificationBadgeHtml(g.level) +
-              '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', g.items.length) + '</strong>' +
-            '</div>' +
+            classificationGroupHeaderHtml(g.level, g.items.length) +
             g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
           );
         }).join('');
@@ -2220,12 +2251,97 @@ function classificationBadgeHtml(classification) {
     'border-radius:4px;padding:.14rem .5rem;white-space:nowrap;">' + escHtml(classificationLabel(classification)) + '</span>';
 }
 
-function confidenceBadgeHtml(conf) {
-  var color = conf === 'high' ? '#27ae60' : conf === 'medium' ? '#e67e22' : '#7f8c8d';
-  var label = tUI('conf_' + conf) || conf;
+/* ── Four-dimension label system (Fase 7) ──────────────────────────────────
+   Each possibleCascades signal carries four INDEPENDENT judgments that must
+   never be collapsed into one bare badge (see docs/clinical-engine-fix-
+   audit.md §1.4): potentialClinicalRelevance (KB/literature-level, this
+   association in general), knowledgeValidationStatus (does the KB entry
+   have a reviewed source), automatedCaseAssessment (this system's read of
+   THIS patient's note = c.classification), and professionalValidation (the
+   clinician's own verdict, state.cascadeClassifications). Every renderer
+   below carries a tUI dimension label alongside its value so none of the
+   four is ever shown as an unlabeled, potentially contradictory badge. ── */
+
+/** potentialClinicalRelevance text label — keyed off c.potential_clinical_relevance
+ * ('alta' / 'moderada' / 'baja') reusing the existing conf_high/medium/low
+ * strings (same underlying scale as c.confidence) so the label vocabulary
+ * stays in one place. Used by both the HTML badge and the plain-text report. */
+function relevanceLabel(relevance) {
+  var key = relevance === 'alta' ? 'conf_high' : relevance === 'moderada' ? 'conf_medium' : 'conf_low';
+  return tUI(key);
+}
+
+function relevanceBadgeHtml(relevance) {
+  var color = relevance === 'alta' ? '#27ae60' : relevance === 'moderada' ? '#e67e22' : '#7f8c8d';
   return '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
-    'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
-    'text-transform:uppercase;letter-spacing:.03em;">' + escHtml(label) + '</span>';
+    'padding:.1rem .4rem;border-radius:3px;text-transform:uppercase;letter-spacing:.03em;">' +
+    escHtml(relevanceLabel(relevance)) + '</span>';
+}
+
+/** knowledgeValidationStatus text label — whether the KB entry backing this
+ * signal has a reviewed bibliographic source or is still pending review;
+ * independent of whether THIS patient's case is a good match for it. */
+function knowledgeValidationLabel(status) {
+  return status === 'reviewed_source' ? tUI('knowledge_reviewed_source') : tUI('knowledge_pending_review');
+}
+
+function knowledgeValidationBadgeHtml(status) {
+  var reviewed = status === 'reviewed_source';
+  var color = reviewed ? '#2980b9' : '#95a5a6';
+  return '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
+    'padding:.1rem .4rem;border-radius:3px;">' + escHtml(knowledgeValidationLabel(status)) + '</span>';
+}
+
+/** professionalValidation badge — the clinician's own recorded verdict for
+ * this cascade_id (state.cascadeClassifications), or an explicit "pending"
+ * state when no clinician has reviewed it yet — never silently omitted, so
+ * a missing professional verdict can't be mistaken for an implicit one. */
+function professionalValidationBadgeHtml(manualVerdict) {
+  var label = manualVerdict === 'confirmed' ? tUI('ver_confirmed')
+    : manualVerdict === 'possible' ? tUI('ver_possible')
+    : manualVerdict === 'not_cascade' ? tUI('classification_manual_discarded')
+    : tUI('dim_professional_pending');
+  var color = manualVerdict === 'confirmed' ? '#1e8449'
+    : manualVerdict === 'possible' ? '#e67e22'
+    : manualVerdict === 'not_cascade' ? '#bdc3c7'
+    : '#dcdfe1';
+  var fg = manualVerdict ? '#fff' : '#5d6d7e';
+  return '<span style="font-size:.7rem;font-weight:700;color:' + fg + ';background:' + color + ';' +
+    'padding:.1rem .4rem;border-radius:3px;">' + escHtml(label) + '</span>';
+}
+
+/** One labeled row: "<dimension label> <badge>" — the pattern every one of
+ * the four dimensions uses, so a reader always sees which judgment a badge
+ * represents instead of a bare color chip. */
+function dimensionRowHtml(labelKey, badgeHtml) {
+  return '<div style="margin-top:.28rem;font-size:.78rem;color:#5d6d7e;">' +
+    '<span>' + escHtml(tUI(labelKey)) + '</span>&nbsp;' + badgeHtml + '</div>';
+}
+
+/** Compact legend explaining the four dimensions — rendered once above the
+ * cascade list (Step 4 preview and Step 6 report), not per-card, per the
+ * Fase 7 "Leyendas" requirement. */
+function renderDimensionLegendHtml() {
+  return (
+    '<details style="margin:.5rem 0 .8rem;font-size:.78rem;color:#5d6d7e;">' +
+      '<summary style="cursor:pointer;color:#2980b9;font-weight:600;">' + escHtml(tUI('dim_legend_title')) + '</summary>' +
+      '<p style="margin:.4rem 0 0;line-height:1.5;">' + escHtml(tUI('dim_legend_text')) + '</p>' +
+    '</details>'
+  );
+}
+
+/** Group-header badge for the classification (automatedCaseAssessment)
+ * grouping used in Step 4 and Step 6 — labeled explicitly so a section
+ * header is never read as an unqualified verdict. */
+function classificationGroupHeaderHtml(level, count) {
+  return (
+    '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
+      'border:1px solid #e0e0e0;border-radius:5px;">' +
+      '<span style="font-size:.72rem;color:#7f8c8d;">' + escHtml(tUI('dim_assessment_lbl')) + '</span>&nbsp;' +
+      classificationBadgeHtml(level) +
+      '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', count) + '</strong>' +
+    '</div>'
+  );
 }
 
 /** Itemized, traceable evidence list: what's explicit, what's inferred,
@@ -2334,31 +2450,31 @@ function renderCascadeCardHtml(c, opts) {
     '</details>'
   );
 
-  var manualBadge = manualVerdict
-    ? '<span style="font-size:.68rem;font-weight:600;color:#2c3e50;border:1px solid #bbb;' +
-        'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
-        (manualVerdict === 'confirmed' ? tUI('ver_confirmed')
-          : manualVerdict === 'possible' ? tUI('ver_possible')
-          : tUI('classification_manual_discarded')) +
-      '</span>'
-    : '';
+  /* The four dimensions, each on its own labeled row — never combined into
+     one bare badge cluster (the exact defect documented in
+     docs/clinical-engine-fix-audit.md §1.4). */
+  var dimensionsBox = (
+    dimensionRowHtml('dim_relevance_lbl', relevanceBadgeHtml(c.potential_clinical_relevance)) +
+    dimensionRowHtml('dim_knowledge_lbl', knowledgeValidationBadgeHtml(c.knowledge_validation_status)) +
+    dimensionRowHtml('dim_assessment_lbl', classificationBadgeHtml(c.classification)) +
+    dimensionRowHtml('dim_professional_lbl', professionalValidationBadgeHtml(manualVerdict))
+  );
 
   return (
     '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
       'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">' +
         '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
-          escHtml(displayName) + confidenceBadgeHtml(c.confidence) +
+          escHtml(displayName) +
           (c.signal_type === 'symptom_bridge'
             ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;border:1px solid #a569bd;' +
                 'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
                 tUI('via_symptom') + '</span>'
             : '') +
-          manualBadge +
         '</span>' +
         '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' + escHtml(c.cascade_id) + '</code>' +
       '</div>' +
-      '<div style="margin-top:.4rem;">' + classificationBadgeHtml(c.classification) + '</div>' +
+      dimensionsBox +
       chain + ddiBox + recBox + reasonBox + evidenceBox +
     '</div>'
   );
@@ -2416,13 +2532,15 @@ function buildReport() {
   var model = getCaseModel(state.clinicalNote);
 
   var cascades = model.possibleCascades.map(function (c) {
+    var adeDisplay = (currentLanguage === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || tUI('seq_potential_ade'));
     return Object.assign({}, c, {
       verification_status: state.cascadeClassifications[c.cascade_id] || 'unreviewed',
       /* Aliases for the plain-text/CSV export surfaces, which pre-date the
          classification system and speak in terms of a single "recommendation"
          / "temporal support" string rather than the richer evidence object. */
       clinical_recommendation: (currentLanguage === 'es' ? c.recommended_action_es : c.recommended_action_en) || '',
-      temporal_support: (c.evidence && c.evidence.temporal_order && c.evidence.temporal_order.status) || 'unknown'
+      temporal_support: (c.evidence && c.evidence.temporal_order && c.evidence.temporal_order.status) || 'unknown',
+      sequence: c.index_drug + ' → ' + adeDisplay + ' → ' + c.cascade_drug
     });
   });
 
@@ -2434,15 +2552,14 @@ function buildReport() {
   var supportedCount = cascades.filter(function (c) { return c.classification === 'supported_possible_cascade'; }).length;
   var incompleteCount = cascades.filter(function (c) { return c.classification === 'possible_but_incomplete'; }).length;
 
-  var topInterventions = [];
-  var seenInterventions = {};
-  cascades.forEach(function (c) {
-    var text = (currentLanguage === 'es' ? c.recommended_action_es : c.recommended_action_en) || '';
-    var key = text.trim().toLowerCase();
-    if (!key || seenInterventions[key]) return;
-    seenInterventions[key] = true;
-    topInterventions.push(text);
-  });
+  /* Fase 8 — explicit, non-hardcoded priority criteria, in clinical-engine.js
+     (CE.selectTopInterventions) so it's a testable, DOM-free rule rather than
+     inline UI code: only classifications the system itself still stands
+     behind for THIS case are eligible — never a pharmacological-coincidence-
+     only, not-evaluable, or discarded signal (see that function's docstring
+     for the exact bug — VIH003 — this replaced). Cascades are already sorted
+     above by classification rank, so the highest-priority ones come first. */
+  var topInterventions = CE.selectTopInterventions(cascades, currentLanguage, 3);
 
   return {
     patient_id: state.patientId || '',
@@ -2465,7 +2582,7 @@ function buildReport() {
       total_cascades: cascades.length,
       supported_cascades: supportedCount,
       incomplete_cascades: incompleteCount,
-      top_interventions: topInterventions.slice(0, 3),
+      top_interventions: topInterventions,
       validation_warning: tUI('validation_warning')
     }
   };
@@ -2500,9 +2617,15 @@ function formatReportForClinicalRecord(report) {
       group.forEach(function (c, idx) {
         lines.push((idx + 1) + '. ' + c.cascade_name + ' [' + c.cascade_id + ']');
         lines.push(tUI('report_seq') + c.sequence);
-        lines.push(tUI('report_verif') + c.verification_status);
+        /* Four-dimension label system (Fase 7) — same four independent
+           judgments shown on screen, each explicitly named so none reads
+           as a bare, potentially contradictory value. */
+        lines.push(tUI('dim_relevance_lbl') + ' ' + relevanceLabel(c.potential_clinical_relevance));
+        lines.push(tUI('dim_knowledge_lbl') + ' ' + knowledgeValidationLabel(c.knowledge_validation_status));
+        lines.push(tUI('dim_assessment_lbl') + ' ' + classificationLabel(c.classification));
         lines.push(tUI('classification_reason_lbl') + ' ' +
           ((currentLanguage === 'es' ? c.classification_reason_es : c.classification_reason_en) || ''));
+        lines.push(tUI('dim_professional_lbl') + ' ' + (tUI('ver_' + c.verification_status) || c.verification_status));
         lines.push(tUI('report_rec') + (c.clinical_recommendation || tUI('report_no_rec')));
       });
       lines.push('');
@@ -2600,11 +2723,17 @@ window.exportReport = function (format) {
 
   if (format === 'csv') {
     /* One row per cascade; header + data rows */
+    /* Fase 7: the four label dimensions get their own explicit CSV columns
+       (potential_clinical_relevance / knowledge_validation_status /
+       classification / verification_status) — never collapsed into one
+       ambiguous "confidence" or "status" column. */
     var csvCols = [
       'patient_id', 'generated_at', 'kb_version',
       'cascade_id', 'cascade_name',
-      'index_drug', 'cascade_drug', 'confidence', 'ade_en',
-      'clinical_recommendation', 'verification_status', 'classification', 'temporal_support'
+      'index_drug', 'cascade_drug', 'ade_en',
+      'potential_clinical_relevance', 'knowledge_validation_status',
+      'classification', 'verification_status',
+      'clinical_recommendation', 'temporal_support'
     ];
     /* RFC 4180 cell quoting: wrap in " and double any inner " */
     function csvCell(v) {
@@ -2617,8 +2746,10 @@ window.exportReport = function (format) {
       rows.push([
         csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
         csvCell(''), csvCell(tUI('report_no_cascades')),
-        csvCell(''), csvCell(''), csvCell(''), csvCell(''),
-        csvCell(''), csvCell(''), csvCell(''), csvCell('')
+        csvCell(''), csvCell(''), csvCell(''),
+        csvCell(''), csvCell(''),
+        csvCell(''), csvCell(''),
+        csvCell(''), csvCell('')
       ].join(','));
     } else {
       report.cascades.forEach(function (c) {
@@ -2630,11 +2761,12 @@ window.exportReport = function (format) {
           csvCell(c.cascade_name),
           csvCell(c.index_drug),
           csvCell(c.cascade_drug),
-          csvCell(c.confidence),
           csvCell(c.ade_en),
-          csvCell(c.clinical_recommendation),
-          csvCell(c.verification_status),
+          csvCell(c.potential_clinical_relevance),
+          csvCell(c.knowledge_validation_status),
           csvCell(c.classification),
+          csvCell(c.verification_status),
+          csvCell(c.clinical_recommendation),
           csvCell(c.temporal_support)
         ].join(','));
       });

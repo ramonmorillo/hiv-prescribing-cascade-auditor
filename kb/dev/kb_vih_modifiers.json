@@ -42,6 +42,12 @@
       "references": [
         "DHHS Guidelines 2024",
         "Panel on Antiretroviral Guidelines for Adults and Adolescents 2024"
+      ],
+      "ddi_required_drugs": [
+        [
+          "simvastatin",
+          "lovastatin"
+        ]
       ]
     },
     {
@@ -76,8 +82,8 @@
     },
     {
       "id": "VIH003",
-      "name_es": "INSTI (DTG/BIC/RAL) + TDF → Ganancia de peso → Antidiabético/Antihipertensivo",
-      "name_en": "INSTI (DTG/BIC/RAL) + TDF → Weight Gain → Antidiabetic/Antihypertensive",
+      "name_es": "INSTI (DTG/BIC/RAL) → Ganancia de peso → Antidiabético/Antihipertensivo",
+      "name_en": "INSTI (DTG/BIC/RAL) → Weight Gain → Antidiabetic/Antihypertensive",
       "index_drug_class": "INSTI",
       "index_drugs_examples": [
         "dolutegravir",
@@ -107,6 +113,13 @@
       "references": [
         "Venter WDF et al. N Engl J Med 2019",
         "Bourgi K et al. Clin Infect Dis 2020"
+      ],
+      "name_correction_note_es": "El nombre original incluía \"+ TDF\" pero la lógica de la regla (index_drugs_examples) nunca exigió TDF, y el propio mecanismo se describe como no completamente establecido, sin fuente en esta KB que documente TDF como cofactor obligatorio. Corregido en la auditoría 2026-09-14 para que el nombre no afirme una condición que la regla no evalúa. Ver kb/CHANGELOG.md.",
+      "name_correction_note_en": "The original name included \"+ TDF\" but the rule logic (index_drugs_examples) never required TDF, and the mechanism itself is described as not fully established, with no source in this KB documenting TDF as a required cofactor. Corrected in the 2026-09-14 audit so the name does not assert a condition the rule never evaluates. See kb/CHANGELOG.md.",
+      "ddi_required_drugs": [
+        [
+          "metformin"
+        ]
       ]
     },
     {
@@ -301,6 +314,12 @@
         "Wiggins BS et al. Pharmacotherapy 2016",
         "DHHS Guidelines 2024",
         "Liverpool HIV Drug Interaction Database 2024"
+      ],
+      "ddi_required_drugs": [
+        [
+          "rivaroxaban",
+          "apixaban"
+        ]
       ]
     },
     {
@@ -366,6 +385,11 @@
         "WHO Consolidated HIV Guidelines 2023",
         "Dooley KE et al. JAIDS 2013",
         "DHHS Guidelines 2024"
+      ],
+      "ddi_required_drugs": [
+        [
+          "rifampicin"
+        ]
       ]
     },
     {
@@ -467,6 +491,11 @@
       "references": [
         "DHHS Guidelines 2024",
         "ViiV Healthcare Cabenuva prescribing information 2023"
+      ],
+      "ddi_required_drugs": [
+        [
+          "rifampicin"
+        ]
       ]
     },
     {

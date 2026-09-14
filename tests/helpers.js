@@ -23,7 +23,8 @@ function loadKB(track) {
     adeTreatmentMap: loadJSON(folder + '/ade_treatment_map.json'),
     clinicalProblems: loadJSON(folder + '/clinical_problems.json'),
     drugDictionary: loadJSON('kb/drug_dictionary.json'),
-    drugCombinations: loadJSON('kb/drug_combinations.json')
+    drugCombinations: loadJSON('kb/drug_combinations.json'),
+    anticholinergicBurdenScale: loadJSON('kb/anticholinergic_burden_scale.json')
   };
 }
 
