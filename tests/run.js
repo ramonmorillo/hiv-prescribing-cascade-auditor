@@ -9,6 +9,7 @@ const path = require('path');
 const suites = [
   './index-case.test.js',
   './negative-cases.test.js',
+  './temporal-events.test.js',
   './regression.test.js',
   './legacy-nlp.test.js',
   './kb-audit.test.js'

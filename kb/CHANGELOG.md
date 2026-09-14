@@ -1,5 +1,21 @@
 # Knowledge Base Changelog
 
+## Version 2.3.0 — 2026-09-14 (second round)
+
+**Clinical-engine audit, second round: negation/temporality with historical vs. current scope, event-sequence model, medication↔indication linking, VIH003 logic fix, scoped DDI display, real anticholinergic burden scale, four-dimension label system, non-hardcoded priority filtering.**
+
+Full root-cause analysis and design in `docs/clinical-engine-fix-audit.md`. Triggered by a second reported index case (56F, HIV+ on Dovato, anastrozole + amitriptyline, NSAID started for joint pain, explicit "no antecedentes de hipertensión" followed by a later, separately-dated hypertension diagnosis and enalapril) that the tool mishandled in 8 distinct ways — see the audit doc §1 for the full list. This version's KB changes are paired with a `clinical-engine.js`/`app.js` rewrite; the two must be read together.
+
+### New file
+- `kb/anticholinergic_burden_scale.json` (v1.0.0, track-independent): sourced ACB (Anticholinergic Cognitive Burden) scale, Boustani et al. 2008 — 15 score-3 entries only (score 1-2 deliberately excluded pending further pharmacological review, see the file's own `pending_review_note`). Replaces the old `CM006` keyword-trigger "carga anticolinérgica elevada" alert, which listed every detected drug as a contributor regardless of actual anticholinergic activity.
+
+### Changed
+- `kb/{prod,dev}/kb_vih_modifiers.json`: VIH003 renamed from `"INSTI (DTG/BIC/RAL) + TDF → Ganancia de peso → Antidiabético/Antihipertensivo"` to `"INSTI (DTG/BIC/RAL) → Ganancia de peso → Antidiabético/Antihipertensivo"` — the rule's own `index_drug_class`/`index_drugs_examples` never required TDF co-administration; the "+ TDF" in the title was never backed by the rule's logic. Added `name_correction_note_es/en` documenting the change.
+- `kb/{prod,dev}/kb_vih_modifiers.json`: added `ddi_required_drugs` (CNF drug-requirement groups) to the 5 rules whose `ddi_warning` names a third-party drug not already covered by the rule's own matched index/cascade pair: VIH001 (`simvastatin`/`lovastatin`), VIH003 (`metformin`), VIH009 (`rivaroxaban`/`apixaban`), VIH011 (`rifampicin`), VIH014 (`rifampicin`). This is the fix for "dolutegravir-metformin DDI warning shown with no metformin in the note" (VIH003) and the same pattern in the other four. The remaining rules with a `ddi_warning` were reviewed and found to already have their DDI participants covered by the rule's own index/cascade match; a further 14 are flagged pending review in `kb/kb_cascade_registry.md` rather than silently left as-is or guessed.
+- `kb/{prod,dev}/kb_core_cascades.json`: CC001's `recommended_first_action_es/en` rewrote a blanket, HIV-unrelated "En PVVIH, preferir paracetamol cuando sea posible" (CC001 has no HIV-specific mechanism at all — the NSAID→hypertension pathway is prostaglandin-mediated and identical in any patient) into a general, mechanism-appropriate recommendation (review NSAID necessity/duration, temporal relationship, rule out other causes, consider withdrawal/substitution with BP reassessment). `kb/dev/` was additionally missing the `_es` field entirely (only had `_en`); added.
+- `kb/{prod,dev}/clinical_problems.json`: added `"dolor articular"`/`"joint pain"` to CPB005's keyword lists (osteoarthritis/chronic musculoskeletal pain), and `"VIH003"` to CPB003's (type 2 diabetes) `source_cascade_ids`.
+- `kb/{prod,dev}/kb_clinical_modifiers.json`: CM006 (the old "carga anticolinérgica elevada" keyword trigger) is superseded by `kb/anticholinergic_burden_scale.json` and skipped by the engine (`SUPERSEDED_MODIFIER_IDS`); the JSON entry itself is kept, unmodified, for traceability rather than deleted. CM007 (CNS-depressant burden) is unchanged in logic; its `drugs_involved` output now reflects only the mentions that matched CM007's own trigger keywords, not the full drug list (the same class of bug CM006 had).
+
 ## Version 2.2.0 — 2026-09-14
 
 **Clinical-engine audit: fix drug catalog errors, consolidate duplicate cascade rules, add active-problem dictionary, wire the already-existing `ade_treatment_map.json` into detection.**

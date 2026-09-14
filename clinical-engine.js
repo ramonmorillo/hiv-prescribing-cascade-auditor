@@ -98,6 +98,26 @@ var MESSAGES = {
   duplicate_kb_rule_merged: {
     es: 'Señal consolidada: la base de conocimiento contenía una regla casi-duplicada para este mismo patrón, fusionada en auditoría.',
     en: 'Consolidated signal: the knowledge base contained a near-duplicate rule for this same pattern, merged during audit.'
+  },
+  problem_resolved: {
+    es: 'El problema clínico intermedio consta como resuelto en la nota; no hay evidencia de que esté activo actualmente.',
+    en: 'The intermediate clinical problem is recorded as resolved in the note; there is no evidence it is currently active.'
+  },
+  problem_contradiction: {
+    es: 'La nota contiene afirmaciones contradictorias sobre este problema clínico que no pueden ordenarse cronológicamente; el resultado no está resuelto y requiere validación profesional.',
+    en: 'The note contains contradictory statements about this clinical problem that cannot be chronologically ordered; the result is unresolved and requires professional validation.'
+  },
+  cascade_drug_predates_index: {
+    es: 'El fármaco propuesto como respuesta a la cascada ya estaba pautado antes de que se iniciara el fármaco índice; no puede ser una respuesta a un efecto que aún no había ocurrido.',
+    en: 'The drug proposed as the cascade response was already prescribed before the index drug was started; it cannot be a response to an effect that had not yet occurred.'
+  },
+  problem_predates_index: {
+    es: 'El problema clínico intermedio ya estaba presente antes de que se iniciara el fármaco índice; no es compatible con una cascada incidente causada por ese fármaco.',
+    en: 'The intermediate clinical problem was already present before the index drug was started; not compatible with an incident cascade caused by that drug.'
+  },
+  medication_indication_mismatch: {
+    es: 'El fármaco propuesto como respuesta a la cascada tiene en esta nota una indicación explícita distinta e incompatible con el problema propuesto por esta regla; la indicación explícita prevalece sobre la inferencia farmacológica genérica.',
+    en: 'The drug proposed as the cascade response has an explicit indication in this note that is different from and incompatible with the problem this rule proposes; the explicit indication takes precedence over the generic pharmacological inference.'
   }
 };
 
@@ -174,6 +194,18 @@ function normalizeSymptomText(str) {
 
 function hasText(value) {
   return !!(value && String(value).trim());
+}
+
+/** De-duplicates a string array while preserving first-seen order; drops
+ * falsy entries. Shared by anything that builds an evidence/finding list
+ * from multiple event mentions of the same concept. */
+function uniqueStrings(arr) {
+  var seen = {};
+  return (arr || []).filter(function (s) {
+    if (!s || seen[s]) return false;
+    seen[s] = true;
+    return true;
+  });
 }
 
 /* ============================================================
@@ -392,6 +424,47 @@ function findTermInNote(noteText, term) {
 }
 
 /**
+ * Like findTermInNote(), but returns EVERY non-overlapping occurrence of
+ * `term` in `noteText`, not just the first. Needed to build a full event
+ * history for a clinical concept — a note can affirm and later negate (or
+ * vice versa) the same concept, and the pre-audit engine's "first match
+ * wins" behaviour silently dropped every occurrence after the first.
+ * @returns {Array<{index:number, length:number}>}
+ */
+function findAllTermOccurrences(noteText, term) {
+  var normNote = (noteText && noteText.normalize) ? noteText.normalize('NFC') : (noteText || '');
+  var results = [];
+  var parts = term.split('/');
+  for (var p = 0; p < parts.length; p++) {
+    var part = parts[p].trim();
+    if (!part) continue;
+    var normPart = part.normalize ? part.normalize('NFC') : part;
+    var escaped = normPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re;
+    try {
+      re = new RegExp('\\b' + escaped + '\\b', 'gi');
+    } catch (e) {
+      continue;
+    }
+    var m;
+    while ((m = re.exec(normNote)) !== null) {
+      results.push({ index: m.index, length: m[0].length });
+      if (m[0].length === 0) re.lastIndex++; /* guard against zero-length match loops */
+    }
+  }
+  results.sort(function (a, b) { return a.index - b.index; });
+  /* De-duplicate overlapping matches from different `parts` (e.g. a
+     combination term matching both its full form and a sub-part). */
+  var deduped = [];
+  results.forEach(function (r) {
+    var last = deduped[deduped.length - 1];
+    if (last && r.index < last.index + last.length) return;
+    deduped.push(r);
+  });
+  return deduped;
+}
+
+/**
  * Classify a mention at [matchIndex, matchIndex+matchLength) into one of:
  *   'negated'   — explicitly denied ("no presenta", "niega", "negativo para")
  *   'history'   — antecedent/resolved/chronic-prior wording ("antecedente de",
@@ -402,9 +475,37 @@ function findTermInNote(noteText, term) {
  * present", not "confirmed by objective criteria" (that distinction is the
  * caller's job, e.g. via clinical measurement discordance).
  */
+/**
+ * Classify a mention at [matchIndex, matchIndex+matchLength) along TWO
+ * INDEPENDENT axes, then derive a single `status` from their combination.
+ *
+ * This is the fix for the "No tenía antecedentes de hipertensión" defect:
+ * the pre-audit version checked negation cues ("no") and historical cues
+ * ("antecedentes de") as mutually exclusive, early-return branches, so a
+ * phrase containing BOTH ("no tenía antecedentes de X" = X was historically
+ * ABSENT, not a current denial of X) was classified identically to a bare
+ * current negation ("no presenta X"). Detecting both axes independently and
+ * then combining them is what lets the two be told apart.
+ *
+ *   assertion:   affirmed | negated | suspected
+ *   temporality: historical | current
+ *   status  (derived):
+ *     negated  + historical -> 'absent'    (never had it / ausencia histórica)
+ *     negated  + current    -> 'absent'    (does not currently have it)
+ *     affirmed + historical -> 'active'    (chronic / antecedent — still an
+ *                                            ongoing condition, just with a
+ *                                            historical onset; temporal-order
+ *                                            comparison against the index
+ *                                            drug — see evaluateDrugDrugCascades
+ *                                            — decides whether that predates
+ *                                            a proposed new cascade)
+ *     affirmed + current    -> 'active'
+ *     *        + resolved-after cue        -> 'resolved'
+ *     suspected              -> 'suspected'
+ */
 function classifyMention(noteText, matchIndex, matchLength) {
   var preRaw = noteText.slice(Math.max(0, matchIndex - 80), matchIndex);
-  var preTokens = preRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(-6);
+  var preTokens = preRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(-8);
   var preStr = preTokens.join(' ').toLowerCase();
 
   var postRaw = noteText.slice(matchIndex + matchLength, Math.min(noteText.length, matchIndex + matchLength + 60));
@@ -417,60 +518,67 @@ function classifyMention(noteText, matchIndex, matchLength) {
     /\bniega\b/, /\bsin\b/, /\bdescarta\b/, /\bnegativo\s+para\b/, /\bnegativa\s+para\b/,
     /\bausencia\s+de\b/, /\bno\s+presenta\b/, /\bno\s+refiere\b/, /\bno\s+hay\b/
   ];
-  for (var i = 0; i < negBefore.length; i++) {
-    if (negBefore[i].test(preStr)) {
-      return { status: 'negated', reason: 'negated before: "' + preTokens.slice(-3).join(' ') + '"' };
-    }
-  }
-
   var suspectBefore = [
     /\bpossible\b/, /\bsuspected\b/, /\blikely\b/, /\bprobable\b/, /\bquery\b/,
-    /\bposible\b/, /\bsospecha\s+de\b/, /\bprobable\b/, /\ba\s+descartar\b/
+    /\bposible\b/, /\bsospecha\s+de\b/, /\ba\s+descartar\b/
   ];
-  for (var s = 0; s < suspectBefore.length; s++) {
-    if (suspectBefore[s].test(preStr)) {
-      return { status: 'suspected', reason: 'hedged before: "' + preTokens.slice(-3).join(' ') + '"' };
-    }
-  }
-
   var histBefore = [
     /\bresolved\b/, /\bimproved\b/, /\bprevious\b/, /\bhistory\s+of\b/, /\bhx\s+of\b/, /\bh\/o\b/,
     /\bprior\b/, /\bpast\b/, /\bused\s+to\b/, /\bformer(?:ly)?\b/, /\bold\b/, /\bchronic\b/,
     /\bantecedentes\s+de\b/, /\bantecedente\s+de\b/, /\bhistoria\s+de\b/, /\bap\s+de\b/,
     /\bprevio\b/, /\bprevia\b/, /\bpreviamente\b/, /\ben\s+el\s+pasado\b/, /\bcr[oó]nic[oa]\b/, /\bconocid[oa]\b/
   ];
-  for (var j = 0; j < histBefore.length; j++) {
-    if (histBefore[j].test(preStr)) {
-      return { status: 'history', reason: 'historical before: "' + preTokens.slice(-3).join(' ') + '"' };
-    }
-  }
-
   var resolvedAfter = [
     /\bresolved\b/, /\bimproved\b/, /\bcleared\b/, /\bgone\b/, /\babated\b/,
     /\bresuelto\b/, /\bresuelta\b/, /\bmejor[ií]a\b/, /\bmejorado\b/, /\bmejorada\b/,
     /\bcontrolado\b/, /\bcontrolada\b/, /\bcede\b/, /\bdesaparece\b/
   ];
-  for (var k = 0; k < resolvedAfter.length; k++) {
-    if (resolvedAfter[k].test(postStr)) {
-      return { status: 'history', reason: 'resolved after: "' + noteText.slice(matchIndex, matchIndex + matchLength) + ' ' + postTokens.slice(0, 2).join(' ') + '"' };
-    }
-  }
-
   var negAfter = [/\bnegative\b/, /\bnegativo\b/, /\bnegativa\b/, /\bnegativos\b/, /\bnegativas\b/];
-  for (var n = 0; n < negAfter.length; n++) {
-    if (negAfter[n].test(postStr)) {
-      return { status: 'negated', reason: 'negative result after: "' + noteText.slice(matchIndex, matchIndex + matchLength) + ' ' + postTokens.slice(0, 2).join(' ') + '"' };
-    }
-  }
 
-  return { status: 'active', reason: '' };
+  var hasNeg = negBefore.some(function (re) { return re.test(preStr); }) ||
+               negAfter.some(function (re) { return re.test(postStr); });
+  var hasSuspect = suspectBefore.some(function (re) { return re.test(preStr); });
+  var hasHist = histBefore.some(function (re) { return re.test(preStr); });
+  var hasResolved = resolvedAfter.some(function (re) { return re.test(postStr); });
+
+  var reasonParts = [];
+  if (hasNeg) reasonParts.push('negation cue');
+  if (hasSuspect) reasonParts.push('hedging cue');
+  if (hasHist) reasonParts.push('historical cue');
+  if (hasResolved) reasonParts.push('resolved cue');
+  var reason = (reasonParts.length ? reasonParts.join('+') : 'no cue') +
+    ' | before: "' + preTokens.slice(-4).join(' ') + '" | after: "' + postTokens.join(' ') + '"';
+
+  if (hasResolved) {
+    return { assertion: 'affirmed', temporality: 'historical', status: 'resolved', reason: reason };
+  }
+  if (hasSuspect) {
+    return { assertion: 'suspected', temporality: hasHist ? 'historical' : 'current', status: 'suspected', reason: reason };
+  }
+  if (hasNeg) {
+    return { assertion: 'negated', temporality: hasHist ? 'historical' : 'current', status: 'absent', reason: reason };
+  }
+  if (hasHist) {
+    return { assertion: 'affirmed', temporality: 'historical', status: 'active', reason: reason };
+  }
+  return { assertion: 'affirmed', temporality: 'current', status: 'active', reason: '' };
 }
 
 /** Backward-compatible boolean view used by the ADE symptom-bridge pipeline
- * (kb_symptoms.json), which only ever needed active/not-active. */
+ * (kb_symptoms.json), which only ever needed active/not-active.
+ *
+ * Deliberately stricter than the clinical_problems status: an ADE symptom
+ * ("dry mouth", "constipation"...) described only in historical terms
+ * ("history of constipation") means the EPISODE is past, not currently
+ * happening — unlike a chronic DISEASE described the same way ("antecedente
+ * de hipertensión"), which conventionally still means an ongoing diagnosis.
+ * detectGenericActiveProblems() keeps affirmed+historical as status:'active'
+ * (with temporality:'historical' exposed separately) for that reason; this
+ * function instead treats ANY historical temporality as not-currently-active,
+ * matching how symptom-bridge cascades need "is this happening now". */
 function isNegatedSymptom(noteText, matchIndex, matchLength) {
   var c = classifyMention(noteText, matchIndex, matchLength);
-  return { negated: c.status === 'negated' || c.status === 'history', reason: c.reason };
+  return { negated: c.status === 'absent' || c.status === 'resolved' || c.temporality === 'historical', reason: c.reason };
 }
 
 function extractSentenceSnippet(text, index, length) {
@@ -523,6 +631,73 @@ function detectTimeCues(noteText, matchIndex) {
   };
 }
 
+var MONTHS_ES = {
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+  julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10,
+  noviembre: 11, diciembre: 12
+};
+var MONTHS_EN = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+};
+
+/**
+ * Extract an explicit, literally-stated date from the SENTENCE containing a
+ * mention — "desde 2019", "desde mayo de 2026", "en agosto de 2026" — as a
+ * comparable numeric value (year*100+month, or year*100 when only a year is
+ * stated). Scoped to the current sentence (previous/next '.' or newline)
+ * rather than a fixed character window: Spanish clinical narrative typically
+ * states the date once, often at the very start of the sentence ("En agosto
+ * de 2026 presenta... se inicia enalapril"), so a short fixed window before
+ * the mention would miss it while a long one would risk bleeding into an
+ * unrelated adjacent sentence. Deliberately narrow otherwise: only matches
+ * an EXPLICIT year or month name; never infers or guesses a date from
+ * context. Used to order medication starts and problem onsets against each
+ * other (see evaluateDrugDrugCascades's temporal-order check) without
+ * inventing chronology the note doesn't state.
+ * @returns {{year:number, month:number|null, value:number, raw:string, index:number}|null}
+ */
+function extractDateNear(noteText, matchIndex, matchLength) {
+  var sentStart = matchIndex;
+  while (sentStart > 0 && !/[.\n]/.test(noteText.charAt(sentStart - 1))) sentStart--;
+  var sentEnd = matchIndex + matchLength;
+  while (sentEnd < noteText.length && !/[.\n]/.test(noteText.charAt(sentEnd))) sentEnd++;
+  var start = sentStart;
+  var ctx = noteText.slice(sentStart, sentEnd);
+  var monthNames = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|january|february|march|april|may|june|july|august|september|october|november|december';
+
+  /* Year (+ optional month): "desde 2019", "en agosto de 2026". */
+  var reYear = new RegExp('\\b(desde|en|since|in)\\s+(?:el\\s+mes\\s+de\\s+)?(' + monthNames + ')?\\s*(?:de\\s+|of\\s+)?(\\d{4})\\b', 'i');
+  var m = reYear.exec(ctx);
+  if (m) {
+    var monthName = m[2] ? m[2].toLowerCase() : null;
+    var month = monthName ? (MONTHS_ES[monthName] || MONTHS_EN[monthName] || null) : null;
+    var year = parseInt(m[3], 10);
+    if (year >= 1900 && year <= 2100) {
+      return { year: year, month: month, value: year * 100 + (month || 0), raw: m[0].trim(), index: start + m.index };
+    }
+  }
+
+  /* Month only, no year stated — e.g. "En enero no presentaba...", "En
+     marzo se diagnostica...". No absolute year to anchor to, so this is
+     kept as a WEAK relative-order signal only (comparable to other
+     month-only mentions in the same note), never invented as a real date:
+     `year` stays null and the value (1-12) is far smaller than any real
+     year*100 value, so a note that also has an actual dated event always
+     orders after a bare month-only one. */
+  var reMonthOnly = new RegExp('\\b(desde|en|since|in)\\s+(' + monthNames + ')\\b', 'i');
+  var m2 = reMonthOnly.exec(ctx);
+  if (m2) {
+    var monthName2 = m2[2].toLowerCase();
+    var month2 = MONTHS_ES[monthName2] || MONTHS_EN[monthName2] || null;
+    if (month2) {
+      return { year: null, month: month2, value: month2, raw: m2[0].trim(), index: start + m2.index };
+    }
+  }
+
+  return null;
+}
+
 /* ============================================================
    4. Symptom bridge extraction (kb_symptoms.json — ADE symptom dictionary)
    ============================================================ */
@@ -565,10 +740,15 @@ function extractSymptoms(noteText, kb) {
     var cls = classifyMention(noteText, matchResult.index, matchResult.length);
     var canonicalTerm = synonymMap[normalizeSymptomText(matchedTerm)] || sym.term;
 
+    /* An ADE symptom described only in historical terms ("history of
+       constipation") is a past episode, not a currently active one — see
+       isNegatedSymptom()'s docstring for why this differs from how a
+       chronic disease's historical phrasing is treated. */
     detected.push({
       id: sym.id, term: canonicalTerm, matched_term: matchedTerm,
       category: sym.category || '', cascade_relevance: sym.cascade_relevance || '',
-      active: cls.status === 'active', status: cls.status, reason: cls.reason,
+      active: cls.status === 'active' && cls.temporality !== 'historical',
+      status: cls.status, reason: cls.reason,
       startIndex: matchResult.index
     });
   });
@@ -590,8 +770,116 @@ function extractSymptoms(noteText, kb) {
          before this audit — no reason to touch it).
    ============================================================ */
 
-function detectGenericActiveProblems(noteText, kb) {
+/**
+ * Reconcile a concept's full list of textual mentions (events, in textual
+ * order) into a single current-state summary.
+ *
+ * Ordering preference:
+ *   1. If every event has the same status, no conflict — use the most
+ *      informative one (prefer one carrying an explicit date).
+ *   2. If events disagree and at least one carries an explicit/relative
+ *      date, the event with the LATEST date wins — unless two events tie at
+ *      the same latest date with different statuses, which is a genuine
+ *      contradiction.
+ *   3. If none carries a date, fall back to textual order ONLY when the
+ *      first event is clearly historical-temporality and the last is not
+ *      (the "was absent historically, now affirmed" pattern — Prueba I).
+ *   4. Otherwise: do not guess. Mark the concept as a contradiction
+ *      requiring professional validation (Prueba J) rather than arbitrarily
+ *      picking a side.
+ *
+ * Never discards the raw events — every mention stays available on
+ * `.events` for full traceability (Fase 2, point 3: "no elimines menciones
+ * anteriores").
+ */
+function reconcileProblemEvents(events) {
+  if (!events.length) return null;
+
+  var firstActiveDate = null;
+  events.forEach(function (e) {
+    if (e.status === 'active' && e.date && (!firstActiveDate || e.date.value < firstActiveDate.value)) {
+      firstActiveDate = e.date;
+    }
+  });
+
+  function finalize(base, extra) {
+    return Object.assign({}, base, { first_active_date: firstActiveDate, events: events }, extra || {});
+  }
+
+  if (events.length === 1) {
+    return finalize(events[0], { contradiction: false });
+  }
+
+  var statuses = events.map(function (e) { return e.status; })
+    .filter(function (v, i, a) { return a.indexOf(v) === i; });
+
+  if (statuses.length === 1) {
+    var withDate = events.filter(function (e) { return e.date; });
+    var chosenSame = withDate.length ? withDate[withDate.length - 1] : events[events.length - 1];
+    return finalize(chosenSame, { contradiction: false });
+  }
+
+  var dated = events.filter(function (e) { return e.date; });
+  if (dated.length) {
+    dated.sort(function (a, b) { return a.date.value - b.date.value; });
+    var latest = dated[dated.length - 1];
+    var conflictAtMax = dated.filter(function (e) { return e.date.value === latest.date.value && e.status !== latest.status; });
+    if (conflictAtMax.length > 1) {
+      return finalize(events[events.length - 1], {
+        status: 'unknown', assertion: 'unknown', temporality: 'undetermined', contradiction: true,
+        evidence_span: events.map(function (e) { return e.evidence_span; }).join(' // ')
+      });
+    }
+    return finalize(latest, { contradiction: false, resolved_by: 'explicit_date' });
+  }
+
+  var first = events[0];
+  var last = events[events.length - 1];
+  if (first.temporality === 'historical' && last.temporality !== 'historical') {
+    return finalize(last, { contradiction: false, resolved_by: 'textual_order' });
+  }
+
+  return finalize(events[events.length - 1], {
+    status: 'unknown', assertion: 'unknown', temporality: 'undetermined', contradiction: true,
+    evidence_span: events.map(function (e) { return e.evidence_span; }).join(' // ')
+  });
+}
+
+/** Category slug -> localized label, for the small handful of coarse
+ * buckets used in kb/clinical_problems.json. Falls back to the raw slug
+ * (Title Cased) for any category not in this list, so an unmapped value is
+ * degraded gracefully rather than throwing or showing nothing. */
+var PROBLEM_CATEGORY_LABELS = {
+  cardiovascular: { es: 'Cardiovascular', en: 'Cardiovascular' },
+  metabolic: { es: 'Metabólico', en: 'Metabolic' },
+  gastrointestinal: { es: 'Gastrointestinal', en: 'Gastrointestinal' },
+  musculoskeletal: { es: 'Musculoesquelético', en: 'Musculoskeletal' },
+  neurological: { es: 'Neurológico', en: 'Neurological' }
+};
+function problemCategoryLabel(category, lang) {
+  var entry = PROBLEM_CATEGORY_LABELS[category];
+  if (entry) return entry[lang] || entry.es;
+  if (!category) return lang === 'en' ? 'Other' : 'Otro';
+  return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+/** Maps the reconciled temporal-event status/assertion onto the UI's
+ * pre-existing certainty vocabulary (confirmed/suspected/symptom/rule_out/
+ * negated — see app.js CERTAINTY_COLOR and tUI certainty_* strings). This
+ * is a DISPLAY-layer relabeling only: it never changes activeProblems'
+ * own status/assertion/temporality fields, which remain the source of
+ * truth for cascade reasoning. */
+function problemCertaintyForDisplay(status) {
+  if (status === 'active') return 'confirmed'; /* explicitly stated in the note */
+  if (status === 'suspected') return 'suspected';
+  if (status === 'absent') return 'negated';
+  if (status === 'resolved') return 'negated'; /* no longer current, same display bucket as absent */
+  return 'suspected'; /* 'unknown' — prudent default, never overclaim */
+}
+
+function detectGenericActiveProblems(noteText, kb, lang) {
   if (!noteText || !noteText.trim()) return [];
+  lang = lang || 'es';
   var original = noteText;
   var normalized = normalizeSymptomText(noteText);
   var entries = (kb.clinicalProblems && kb.clinicalProblems.problems) || [];
@@ -601,48 +889,104 @@ function detectGenericActiveProblems(noteText, kb) {
     var chronicKeywords = (entry.chronic_keywords_es || []).concat(entry.chronic_keywords_en || []);
     var plainKeywords = (entry.keywords_es || []).concat(entry.keywords_en || []);
 
-    /* Chronic-specific phrasing takes priority: if the note uses a phrase
-       like "hipertensión arterial esencial" or "HTA previa", that alone
-       settles status=history regardless of what classifyMention would say
-       about the shorter bare term nearby. */
-    var chronicHit = null;
-    for (var ci = 0; ci < chronicKeywords.length; ci++) {
-      var normKw = normalizeSymptomText(chronicKeywords[ci]);
-      var pos = findTermInNote(normalized, normKw);
-      if (pos) { chronicHit = { pos: pos, keyword: chronicKeywords[ci] }; break; }
+    /* Collect every occurrence of every keyword variant (not just the
+       first) as its own event — this is the fix for "no tenía antecedentes
+       de hipertensión" silently shadowing a later, separate, affirmed
+       mention of the same concept (see docs/clinical-engine-fix-audit.md
+       §1.1). Chronic-specific phrasing ("hipertensión arterial esencial",
+       "HTA previa") forces temporality=historical for that event even when
+       classifyMention's own nearby-word cues wouldn't catch it, since the
+       phrase itself asserts chronicity. */
+    var rawEvents = [];
+    function collect(keywordList, isChronicList) {
+      keywordList.forEach(function (kw) {
+        var normKw = normalizeSymptomText(kw);
+        if (!normKw) return;
+        findAllTermOccurrences(normalized, normKw).forEach(function (pos) {
+          var cls = classifyMention(normalized, pos.index, pos.length);
+          var status = cls.status;
+          var temporality = cls.temporality;
+          if (isChronicList && status === 'active') temporality = 'historical';
+          var date = extractDateNear(original, pos.index, pos.length);
+          rawEvents.push({
+            pos: pos, keyword: kw, is_chronic_phrasing: !!isChronicList,
+            assertion: cls.assertion, temporality: temporality, status: status, reason: cls.reason,
+            evidence_span: extractSentenceSnippet(original, pos.index, pos.length),
+            date: date, matched_keyword: kw
+          });
+        });
+      });
     }
+    collect(chronicKeywords, true);
+    collect(plainKeywords, false);
 
-    var plainHit = null;
-    for (var pi = 0; pi < plainKeywords.length; pi++) {
-      var normKw2 = normalizeSymptomText(plainKeywords[pi]);
-      var pos2 = findTermInNote(normalized, normKw2);
-      if (pos2) { plainHit = { pos: pos2, keyword: plainKeywords[pi] }; break; }
-    }
+    if (!rawEvents.length) return;
 
-    var hit = chronicHit || plainHit;
-    if (!hit) return;
+    /* De-duplicate events at (near-)identical positions found via more than
+       one keyword variant (e.g. "hipertension" matching both a plain and a
+       chronic-phrase keyword at the same spot). */
+    rawEvents.sort(function (a, b) { return a.pos.index - b.pos.index; });
+    var events = [];
+    rawEvents.forEach(function (e) {
+      var last = events[events.length - 1];
+      if (last && e.pos.index < last.pos.index + last.pos.length) return;
+      events.push(e);
+    });
 
-    var cls = classifyMention(normalized, hit.pos.index, hit.pos.length);
-    var status = cls.status;
-    if (chronicHit && status === 'active') status = 'history'; /* explicit chronic phrasing wins */
+    var reconciled = reconcileProblemEvents(events);
+    if (!reconciled) return;
+
+    /* UI-compat fields (Step 3 "Clasificación" screen, app.js renderProblemCard):
+       that renderer pre-dates the Fase 2 multi-event/temporal rewrite and
+       still reads problem/certainty/category_label/evidence[]/negatedFindings[]
+       — added here rather than forking a second problem-detection path, so
+       CaseModel.activeProblems (cascade reasoning, tests) and the Step 3
+       display stay backed by the exact same reconciled event data. */
+    var displayEvidence = uniqueStrings(events.filter(function (e) {
+      return e.status === 'active' || e.status === 'resolved' || e.status === 'suspected';
+    }).map(function (e) { return e.evidence_span; }));
+    var displayNegated = uniqueStrings(events.filter(function (e) {
+      return e.status === 'absent';
+    }).map(function (e) { return e.evidence_span; }));
 
     results.push({
       id: entry.id,
       concept_es: entry.concept_es,
       concept_en: entry.concept_en,
       category: entry.category || '',
-      status: status, /* 'active' | 'history' | 'negated' | 'suspected' */
-      matched_keyword: hit.keyword,
-      is_chronic_phrasing: !!chronicHit,
-      evidence_span: extractSentenceSnippet(original, hit.pos.index, hit.pos.length),
+      status: reconciled.status, /* 'active' | 'absent' | 'resolved' | 'suspected' | 'unknown' */
+      assertion: reconciled.assertion,
+      temporality: reconciled.temporality,
+      contradiction: !!reconciled.contradiction,
+      matched_keyword: reconciled.matched_keyword,
+      is_chronic_phrasing: !!reconciled.is_chronic_phrasing,
+      evidence_span: reconciled.evidence_span,
       source: 'explicit',
-      confidence: status === 'active' ? 'high' : 'medium',
+      confidence: reconciled.contradiction ? 'low' : (reconciled.status === 'active' ? 'high' : 'medium'),
+      /* Step 3 display fields — see comment above. */
+      problem: lang === 'en' ? (entry.concept_en || entry.concept_es) : (entry.concept_es || entry.concept_en),
+      category_label: problemCategoryLabel(entry.category, lang),
+      certainty: problemCertaintyForDisplay(reconciled.status),
+      evidence: displayEvidence,
+      negatedFindings: displayNegated,
       measurement_type: entry.measurement_type || null,
       diagnostic_note_es: entry.diagnostic_note_es || '',
       diagnostic_note_en: entry.diagnostic_note_en || '',
       alternative_indication_for_drug_examples: entry.alternative_indication_for_drug_examples || [],
       source_cascade_ids: entry.source_cascade_ids || [],
-      references: entry.references || []
+      references: entry.references || [],
+      /* Full event history — never discarded, per Fase 2 point 3. */
+      events: events.map(function (e) {
+        return {
+          originalText: e.evidence_span, assertion: e.assertion, temporality: e.temporality,
+          status: e.status, evidenceSpan: e.evidence_span, date: e.date ? e.date.raw : null,
+          startDate: e.date ? e.date.value : null, source: 'explicit', confidence: e.status === 'active' ? 'high' : 'medium'
+        };
+      }),
+      /* Earliest date at which this problem was affirmed active — used to
+         compare against a candidate index drug's own start date (Fase 4:
+         "la hipertensión era previa al AINE" reduces/discards plausibility). */
+      first_active_date: reconciled.first_active_date
     });
   });
 
@@ -728,7 +1072,7 @@ function detectUrologicRenalProblem(noteText, lang, resolver) {
 function detectActiveProblems(noteText, kb, lang, resolver) {
   if (!noteText || !noteText.trim()) return [];
   var corrected = normalizeClinicalText(noteText);
-  var problems = detectGenericActiveProblems(corrected, kb);
+  var problems = detectGenericActiveProblems(corrected, kb, lang);
   var urologic = detectUrologicRenalProblem(corrected, lang || 'es', resolver || buildDrugResolver(kb));
   if (urologic) problems.push(urologic);
   return problems;
@@ -831,7 +1175,7 @@ function detectAlternativeIndication(noteText, cascadeDrug, kb, activeProblems, 
 
   for (var i = 0; i < (activeProblems || []).length; i++) {
     var p = activeProblems[i];
-    if (p.status === 'negated') continue;
+    if (p.status === 'absent' || p.status === 'resolved') continue;
     if (currentCascadeId && Array.isArray(p.source_cascade_ids) && p.source_cascade_ids.indexOf(currentCascadeId) !== -1) continue;
     var drugs = (p.alternative_indication_for_drug_examples || []).map(normalizeDrugText);
     if (drugs.indexOf(normCascade) === -1) continue;
@@ -839,7 +1183,7 @@ function detectAlternativeIndication(noteText, cascadeDrug, kb, activeProblems, 
       found: true,
       reason_es: p.concept_es,
       reason_en: p.concept_en,
-      chronic: p.status === 'history' || p.is_chronic_phrasing
+      chronic: p.temporality === 'historical' || p.is_chronic_phrasing
     };
   }
   return { found: false, reason_es: '', reason_en: '', chronic: false };
@@ -857,7 +1201,19 @@ function detectAlternativeIndication(noteText, cascadeDrug, kb, activeProblems, 
    as standalone alerts, never injected into an unrelated cascade card).
    ============================================================ */
 
-var DRUG_SPECIFIC_MODIFIER_IDS = ['CM006', 'CM007']; /* anticholinergic / CNS depressant burden */
+/* CM006 (anticholinergic burden) is superseded by scoreAnticholinergicBurden()
+ * below, which uses a real, sourced, per-drug scoring table
+ * (kb/anticholinergic_burden_scale.json) instead of a keyword trigger that
+ * fires the whole alert on any single mention and then lists every drug in
+ * the note as a "contributor" — see docs/clinical-engine-fix-audit.md §1.3.
+ * CM006 itself is kept in kb_clinical_modifiers.json (not silently deleted)
+ * but is excluded from BOTH modifier buckets below so it never fires under
+ * its old keyword-trigger behaviour. CM007 (CNS depressant burden) still
+ * uses the keyword-trigger mechanism, but drugs_involved is now restricted
+ * to the mentions that actually matched one of ITS keywords (see
+ * matched_keywords below), not every drug in the note. */
+var SUPERSEDED_MODIFIER_IDS = ['CM006'];
+var DRUG_SPECIFIC_MODIFIER_IDS = ['CM007']; /* CNS depressant burden */
 
 function detectClinicalContextModifiers(noteText, kb) {
   if (!noteText || !noteText.trim()) return [];
@@ -866,12 +1222,15 @@ function detectClinicalContextModifiers(noteText, kb) {
   var normalizedNote = normalizeDrugText(noteText);
   var matched = [];
   modifiers.forEach(function (mod) {
+    if (SUPERSEDED_MODIFIER_IDS.indexOf(mod.id) !== -1) return;
     var keywords = [].concat((mod.trigger_context && mod.trigger_context.keywords_en) || [],
                               (mod.trigger_context && mod.trigger_context.keywords_es) || []);
+    var matchedKeywords = [];
     for (var ki = 0; ki < keywords.length; ki++) {
       var kw = normalizeDrugText(keywords[ki]);
-      if (kw && normalizedNote.indexOf(kw) !== -1) { matched.push(mod); return; }
+      if (kw && normalizedNote.indexOf(kw) !== -1) matchedKeywords.push(keywords[ki]);
     }
+    if (matchedKeywords.length) matched.push(Object.assign({}, mod, { matched_keywords: matchedKeywords }));
   });
   return matched;
 }
@@ -883,10 +1242,10 @@ function detectClinicalContextModifiers(noteText, kb) {
  *     fall risk, CV risk, dementia) — these describe the PATIENT, not one
  *     specific drug pair, so "affects all cascades" is a legitimate reading
  *     of the KB's own `affects` field for them.
- *   - globalAlerts: drug-burden scores (anticholinergic/CNS depressant) that
- *     are properties of the CURRENT DRUG LIST as a whole, never of one
- *     cascade — these become their own entries in CaseModel.globalMedicationAlerts
- *     and are NEVER merged into a cascade card's text.
+ *   - globalAlerts: drug-burden scores (CNS depressant load) that are
+ *     properties of the CURRENT DRUG LIST as a whole, never of one cascade —
+ *     these become their own entries in CaseModel.globalMedicationAlerts and
+ *     are NEVER merged into a cascade card's text.
  */
 function classifyMatchedModifiers(matched) {
   var patientLevel = [];
@@ -899,6 +1258,50 @@ function classifyMatchedModifiers(matched) {
     }
   });
   return { patientLevel: patientLevel, globalAlerts: globalAlerts };
+}
+
+/**
+ * Fase 6 — real, sourced anticholinergic burden scoring using
+ * kb/anticholinergic_burden_scale.json (ACB scale, Boustani et al. 2008).
+ * Only mentions matching a scored entry become contributors; a drug absent
+ * from the table is never assumed anticholinergic. Wording adapts to the
+ * number of contributors — "cumulative"/"elevated" language is only used
+ * with 2+ contributors and a total reaching the disclosed threshold; a
+ * single contributor gets a prudent, non-alarmist phrasing instead.
+ */
+function scoreAnticholinergicBurden(mentions, kb) {
+  var scaleData = kb.anticholinergicBurdenScale || {};
+  var scaleEntries = scaleData.entries || [];
+  if (!scaleEntries.length) return null; /* scale not loaded: not evaluable, never guess */
+
+  var scaleByCanonical = {};
+  scaleEntries.forEach(function (e) { scaleByCanonical[normalizeDrugText(e.canonical)] = e; });
+
+  var contributors = [];
+  var seen = {};
+  (mentions || []).forEach(function (m) {
+    var key = normalizeDrugText(m.canonical);
+    if (seen[key]) return;
+    var entry = scaleByCanonical[key];
+    if (!entry) return;
+    seen[key] = true;
+    contributors.push({ canonical: m.canonical, score: entry.score, drug_class: entry.drug_class || '' });
+  });
+
+  if (!contributors.length) return { contributors: [], total_score: 0 };
+
+  var total = contributors.reduce(function (sum, c) { return sum + c.score; }, 0);
+  var CLINICALLY_RELEVANT_THRESHOLD = 3; /* ACB total >=3 is the threshold Boustani et al. use for clinical relevance */
+
+  return {
+    contributors: contributors,
+    total_score: total,
+    threshold: CLINICALLY_RELEVANT_THRESHOLD,
+    meets_threshold: total >= CLINICALLY_RELEVANT_THRESHOLD,
+    scale_name_es: scaleData.scale_name_es || 'Escala ACB',
+    scale_name_en: scaleData.scale_name_en || 'ACB Scale',
+    references: scaleData.references || []
+  };
 }
 
 function applyPatientLevelModifiers(signal, patientLevelModifiers) {
@@ -924,9 +1327,23 @@ function applyPatientLevelModifiers(signal, patientLevelModifiers) {
 function buildGlobalMedicationAlerts(noteText, kb, mentions) {
   var matched = detectClinicalContextModifiers(noteText, kb);
   var split = classifyMatchedModifiers(matched);
-  var mentionCanonicals = (mentions || []).map(function (m) { return m.canonical; });
 
+  /* CM007 (CNS-depressant burden): drugs_involved is restricted to the
+     mentions that actually matched one of the modifier's own trigger
+     keywords — not the full drug list — the same class of bug already
+     fixed for the retired CM006 keyword-trigger path. */
   var alerts = split.globalAlerts.map(function (mod) {
+    var drugsInvolved = (mentions || []).filter(function (m) {
+      var mCanon = normalizeDrugText(m.canonical || '');
+      var mText = normalizeDrugText(m.mention || m.canonical || '');
+      return (mod.matched_keywords || []).some(function (kw) {
+        var nkw = normalizeDrugText(kw);
+        if (!nkw) return false;
+        return mCanon.indexOf(nkw) !== -1 || nkw.indexOf(mCanon) !== -1 ||
+               mText.indexOf(nkw) !== -1 || nkw.indexOf(mText) !== -1;
+      });
+    }).map(function (m) { return m.canonical; });
+
     return {
       id: mod.id,
       type: 'drug_burden',
@@ -934,11 +1351,62 @@ function buildGlobalMedicationAlerts(noteText, kb, mentions) {
       name_en: mod.name_en,
       message_es: mod.message_es,
       message_en: mod.message_en,
-      drugs_involved: mentionCanonicals,
+      drugs_involved: drugsInvolved,
       references: mod.references || [],
       rule_id: mod.id
     };
   });
+
+  /* Fase 6 — real ACB-scale anticholinergic burden alert, replacing the
+     retired CM006 keyword trigger. Wording never claims a "cumulative"/
+     multi-drug effect with a single contributor, and never claims
+     "elevated burden" below the disclosed threshold. */
+  var acb = scoreAnticholinergicBurden(mentions, kb);
+  if (acb && acb.contributors && acb.contributors.length) {
+    var multi = acb.contributors.length >= 2;
+    var list = acb.contributors.map(function (c) { return c.canonical + ' (ACB ' + c.score + ')'; }).join(', ');
+    var nameEs, nameEn, messageEs, messageEn;
+    if (multi) {
+      nameEs = 'Carga anticolinérgica acumulada';
+      nameEn = 'Cumulative anticholinergic burden';
+      messageEs = 'Carga anticolinérgica acumulada detectada: ' + list + ' (puntuación ACB total = ' +
+        acb.total_score + ', umbral de relevancia clínica de la escala ≥' + acb.threshold +
+        '). El efecto acumulado de varios fármacos con actividad anticolinérgica definida aumenta el riesgo ' +
+        'de confusión, retención urinaria, estreñimiento y caídas, especialmente en personas mayores.';
+      messageEn = 'Cumulative anticholinergic burden detected: ' + list + ' (total ACB score = ' +
+        acb.total_score + ', scale clinical-relevance threshold ≥' + acb.threshold +
+        '). The cumulative effect of several drugs with definite anticholinergic activity increases the risk ' +
+        'of confusion, urinary retention, constipation, and falls, especially in older adults.';
+    } else {
+      nameEs = 'Fármaco con actividad anticolinérgica definida (ACB 3)';
+      nameEn = 'Drug with definite anticholinergic activity (ACB 3)';
+      messageEs = 'Fármaco con actividad anticolinérgica definida detectado: ' + list +
+        '. Vigilar efectos anticolinérgicos (confusión, retención urinaria, estreñimiento, sequedad de boca), ' +
+        'especialmente en personas mayores. No se identifican otros fármacos con actividad anticolinérgica ' +
+        'definida en esta nota: no procede describir una carga acumulada por polimedicación anticolinérgica.';
+      messageEn = 'Drug with definite anticholinergic activity detected: ' + list +
+        '. Monitor for anticholinergic effects (confusion, urinary retention, constipation, dry mouth), ' +
+        'especially in older adults. No other drugs with definite anticholinergic activity are identified in ' +
+        'this note: cumulative anticholinergic-burden language does not apply.';
+    }
+    alerts.push({
+      id: 'ACB_SCORE',
+      type: 'anticholinergic_burden',
+      name_es: nameEs,
+      name_en: nameEn,
+      message_es: messageEs,
+      message_en: messageEn,
+      drugs_involved: acb.contributors.map(function (c) { return c.canonical; }),
+      contributors: acb.contributors,
+      total_score: acb.total_score,
+      threshold: acb.threshold,
+      meets_threshold: acb.meets_threshold,
+      scale_name_es: acb.scale_name_es,
+      scale_name_en: acb.scale_name_en,
+      references: acb.references || [],
+      rule_id: 'ACB_SCORE'
+    });
+  }
 
   return { alerts: alerts, patientLevelModifiers: split.patientLevel };
 }
@@ -947,11 +1415,78 @@ function buildGlobalMedicationAlerts(noteText, kb, mentions) {
    9. Duplicate suppression
    ============================================================ */
 
+/**
+ * Fase 5 — single centralized check for "does every entity a rule/alert
+ * requires actually appear in this note", used everywhere a DDI warning or
+ * similar multi-drug alert is about to be shown, so no component has to
+ * re-implement (and potentially get wrong) this logic independently.
+ *
+ * @param {Array<Array<string>>} requiredGroups  conjunctive-normal-form drug
+ *   requirement: EVERY group must have AT LEAST ONE of its members present
+ *   (group = alternative drugs satisfying the same requirement, e.g.
+ *   ["simvastatin","lovastatin"] — either one is enough; two separate
+ *   single-member groups mean both are independently required, e.g.
+ *   VIH003's [["metformin"]] combined with its own already-guaranteed
+ *   index drug). An empty `requiredGroups` array means "not yet reviewed
+ *   for this check" and is treated as automatically satisfied (unchanged,
+ *   pre-audit behaviour) — see kb_cascade_registry.md for which rules still
+ *   need this review.
+ * @param {string[]} presentCanonicals  canonical drug names resolved from
+ *   the note (state.kb-independent — just the plain list).
+ */
+function allRequiredEntitiesPresent(requiredGroups, presentCanonicals) {
+  if (!requiredGroups || !requiredGroups.length) return true;
+  var normPresent = (presentCanonicals || []).map(normalizeDrugText);
+  return requiredGroups.every(function (group) {
+    return (group || []).some(function (drug) { return normPresent.indexOf(normalizeDrugText(drug)) !== -1; });
+  });
+}
+
 function confidenceRank(conf) { return conf === 'high' ? 3 : conf === 'medium' ? 2 : 1; }
 function priorityRank(priority) { return priority === 'alta' ? 3 : priority === 'intermedia' ? 2 : 1; }
 function classificationRank(c) {
   var order = { supported_possible_cascade: 5, possible_but_incomplete: 4, pharmacological_match_only: 3, not_evaluable: 2, discarded: 1 };
   return order[c] || 0;
+}
+
+/**
+ * Fase 8 — explicit, non-hardcoded priority criteria for "Principales
+ * intervenciones sugeridas". A recommendation is only surfaced as a leading
+ * intervention when the SYSTEM'S OWN automated case assessment
+ * (signal.classification) found it actionable for THIS patient — never for
+ * a pharmacological-coincidence-only, not-evaluable, or discarded signal.
+ * This is the fix for the audit's bug #8: a discarded cascade's KB action
+ * text (e.g. VIH003's "switch the INSTI") was leaking into the top-
+ * interventions summary purely because it happened to be one of few
+ * possibleCascades entries, with no check on whether the system itself
+ * still stood behind that signal for this specific case.
+ *
+ * Ordering within the actionable set is preserved from `signals`'
+ * incoming order (callers are expected to have already sorted by
+ * classificationRank/confidence, as buildReport() does), so the most
+ * actionable classification still comes first; this function only FILTERS
+ * and de-duplicates, it never re-orders.
+ *
+ * @param {Array} signals  possibleCascades-shaped entries (need
+ *   .classification, .recommended_action_es, .recommended_action_en)
+ * @param {string} lang  'es' | 'en'
+ * @param {number} [limit=3]
+ * @returns {string[]} deduplicated, non-empty recommendation strings
+ */
+var ACTIONABLE_CLASSIFICATIONS = ['supported_possible_cascade', 'possible_but_incomplete'];
+function selectTopInterventions(signals, lang, limit) {
+  limit = typeof limit === 'number' ? limit : 3;
+  var seen = {};
+  var out = [];
+  (signals || []).forEach(function (c) {
+    if (ACTIONABLE_CLASSIFICATIONS.indexOf(c.classification) === -1) return;
+    var text = (lang === 'en' ? c.recommended_action_en : c.recommended_action_es) || '';
+    var key = text.trim().toLowerCase();
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    out.push(text);
+  });
+  return limit > 0 ? out.slice(0, limit) : out;
 }
 
 function suppressDuplicateSignals(signals) {
@@ -1047,7 +1582,9 @@ function verifyIntermediateProblem(noteText, cascade, kb, activeProblems) {
     var fromActive = (activeProblems || []).find(function (p) { return p.id === problemEntry.id; });
     if (fromActive) {
       return {
-        checked: true, status: fromActive.status, evidence_span: fromActive.evidence_span,
+        checked: true, status: fromActive.status, temporality: fromActive.temporality,
+        contradiction: !!fromActive.contradiction, evidence_span: fromActive.evidence_span,
+        first_active_date: fromActive.first_active_date || null,
         source: 'clinical_problems', linked_problem_id: problemEntry.id,
         measurement_type: problemEntry.measurement_type || null,
         diagnostic_note_es: problemEntry.diagnostic_note_es || '',
@@ -1064,12 +1601,21 @@ function verifyIntermediateProblem(noteText, cascade, kb, activeProblems) {
   var normalized = normalizeSymptomText(noteText);
   for (var i = 0; i < synonyms.length; i++) {
     var normKw = normalizeSymptomText(synonyms[i]);
-    var pos = findTermInNote(normalized, normKw);
-    if (pos) {
-      var cls = classifyMention(normalized, pos.index, pos.length);
+    var occurrences = findAllTermOccurrences(normalized, normKw);
+    if (occurrences.length) {
+      var events = occurrences.map(function (pos) {
+        var cls = classifyMention(normalized, pos.index, pos.length);
+        return {
+          status: cls.status, temporality: cls.temporality, assertion: cls.assertion,
+          evidence_span: extractSentenceSnippet(noteText, pos.index, pos.length),
+          date: extractDateNear(noteText, pos.index, pos.length)
+        };
+      });
+      var reconciled = reconcileProblemEvents(events);
       return {
-        checked: true, status: cls.status,
-        evidence_span: extractSentenceSnippet(noteText, pos.index, pos.length),
+        checked: true, status: reconciled.status, temporality: reconciled.temporality,
+        contradiction: !!reconciled.contradiction, first_active_date: reconciled.first_active_date,
+        evidence_span: reconciled.evidence_span,
         source: 'ade_treatment_map', linked_problem_id: null
       };
     }
@@ -1077,9 +1623,118 @@ function verifyIntermediateProblem(noteText, cascade, kb, activeProblems) {
   return { checked: true, status: 'none', evidence_span: '', source: 'ade_treatment_map', linked_problem_id: null };
 }
 
-function detectDrugPairTemporality(noteText, indexDrug, cascadeDrug) {
-  var idxPos = indexDrug ? findTermInNote(noteText, indexDrug) : null;
-  var casPos = cascadeDrug ? findTermInNote(noteText, cascadeDrug) : null;
+/**
+ * Match free-text indication wording (e.g. "dolor articular") to a
+ * kb/clinical_problems.json concept via its own keyword lists. Returns the
+ * matching entry, or null when the reason text doesn't correspond to any
+ * cataloged concept (still useful as raw evidence — see
+ * extractExplicitIndicationForMedication — just without a concept_id).
+ */
+function matchReasonToClinicalProblem(reasonText, kb) {
+  var normReason = normalizeSymptomText(reasonText);
+  if (!normReason) return null;
+  var problems = (kb.clinicalProblems && kb.clinicalProblems.problems) || [];
+  for (var i = 0; i < problems.length; i++) {
+    var p = problems[i];
+    var kws = [].concat(p.keywords_es || [], p.keywords_en || [], p.chronic_keywords_es || [], p.chronic_keywords_en || []);
+    for (var j = 0; j < kws.length; j++) {
+      var nk = normalizeSymptomText(kws[j]);
+      if (nk && normReason.indexOf(nk) !== -1) return p;
+    }
+  }
+  return null;
+}
+
+/**
+ * Fase 3 — medicación↔indicación: general, pattern-based extraction of a
+ * medication's EXPLICIT indication from its own sentence. Two patterns,
+ * neither tied to any specific drug or diagnosis name:
+ *   1. "se diagnostica <problema> ... se inicia/pauta/prescribe <fármaco>"
+ *      (diagnosis immediately followed by prescription of THIS drug).
+ *   2. "<fármaco> ... por/para/debido a <razón>" (connector right after the
+ *      drug mention, in the same sentence).
+ * Returns { found:false } when neither pattern matches — callers must never
+ * invent an indication when this returns nothing.
+ */
+function extractExplicitIndicationForMedication(noteText, mentionPos, kb) {
+  if (!mentionPos) return { found: false };
+  var sentStart = mentionPos.index;
+  while (sentStart > 0 && !/[.\n]/.test(noteText.charAt(sentStart - 1))) sentStart--;
+  var sentEnd = mentionPos.index + mentionPos.length;
+  while (sentEnd < noteText.length && !/[.\n]/.test(noteText.charAt(sentEnd))) sentEnd++;
+  var sentence = noteText.slice(sentStart, sentEnd);
+  var relPos = mentionPos.index - sentStart;
+
+  var reDiag = /se\s+diagnostica\s+([^,;.]{3,80}?)\s*(?:,|\by\b|por lo que)?\s*(?:se\s+(?:inicia|pauta|prescribe|a[ñn]ade))\b/i;
+  var dm = reDiag.exec(sentence);
+  if (dm) {
+    var verbEnd = dm.index + dm[0].length;
+    if (relPos >= verbEnd - 5 && relPos <= verbEnd + 30) {
+      var reasonText1 = dm[1].trim();
+      var concept1 = matchReasonToClinicalProblem(reasonText1, kb);
+      return {
+        found: true, reason_text: reasonText1,
+        concept_id: concept1 ? concept1.id : null,
+        concept_es: concept1 ? concept1.concept_es : reasonText1,
+        concept_en: concept1 ? concept1.concept_en : reasonText1,
+        evidence_span: dm[0].trim(), source: 'explicit', pattern: 'diagnosis_then_prescription'
+      };
+    }
+  }
+
+  var afterDrug = sentence.slice(relPos + mentionPos.length);
+  var reConn = /^[^,.;]{0,40}?\b(?:por|para|debido a|a causa de)\s+([^,;.]{3,60})/i;
+  var cm = reConn.exec(afterDrug);
+  /* "por la noche/mañana/tarde", "por vía oral" etc. are dosing-schedule or
+     route wording caught by the same "por X" connector, not a clinical
+     indication — must not be fabricated into one. */
+  var NON_INDICATION_REASON = /^(?:la\s+)?(?:noche|ma[ñn]ana|tarde|v[ií]a\s+\w+|orden\s+m[eé]dica|prescripci[oó]n\s+m[eé]dica)\b/i;
+  if (cm && !NON_INDICATION_REASON.test(cm[1].trim())) {
+    var reasonText2 = cm[1].trim();
+    var concept2 = matchReasonToClinicalProblem(reasonText2, kb);
+    return {
+      found: true, reason_text: reasonText2,
+      concept_id: concept2 ? concept2.id : null,
+      concept_es: concept2 ? concept2.concept_es : reasonText2,
+      concept_en: concept2 ? concept2.concept_en : reasonText2,
+      evidence_span: cm[0].trim(), source: 'explicit', pattern: 'connector'
+    };
+  }
+
+  return { found: false };
+}
+
+/**
+ * Temporal order between the index drug, the cascade drug, and the
+ * intermediate problem's own onset — combining, in order of reliability:
+ *   1. Explicit dates (when at least two of the three carry one): if the
+ *      cascade drug or the problem's onset PRE-DATES the index drug, the
+ *      candidate cannot be an incident cascade caused by that index drug
+ *      (Fase 4: "la hipertensión era previa al AINE" / "el antihipertensivo
+ *      era previo" — Prueba C).
+ *   2. The pre-existing text-cue heuristic (detectTimeCues) as a fallback
+ *      when dates aren't available for both sides being compared.
+ * Uses each mention's own MATCHED TEXT (`.mention`, e.g. "naproxeno") to
+ * locate it in the original note — searching for the KB's canonical INN
+ * (e.g. "naproxen") would silently fail to find the Spanish spelling.
+ */
+function detectDrugPairTemporality(noteText, indexMeta, cascadeMeta, problemCheck) {
+  var idxPos = indexMeta ? findTermInNote(noteText, indexMeta.mention) : null;
+  var casPos = cascadeMeta ? findTermInNote(noteText, cascadeMeta.mention) : null;
+  var idxDate = idxPos ? extractDateNear(noteText, idxPos.index, idxPos.length) : null;
+  var casDate = casPos ? extractDateNear(noteText, casPos.index, casPos.length) : null;
+  var problemDate = problemCheck && problemCheck.first_active_date ? problemCheck.first_active_date : null;
+
+  if (idxDate && casDate && casDate.value < idxDate.value) {
+    return { status: 'incompatible', reason_code: 'cascade_drug_predates_index', index_date: idxDate, cascade_date: casDate };
+  }
+  if (idxDate && problemDate && problemDate.value < idxDate.value) {
+    return { status: 'incompatible', reason_code: 'problem_predates_index', index_date: idxDate, problem_date: problemDate };
+  }
+  if (idxDate && casDate && casDate.value >= idxDate.value) {
+    return { status: 'supportive', reason_code: 'explicit_dates_compatible', index_date: idxDate, cascade_date: casDate };
+  }
+
   if (!idxPos && !casPos) return { status: 'unknown' };
   var idxCue = idxPos ? detectTimeCues(noteText, idxPos.index) : {};
   var casCue = casPos ? detectTimeCues(noteText, casPos.index) : {};
@@ -1099,15 +1754,24 @@ function detectDrugPairTemporality(noteText, indexDrug, cascadeDrug) {
  * problem (hypertension) was actually documented, negated, pre-existing, or
  * contradicted by an available measurement.
  */
-function classifyCascadeSignal(problemCheck, altIndication, temporality, measurementDiscordance) {
+function classifyCascadeSignal(problemCheck, altIndication, temporality, measurementDiscordance, indicationMismatch) {
+  if (indicationMismatch) {
+    return { classification: 'discarded', reason_code: 'medication_indication_mismatch' };
+  }
+  if (temporality.status === 'incompatible') {
+    return { classification: 'discarded', reason_code: temporality.reason_code };
+  }
   if (altIndication.found && problemCheck.status !== 'active') {
     return { classification: 'discarded', reason_code: 'alternative_indication_found' };
   }
-  if (problemCheck.status === 'negated') {
+  if (problemCheck.contradiction) {
+    return { classification: 'not_evaluable', reason_code: 'problem_contradiction' };
+  }
+  if (problemCheck.status === 'absent') {
     return { classification: 'discarded', reason_code: 'problem_negated' };
   }
-  if (problemCheck.status === 'history') {
-    return { classification: 'discarded', reason_code: 'problem_chronic_or_prior' };
+  if (problemCheck.status === 'resolved') {
+    return { classification: 'discarded', reason_code: 'problem_resolved' };
   }
   if (problemCheck.status === 'none' || !problemCheck.checked) {
     return { classification: 'pharmacological_match_only', reason_code: 'pharmacological_class_match_only' };
@@ -1115,7 +1779,18 @@ function classifyCascadeSignal(problemCheck, altIndication, temporality, measure
   if (problemCheck.status === 'suspected') {
     return { classification: 'not_evaluable', reason_code: 'problem_suspected_only' };
   }
-  /* status === 'active' from here on */
+  /* status === 'active' from here on. Chronic/antecedent phrasing
+     ("antecedente de hipertensión") defaults to discard — a condition only
+     ever described in historical/chronic terms, with nothing placing its
+     onset after the index drug, is not a new event. Only an EXPLICIT DATE
+     comparison proving the index drug precedes it (reason_code
+     'explicit_dates_compatible', set above in detectDrugPairTemporality) is
+     strong enough evidence to override that default; a generic text-cue
+     "supportive" match (e.g. a bare "inicia" near the index drug, which
+     proves nothing about when the CHRONIC problem itself began) is not. */
+  if (problemCheck.temporality === 'historical' && temporality.reason_code !== 'explicit_dates_compatible') {
+    return { classification: 'discarded', reason_code: 'problem_chronic_or_prior' };
+  }
   if (altIndication.found) {
     return { classification: 'possible_but_incomplete', reason_code: 'alternative_indication_found' };
   }
@@ -1142,13 +1817,23 @@ function checkMeasurementDiscordance(problemCheck, measurements) {
   return { applicable: true, discordant: discordant, measurement: bp };
 }
 
-function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measurements) {
+/**
+ * @param {Object} indicationByCanonical  map of normalizeDrugText(canonical)
+ *   -> extractExplicitIndicationForMedication() result, built once in
+ *   buildCaseModel() and passed in here so every candidate rule can check
+ *   whether its proposed cascade_drug already has an incompatible explicit
+ *   indication (Fase 3: "una inferencia genérica nunca debe desplazar una
+ *   indicación explícita incompatible").
+ */
+function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measurements, indicationByCanonical) {
   var mentionByCanonical = {};
   mentions.forEach(function (m) {
     var key = normalizeDrugText(m.canonical);
     if (!mentionByCanonical[key]) mentionByCanonical[key] = [];
     mentionByCanonical[key].push(m);
   });
+  indicationByCanonical = indicationByCanonical || {};
+  var presentCanonicals = mentions.map(function (m) { return m.canonical; });
 
   var signals = [];
   var potentialAdeNoCascadeDrug = [];
@@ -1192,11 +1877,32 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
     }
 
     var altIndication = detectAlternativeIndication(noteText, foundCascade, kb, activeProblems, cascade.id);
-    var temporality = detectDrugPairTemporality(noteText, foundIndex, foundCascade);
+    var temporality = detectDrugPairTemporality(noteText, foundIndexMeta, foundCascadeMeta, problemCheck);
     var measDiscordance = checkMeasurementDiscordance(problemCheck, measurements);
-    var decision = classifyCascadeSignal(problemCheck, altIndication, temporality, measDiscordance.discordant);
+
+    /* Medication↔indication mismatch (Fase 3): the cascade_drug already has
+       an EXPLICIT indication in the note that names a different concept
+       than the one THIS rule proposes, and this rule has no independent
+       evidence of its own problem — the explicit, textual indication wins. */
+    var cascadeIndication = indicationByCanonical[normalizeDrugText(foundCascade)];
+    var linkedProblemEntry = findClinicalProblemForCascade(cascade, kb);
+    var indicationMismatch = false;
+    if (cascadeIndication && cascadeIndication.found && problemCheck.status !== 'active') {
+      var matchesThisRule = linkedProblemEntry && cascadeIndication.concept_id === linkedProblemEntry.id;
+      if (!matchesThisRule) indicationMismatch = true;
+    }
+
+    var decision = classifyCascadeSignal(problemCheck, altIndication, temporality, measDiscordance.discordant, indicationMismatch);
 
     var adeDisplay = { es: cascade.ade_es || '', en: cascade.ade_en || '' };
+
+    /* Fase 5: a ddi_warning is only shown when every drug it requires is
+       actually present in this note (see allRequiredEntitiesPresent above)
+       — the fix for "dolutegravir-metformin interaction shown with no
+       metformin in the note" (VIH003) and the same pattern in the other
+       rules audited in kb/CHANGELOG.md. Rules with ddi_required_drugs still
+       empty (not yet reviewed) keep their pre-audit unconditional display. */
+    var ddiVisible = allRequiredEntitiesPresent(cascade.ddi_required_drugs, presentCanonicals);
 
     signals.push({
       cascade_id: cascade.id,
@@ -1212,21 +1918,29 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       ade_es: adeDisplay.es,
       ade_en: adeDisplay.en,
       appropriateness: cascade.appropriateness || '',
-      ddi_warning: cascade.ddi_warning_en || '',
-      ddi_warning_es: cascade.ddi_warning_es || '',
+      ddi_warning: ddiVisible ? (cascade.ddi_warning_en || '') : '',
+      ddi_warning_es: ddiVisible ? (cascade.ddi_warning_es || '') : '',
+      ddi_required_drugs: cascade.ddi_required_drugs || [],
+      ddi_suppressed_missing_entities: !ddiVisible && !!(cascade.ddi_warning_es || cascade.ddi_warning_en),
       recommended_action_es: getLocalizedField(cascade, 'recommended_first_action', 'es') || getLocalizedField(cascade, 'clinical_note', 'es'),
       recommended_action_en: getLocalizedField(cascade, 'recommended_first_action', 'en') || getLocalizedField(cascade, 'clinical_note', 'en'),
       classification: decision.classification,
       classification_reason_code: decision.reason_code,
       classification_reason_es: msg(decision.reason_code, 'es'),
       classification_reason_en: msg(decision.reason_code, 'en'),
+      knowledge_validation_status: (cascade.references && cascade.references.length) ? 'reviewed_source' : 'pending_review',
+      potential_clinical_relevance: mapConfidenceToRelevance(cascade.confidence || cascade.plausibility),
       evidence: {
         index_drug: { present: true, mention: foundIndexMeta && foundIndexMeta.mention, source: 'explicit' },
-        cascade_drug: { present: true, mention: foundCascadeMeta && foundCascadeMeta.mention, source: 'explicit' },
+        cascade_drug: {
+          present: true, mention: foundCascadeMeta && foundCascadeMeta.mention, source: 'explicit',
+          explicit_indication: cascadeIndication && cascadeIndication.found ? cascadeIndication : null
+        },
         intermediate_problem: problemCheck,
         temporal_order: temporality,
         alternative_indication: altIndication,
-        measurement_discordance: measDiscordance
+        measurement_discordance: measDiscordance,
+        indication_mismatch: indicationMismatch
       },
       merged_from: cascade.merged_from || [],
       references: cascade.references || []
@@ -1234,6 +1948,16 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
   });
 
   return { signals: signals, potentialAdeNoCascadeDrug: potentialAdeNoCascadeDrug };
+}
+
+/** potentialClinicalRelevance (Fase 7): derived from the KB's own
+ * confidence/plausibility rating of the ASSOCIATION, never from this
+ * patient's data — see buildEvidenceListHtml in app.js for the label that
+ * makes this distinction explicit to the clinician. */
+function mapConfidenceToRelevance(confidence) {
+  if (confidence === 'high') return 'alta';
+  if (confidence === 'medium') return 'moderada';
+  return 'baja';
 }
 
 function isNonspecificSymptom(symptomTerm) {
@@ -1318,6 +2042,11 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
       classification_reason_code: supportive ? 'temporality_supportive' : 'temporality_unknown',
       classification_reason_es: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'es'),
       classification_reason_en: msg(supportive ? 'temporality_supportive' : 'temporality_unknown', 'en'),
+      /* Fase 7: the symptom dictionary carries no `references` field today,
+         so this path is always "pending_review" — an honest reflection of
+         what has and hasn't been source-checked, not a guess. */
+      knowledge_validation_status: (entry.references && entry.references.length) ? 'reviewed_source' : 'pending_review',
+      potential_clinical_relevance: mapConfidenceToRelevance(confidence),
       evidence: {
         index_drug: { present: true, mention: foundCause, source: 'explicit' },
         cascade_drug: { present: true, mention: foundTreatment, source: 'explicit' },
@@ -1327,7 +2056,7 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
         measurement_discordance: { applicable: false, discordant: false }
       },
       merged_from: [],
-      references: []
+      references: entry.references || []
     });
   });
 
@@ -1376,7 +2105,25 @@ function buildCaseModel(noteText, kb, options) {
   var measurements = extractClinicalMeasurements(corrected);
   var symptomsDetected = extractSymptoms(corrected, kb);
 
-  var drugDrug = evaluateDrugDrugCascades(corrected, kb, mentions, activeProblems, measurements);
+  /* Resolve each distinct medication's real position in `corrected` once
+     (never trust mention.start_index — it is an offset into the resolver's
+     internally-normalized copy, not into `corrected`), then derive its
+     explicit indication and start date from that position. Built BEFORE
+     evaluateDrugDrugCascades so every candidate rule can check whether its
+     proposed cascade_drug already has an incompatible explicit indication
+     (Fase 3). */
+  var reconciledDrugCanonicals = mentions.map(function (m) { return m.canonical; })
+    .filter(function (v, i, a) { return a.indexOf(v) === i; });
+  var positionByCanonical = {};
+  var indicationByCanonical = {};
+  reconciledDrugCanonicals.forEach(function (canonical) {
+    var m = mentions.find(function (x) { return x.canonical === canonical; });
+    var pos = findTermInNote(corrected, m.mention) || { index: 0, length: (m.mention || '').length };
+    positionByCanonical[canonical] = pos;
+    indicationByCanonical[normalizeDrugText(canonical)] = extractExplicitIndicationForMedication(corrected, pos, kb);
+  });
+
+  var drugDrug = evaluateDrugDrugCascades(corrected, kb, mentions, activeProblems, measurements, indicationByCanonical);
   var symptomBridge = evaluateSymptomBridgeCascades(corrected, kb, mentionByCanonical, symptomsDetected);
 
   var allSignals = drugDrug.signals.concat(symptomBridge);
@@ -1437,26 +2184,23 @@ function buildCaseModel(noteText, kb, options) {
     }
   }
 
-  var reconciledDrugCanonicals = mentions.map(function (m) { return m.canonical; })
-    .filter(function (v, i, a) { return a.indexOf(v) === i; });
-
   var medications = reconciledDrugCanonicals.map(function (canonical) {
     var m = mentions.find(function (x) { return x.canonical === canonical; });
-    /* Re-locate in `corrected` rather than trusting m.start_index, which is
-       an offset into the resolver's internally-normalized (whitespace/
-       punctuation-collapsed) copy, not into `corrected` itself. */
-    var pos = findTermInNote(corrected, m.mention) || { index: 0, length: (m.mention || '').length };
+    var pos = positionByCanonical[canonical] || { index: 0, length: (m.mention || '').length };
     var posology = extractDosePosology(corrected, pos.index, pos.length);
+    var startDate = extractDateNear(corrected, pos.index, pos.length);
+    var indication = indicationByCanonical[normalizeDrugText(canonical)];
     return {
       original_text: m.mention,
       normalized_name: canonical,
       brand: m.brand || null,
       active_ingredients: m.brand_ingredients || [canonical],
       drug_class: m.drug_class || '',
-      dose: posology.dose, frequency: posology.frequency, route: null, start_date: null,
+      dose: posology.dose, frequency: posology.frequency, route: null,
+      start_date: startDate ? startDate.raw : null,
       prn: posology.prn,
       current_status: 'active',
-      explicit_indication: null,
+      explicit_indication: indication && indication.found ? indication : null,
       source: m.match_type === 'combo_brand' ? 'inferred' : 'explicit',
       confidence: m.confidence || 'medium',
       evidence_span: extractSentenceSnippet(corrected, pos.index, pos.length)
@@ -1515,6 +2259,17 @@ return {
   priorityRank: priorityRank,
   classificationRank: classificationRank,
   classifyCascadeSignal: classifyCascadeSignal,
+  findAllTermOccurrences: findAllTermOccurrences,
+  extractDateNear: extractDateNear,
+  reconcileProblemEvents: reconcileProblemEvents,
+  extractExplicitIndicationForMedication: extractExplicitIndicationForMedication,
+  matchReasonToClinicalProblem: matchReasonToClinicalProblem,
+  detectDrugPairTemporality: detectDrugPairTemporality,
+  mapConfidenceToRelevance: mapConfidenceToRelevance,
+  allRequiredEntitiesPresent: allRequiredEntitiesPresent,
+  selectTopInterventions: selectTopInterventions,
+  scoreAnticholinergicBurden: scoreAnticholinergicBurden,
+  buildGlobalMedicationAlerts: buildGlobalMedicationAlerts,
   buildCaseModel: buildCaseModel
 };
 

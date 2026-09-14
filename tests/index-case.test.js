@@ -1,14 +1,17 @@
 'use strict';
 /* ============================================================================
-   Index-case regression test.
+   Index-case regression test — Prueba A.
    ----------------------------------------------------------------------------
-   This is the exact case reported during the clinical-engine audit (see
-   KB_REFERENCE.md and kb/CHANGELOG.md for the full diagnosis): a 56-year-old
-   woman on Dovato since 2019 for HIV category C3, with a fixed medication
-   list, who is later prescribed enalapril for a single 130/80 mmHg BP
-   reading documented as "hipertensión".
+   Case mandated by the 2026-09-14 (second round) clinical-engine audit: a
+   56-year-old woman on Dovato since 2019, taking anastrozole and
+   amitriptyline, who starts naproxen in May 2026 for joint pain, with NO
+   prior history of hypertension, and is diagnosed with hypertension from two
+   repeated elevated BP readings in August 2026, at which point enalapril is
+   started. See docs/clinical-engine-fix-audit.md for the full root-cause
+   diagnosis this test guards against regressing.
 
-   Every assertion here maps 1:1 to a requirement from the audit brief.
+   Every assertion here maps 1:1 to a requirement from "Prueba A" in the
+   audit brief.
    ============================================================================ */
 const { loadKB, CE, assert, reset, summary } = require('./helpers');
 
@@ -17,92 +20,124 @@ function run() {
   console.log('== index-case.test.js ==');
 
   const kb = loadKB('prod');
-  const note = [
-    'Mujer de 56 años, en tratamiento con Dovato desde 2019 por VIH categoría C3.',
-    'Medicación habitual:',
-    '- Calcio carbonato/colecalciferol, un comprimido cada 24 horas.',
-    '- Atorvastatina 10 mg al día.',
-    '- Anastrozol 1 mg cada 24 horas.',
-    '- Gabapentina, una cápsula cada 8 horas.',
-    '- Hidroxizina si precisa.',
-    '- Amitriptilina 50 mg al día.',
-    '- Naproxeno 550 mg cada 8 horas desde mayo de 2026.',
-    '- Etoricoxib si precisa.',
-    'Posteriormente acude al médico y se prescribe enalapril 5 mg por una presión arterial de 130/80 mmHg, descrita en la nota como hipertensión.'
-  ].join('\n');
+  const note = 'Mujer de 56 años con infección por VIH, en tratamiento con Dovato desde 2019. ' +
+    'Toma anastrozol 1 mg cada 24 horas y amitriptilina 25 mg por la noche. ' +
+    'En mayo de 2026 inicia naproxeno 550 mg cada 12 horas por dolor articular. ' +
+    'No tenía antecedentes de hipertensión. ' +
+    'En agosto de 2026 presenta cifras repetidas de presión arterial de 165/95 y 160/92 mmHg, ' +
+    'por lo que se diagnostica hipertensión arterial y se inicia enalapril 5 mg cada 24 horas.';
 
   const model = CE.buildCaseModel(note, kb, { lang: 'es' });
   const meds = model.medications.map((m) => m.normalized_name);
 
-  /* ---- Medication extraction / normalization ---- */
+  /* ---- Medication extraction ---- */
   assert('Dovato detected and split into dolutegravir + lamivudine',
     meds.includes('dolutegravir') && meds.includes('lamivudine'));
-  const dovatoMeds = model.medications.filter((m) => m.brand === 'Dovato');
-  assert('Both Dovato ingredients carry brand=Dovato for traceability', dovatoMeds.length === 2);
+  ['anastrozole', 'amitriptyline', 'naproxen', 'enalapril'].forEach((d) =>
+    assert('Drug detected: ' + d, meds.includes(d)));
+  assert('Exactly six active ingredients detected (no extras, no omissions)', meds.length === 6);
 
-  assert('Calcium carbonate detected', meds.includes('calcium carbonate'));
-  assert('Cholecalciferol (colecalciferol) detected', meds.includes('colecalciferol'));
-  assert('Anastrozole detected', meds.includes('anastrozole'));
+  /* ---- Dates ---- */
+  const naproxenMed = model.medications.find((m) => m.normalized_name === 'naproxen');
+  const enalaprilMed = model.medications.find((m) => m.normalized_name === 'enalapril');
+  const dtgMed = model.medications.find((m) => m.normalized_name === 'dolutegravir');
+  assert('Naproxen start date captured as "mayo de 2026" (literal, not invented)',
+    !!naproxenMed && /mayo de 2026/i.test(naproxenMed.start_date || ''));
+  assert('Enalapril start date captured as "agosto de 2026"',
+    !!enalaprilMed && /agosto de 2026/i.test(enalaprilMed.start_date || ''));
+  assert('Dovato/dolutegravir start date captured as "desde 2019"',
+    !!dtgMed && /2019/.test(dtgMed.start_date || ''));
 
-  ['atorvastatin', 'gabapentin', 'hydroxyzine', 'amitriptyline', 'naproxen', 'etoricoxib', 'enalapril']
-    .forEach((d) => assert('Drug detected: ' + d, meds.includes(d)));
+  /* ---- BP measurements ---- */
+  const values = model.clinicalMeasurements.map((m) => m.value.systolic + '/' + m.value.diastolic);
+  assert('165/95 mmHg captured as a measurement', values.includes('165/95'));
+  assert('160/92 mmHg captured as a measurement', values.includes('160/92'));
 
-  /* ---- Active problems ---- */
+  /* ---- Temporal reconciliation: historical absence != current negation ---- */
   const htn = model.activeProblems.find((p) => p.id === 'CPB001');
-  assert('Hypertension detected as an explicit active problem', !!htn && htn.status === 'active');
-  assert('Hypertension source is explicit (literal note text), not inferred',
-    !htn || htn.source === 'explicit');
+  assert('Hypertension concept detected', !!htn);
+  assert('"No tenía antecedentes de hipertensión" recorded as one event, status=absent, temporality=historical',
+    !!htn && htn.events.some((e) => e.status === 'absent' && e.temporality === 'historical'));
+  assert('The later affirmed August 2026 diagnosis is recorded as its own separate event (history preserved, not overwritten)',
+    !!htn && htn.events.length >= 2);
+  assert('Final reconciled hypertension status is ACTIVE, never "negated"/"absent"',
+    !!htn && htn.status === 'active');
+  assert('Final status is not a contradiction (the dated Aug-2026 event resolves the historical-absence event unambiguously)',
+    !!htn && htn.contradiction === false);
 
-  /* ---- Clinical measurements + discordance ---- */
-  const bp = model.clinicalMeasurements.find((m) => m.type === 'blood_pressure');
-  assert('BP 130/80 mmHg captured as a clinical measurement',
-    !!bp && bp.value.systolic === 130 && bp.value.diastolic === 80);
-  assert('System records the diagnosis is NOT confirmed by this single reading (discordance)',
-    !!bp && bp.interpretation.meets_single_reading_hypertension_threshold === false);
+  /* ---- Medication-indication linking (Fase 3) ---- */
+  assert('Enalapril is explicitly linked to hypertension as its indication',
+    !!enalaprilMed && enalaprilMed.explicit_indication &&
+    /hipertensi/i.test(enalaprilMed.explicit_indication.concept_es || ''));
+  assert('Naproxen is explicitly linked to joint pain / musculoskeletal pain as its indication',
+    !!naproxenMed && naproxenMed.explicit_indication);
 
-  /* ---- Cascade signal count / classification ---- */
-  const htnSignals = model.possibleCascades.filter((c) =>
-    CE.normalizeDrugText(c.index_drug) === 'naproxen' && CE.normalizeDrugText(c.cascade_drug) === 'enalapril');
-  assert('At most one NSAID→hypertension→enalapril signal (CC001/CC061 duplicate consolidated)',
-    htnSignals.length === 1);
-  assert('That signal is NEVER presented as a confirmed/fully-supported cascade',
-    htnSignals[0] && htnSignals[0].classification !== 'supported_possible_cascade');
-  assert('That signal is downgraded specifically for the measurement discordance reason',
-    htnSignals[0] && htnSignals[0].classification_reason_code === 'measurement_discordant');
+  /* ---- CC001: exactly one candidate, never auto-discarded by the
+     historical-absence defect, classified prudently ---- */
+  const cc001Signals = model.possibleCascades.filter((c) => c.cascade_id === 'CC001');
+  assert('Exactly one CC001 candidate generated', cc001Signals.length === 1);
+  const cc001 = cc001Signals[0];
+  assert('CC001 is index_drug=naproxen, cascade_drug=enalapril',
+    !!cc001 && cc001.index_drug === 'naproxen' && cc001.cascade_drug === 'enalapril');
+  assert('CC001 is NOT discarded by the historical-negation defect ("problem_negated")',
+    !!cc001 && cc001.classification_reason_code !== 'problem_negated');
+  assert('CC001 classification is never the literal word "confirmada"/"confirmed" (system never self-confirms)',
+    !!cc001 && cc001.classification !== 'confirmed' && cc001.classification !== 'confirmada');
+  assert('CC001 is a prudent possible-cascade classification (supported or incomplete), not discarded/coincidence',
+    !!cc001 && ['supported_possible_cascade', 'possible_but_incomplete'].includes(cc001.classification));
 
-  /* ---- Recommendation scoping (the CM006/CM007-leak bug) ---- */
-  const cc001 = htnSignals[0];
-  assert('The cardiovascular recommendation text is CC001-specific, not generic',
-    cc001 && /AINE/i.test(cc001.recommended_action_es));
-  assert('Anticholinergic-burden modifier (CM006) is NOT attached to this cascade signal',
-    cc001 && (!cc001.patient_context_modifiers || cc001.patient_context_modifiers.indexOf('CM006') === -1));
-  assert('CNS-depressant-burden modifier (CM007) is NOT attached to this cascade signal',
-    cc001 && (!cc001.patient_context_modifiers || cc001.patient_context_modifiers.indexOf('CM007') === -1));
+  /* ---- VIH003: must not fire a cardiometabolic intervention when weight
+     gain/diabetes/metabolic syndrome is nowhere in the note, and must not
+     reuse enalapril (whose explicit indication is hypertension) ---- */
+  const vih003 = model.possibleCascades.find((c) => c.cascade_id === 'VIH003');
+  assert('VIH003 does not appear as a supported or incomplete cascade (no weight gain/diabetes evidence in the note)',
+    !vih003 || !['supported_possible_cascade', 'possible_but_incomplete'].includes(vih003.classification));
+  assert('If VIH003 is generated at all, it is discarded specifically for reusing an incompatible explicit indication',
+    !vih003 || vih003.classification_reason_code === 'medication_indication_mismatch' ||
+    vih003.classification === 'pharmacological_match_only');
+  assert('No signal proposes a weight-gain/diabetes intervention (absent from the note)',
+    !model.possibleCascades.some((c) =>
+      ['supported_possible_cascade', 'possible_but_incomplete'].includes(c.classification) &&
+      /peso|diabetes|metab[oó]lico/i.test((c.ade_es || '') + (c.recommended_action_es || ''))));
 
-  /* ---- Global alerts vs. cascades: strict separation ---- */
-  const alertIds = model.globalMedicationAlerts.map((a) => a.id);
-  assert('Anticholinergic burden (CM006) appears as a GLOBAL alert', alertIds.includes('CM006'));
-  assert('CNS depressant burden (CM007) appears as a GLOBAL alert', alertIds.includes('CM007'));
-  assert('NSAID duplicity (naproxen+etoricoxib) appears as its own separate global finding, not a cascade',
-    alertIds.includes('GA_NSAID_DUPLICITY') &&
-    !model.possibleCascades.some((c) => c.cascade_id === 'GA_NSAID_DUPLICITY'));
+  /* ---- No metformin, no metformin interaction ---- */
+  assert('Metformin is not in the detected medication list (never mentioned in the note)',
+    !meds.includes('metformin'));
+  assert('No signal carries a dolutegravir-metformin DDI warning when metformin is absent',
+    !model.possibleCascades.some((c) => /metformin|metformina/i.test(c.ddi_warning_es || '')));
 
-  /* ---- PRN preservation ---- */
-  const hydroxyzine = model.medications.find((m) => m.normalized_name === 'hydroxyzine');
-  const etoricoxib = model.medications.find((m) => m.normalized_name === 'etoricoxib');
-  const amitriptyline = model.medications.find((m) => m.normalized_name === 'amitriptyline');
-  assert('Hydroxyzine "si precisa" preserved as prn=true', hydroxyzine && hydroxyzine.prn === true);
-  assert('Etoricoxib "si precisa" preserved as prn=true', etoricoxib && etoricoxib.prn === true);
-  assert('Amitriptyline (scheduled, not prn) is NOT contaminated by the neighbouring prn line',
-    amitriptyline && amitriptyline.prn === false);
+  /* ---- Anticholinergic burden (Fase 6): only amitriptyline contributes,
+     and single-contributor wording must not claim cumulative/multi-drug
+     exposure ---- */
+  const acbAlert = model.globalMedicationAlerts.find((a) => a.id === 'ACB_SCORE');
+  assert('An ACB_SCORE alert is generated (amitriptyline is a defined ACB-3 contributor)', !!acbAlert);
+  assert('Only amitriptyline is listed as a contributor',
+    !!acbAlert && acbAlert.drugs_involved.length === 1 && acbAlert.drugs_involved[0] === 'amitriptyline');
+  ['dolutegravir', 'lamivudine', 'anastrozole', 'naproxen', 'enalapril'].forEach((d) =>
+    assert('Drug NOT listed as an anticholinergic contributor: ' + d,
+      !acbAlert || acbAlert.drugs_involved.indexOf(d) === -1));
+  assert('Single-contributor wording does not claim a cumulative/multi-drug effect',
+    !!acbAlert && !/efecto acumulado de (varios|m[uú]ltiples)/i.test(acbAlert.message_es || ''));
 
-  /* ---- No invented data ---- */
-  model.medications.forEach((m) => {
-    assert('No invented start_date for ' + m.normalized_name + ' (must be null or literally present in note)',
-      m.start_date === null);
+  /* ---- Fase 8: top-intervention priority filtering must never surface a
+     discarded cascade's recommendation (VIH003 was discarded above; its
+     "switch the INSTI" action must not appear as a leading intervention
+     just because it happened to exist in possibleCascades) ---- */
+  var topInterventions = CE.selectTopInterventions(model.possibleCascades, 'es', 3);
+  assert('Top interventions include the CC001 (actionable) recommendation',
+    topInterventions.some((t) => /AINE/i.test(t)));
+  assert('Top interventions never include the discarded VIH003 recommendation',
+    !topInterventions.some((t) => /INSTI/i.test(t)));
+
+  /* ---- Duplicate suppression ---- */
+  const seenPairs = {};
+  let hasDuplicatePair = false;
+  model.possibleCascades.forEach((c) => {
+    const key = c.index_drug + '|' + c.cascade_drug;
+    if (seenPairs[key]) hasDuplicatePair = true;
+    seenPairs[key] = true;
   });
-  assert('No cascade signal claims a confirmed/diagnostic-certainty classification anywhere in this case',
-    !model.possibleCascades.some((c) => c.classification === 'supported_possible_cascade' && c.evidence.measurement_discordance.discordant));
+  assert('No duplicate index/cascade drug pair produces two separate cards', !hasDuplicatePair);
 
   const r = summary();
   console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`);

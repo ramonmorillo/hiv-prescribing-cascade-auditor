@@ -44,7 +44,7 @@ function run() {
     const note = 'Paciente toma naproxeno 500 mg y enalapril 10 mg. No presenta hipertensión.';
     const model = CE.buildCaseModel(note, kb, { lang: 'es' });
     const htn = model.activeProblems.find((p) => p.id === 'CPB001');
-    assert('Case 3: "no presenta hipertensión" -> problem status is negated', !!htn && htn.status === 'negated');
+    assert('Case 3: "no presenta hipertensión" -> problem status is absent (current negation)', !!htn && htn.status === 'absent');
     const cc001 = findCC001(model);
     assert('Case 3: negated hypertension -> CC001 discarded, never presented as a finding',
       !!cc001 && cc001.classification === 'discarded');
@@ -55,8 +55,8 @@ function run() {
     const note = 'Antecedente de hipertensión arterial. Inicia naproxeno 500 mg. Enalapril 10 mg.';
     const model = CE.buildCaseModel(note, kb, { lang: 'es' });
     const htn = model.activeProblems.find((p) => p.id === 'CPB001');
-    assert('Case 4: "antecedente de hipertensión" -> problem status is history (pre-existing)',
-      !!htn && htn.status === 'history');
+    assert('Case 4: "antecedente de hipertensión" -> affirmed, historical temporality (pre-existing, still an active diagnosis)',
+      !!htn && htn.status === 'active' && htn.temporality === 'historical');
     const cc001 = findCC001(model);
     assert('Case 4: pre-existing hypertension -> CC001 not presented as a supported cascade',
       !cc001 || cc001.classification !== 'supported_possible_cascade');
@@ -98,7 +98,7 @@ function run() {
     const modelA = CE.buildCaseModel(noteA, kb, { lang: 'es' });
     const htnA = modelA.activeProblems.find((p) => p.id === 'CPB001');
     assert('Case 8a: "HTA" abbreviation normalized and detected', !!htnA);
-    assert('Case 8a: "Antecedentes de HTA" -> status history', !!htnA && htnA.status === 'history');
+    assert('Case 8a: "Antecedentes de HTA" -> affirmed, historical temporality', !!htnA && htnA.status === 'active' && htnA.temporality === 'historical');
 
     const noteB = 'Paciente con hipertension arterial (sin tilde). Naproxeno y enalapril pautados.';
     const modelB = CE.buildCaseModel(noteB, kb, { lang: 'es' });

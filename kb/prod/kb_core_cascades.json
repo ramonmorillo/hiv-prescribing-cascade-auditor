@@ -57,8 +57,8 @@
       "appropriateness": "often_inappropriate",
       "time_window_days_min": 7,
       "time_window_days_max": 90,
-      "recommended_first_action_en": "Consider if NSAIDs are truly necessary. In PLHIV, prefer paracetamol when possible.",
-      "recommended_first_action_es": "Valorar si los AINE son realmente necesarios. En PVVIH, preferir paracetamol cuando sea posible.",
+      "recommended_first_action_en": "Review whether the NSAID is still necessary and how long it has been used. Assess the temporal relationship with the blood-pressure rise, rule out other causes of hypertension, and consider withdrawing or substituting the NSAID with follow-up blood-pressure reassessment before assuming the antihypertensive must be continued indefinitely.",
+      "recommended_first_action_es": "Revisar si el AINE sigue siendo necesario y desde cuándo se utiliza. Valorar la relación temporal con la elevación de la presión arterial, descartar otras causas de hipertensión, y considerar la retirada o sustitución del AINE con reevaluación posterior de las cifras tensionales antes de asumir que el tratamiento antihipertensivo debe mantenerse de forma indefinida.",
       "references": [
         "Scott IA et al. Med J Aust 2013",
         "Lanas A et al. Aliment Pharmacol Ther 2003"

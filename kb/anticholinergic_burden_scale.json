@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "scale_name_es": "Escala de Carga Anticolinérgica Cognitiva (ACB — Anticholinergic Cognitive Burden Scale)",
+  "scale_name_en": "Anticholinergic Cognitive Burden (ACB) Scale",
+  "description": "Tabla de puntuación explícita y auditable, sustituyendo el disparador binario por palabra clave que existía antes de la auditoría 2026-09-14 (ver kb/CHANGELOG.md). Deliberadamente restringida a fármacos con puntuación 3 (actividad anticolinérgica clínicamente definida) de la escala ACB, sobre los que existe acuerdo consistente entre las versiones publicadas. No incluye puntuaciones 1-2 (efecto posible/leve) porque las distintas versiones y adaptaciones de la escala difieren en esos límites y no se quiere arriesgar una puntuación inventada o incorrecta — ver 'pending_review_note'. Un fármaco ausente de esta tabla NO se considera anticolinérgico por defecto.",
+  "last_updated": "2026-09-14",
+  "pending_review_note_es": "Tabla parcial: cubre únicamente la puntuación 3 (definida) de la escala ACB. La incorporación de fármacos con puntuación 1-2 requiere revisión farmacológica adicional antes de añadirse, para no arriesgar una puntuación no verificada.",
+  "pending_review_note_en": "Partial table: covers only ACB score 3 (definite) entries. Adding score 1-2 drugs requires further pharmacological review before inclusion, to avoid an unverified score.",
+  "references": [
+    "Boustani M, Campbell N, Munger S, Maidment I, Fox C. Impact of anticholinergics on the aging brain: a review and practical application. Aging Health. 2008;4(3):311-320.",
+    "Campbell NL, Boustani MA, Lane KA, et al. Use of anticholinergics and the risk of cognitive impairment in an African American population. Neurology. 2010;75(2):152-159."
+  ],
+  "entries": [
+    { "canonical": "amitriptyline", "score": 3, "drug_class": "Tricyclic antidepressant" },
+    { "canonical": "clomipramine", "score": 3, "drug_class": "Tricyclic antidepressant" },
+    { "canonical": "imipramine", "score": 3, "drug_class": "Tricyclic antidepressant" },
+    { "canonical": "doxepin", "score": 3, "drug_class": "Tricyclic antidepressant" },
+    { "canonical": "nortriptyline", "score": 3, "drug_class": "Tricyclic antidepressant" },
+    { "canonical": "hydroxyzine", "score": 3, "drug_class": "First-generation antihistamine" },
+    { "canonical": "diphenhydramine", "score": 3, "drug_class": "First-generation antihistamine" },
+    { "canonical": "oxybutynin", "score": 3, "drug_class": "Antimuscarinic (overactive bladder)" },
+    { "canonical": "tolterodine", "score": 3, "drug_class": "Antimuscarinic (overactive bladder)" },
+    { "canonical": "solifenacin", "score": 3, "drug_class": "Antimuscarinic (overactive bladder)" },
+    { "canonical": "chlorpromazine", "score": 3, "drug_class": "First-generation antipsychotic" },
+    { "canonical": "thioridazine", "score": 3, "drug_class": "First-generation antipsychotic" },
+    { "canonical": "clozapine", "score": 3, "drug_class": "Second-generation antipsychotic" },
+    { "canonical": "olanzapine", "score": 3, "drug_class": "Second-generation antipsychotic" },
+    { "canonical": "paroxetine", "score": 3, "drug_class": "SSRI antidepressant" }
+  ]
+}
