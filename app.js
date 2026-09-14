@@ -91,6 +91,7 @@ const UI_STRINGS = {
 
     /* Step 2 */
     drugs_section_label:           'Medicamentos detectados',
+    inactive_drugs_label:          'Medicamentos mencionados pero no activos',
     no_drugs_title:                '&#10003; Sin medicamentos identificados.',
     no_drugs_detail:               'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medicamento' + (n === 1 ? '' : 's') + ' detectado' + (n === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.'; },
@@ -439,6 +440,7 @@ const UI_STRINGS = {
 
     /* Step 2 */
     drugs_section_label:           'Detected medications',
+    inactive_drugs_label:          'Medications mentioned but not active',
     no_drugs_title:                '&#10003; No medications identified.',
     no_drugs_detail:               'The note may use brand names, abbreviations or drugs not included in the current KB.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medication' + (n === 1 ? '' : 's') + ' detected</strong> in the clinical note.'; },
@@ -1417,8 +1419,9 @@ const STEP_CONTENT = {
        *    retrieve its canonical English INN (e.g. "amlodipino" → "amlodipine").
        * 3. Unique canonical names are returned for display and forwarded to
        *    the cascade detection engine. */
-      var drugs      = extractDrugs(state.clinicalNote);
-      var normalized = normalizeDrugs(drugs);
+      var medicationModel = getCaseModel(state.clinicalNote);
+      var drugs = medicationModel.medications.map(function (m) { return m.normalized_name; });
+      var normalized = medicationModel.medications.map(function (m) { return { drug: m.normalized_name, class: m.drug_class }; });
       var classLookup = {};
       normalized.forEach(function (n) { classLookup[n.drug.toLowerCase()] = n.class; });
 
@@ -1451,6 +1454,14 @@ const STEP_CONTENT = {
           '</div>' +
           '<div style="padding:.2rem 0 .65rem;">' + drugTags + '</div>'
         );
+      }
+
+      var inactiveRows = medicationModel.inactiveOrNegatedMedications || [];
+      if (inactiveRows.length) {
+        drugSection += '<details style="margin:.25rem 0 .7rem"><summary style="cursor:pointer;color:#5d6d7e;font-weight:600;">' +
+          escHtml(tUI('inactive_drugs_label')) + ' (' + inactiveRows.length + ')</summary><ul>' +
+          inactiveRows.map(function (m) { return '<li><strong>' + escHtml(m.normalized_name) + '</strong> — ' +
+            escHtml(m.status) + ': “' + escHtml(m.evidence_span) + '”</li>'; }).join('') + '</ul></details>';
       }
 
       /* ── Combination-brand traceability ──────────────────────────────────
@@ -1845,12 +1856,13 @@ const STEP_CONTENT = {
         var entry       = findCascadeEntry(c.cascade_id);
         var recAction   = entry ? getLocalizedField(entry, 'recommended_first_action', currentLanguage) : '';
         var clinNote    = entry ? getLocalizedField(entry, 'clinical_note', currentLanguage) : '';
-        var ddiWarning  = entry ? getLocalizedField(entry, 'ddi_warning', currentLanguage) : '';
+        var ddiWarning  = currentLanguage === 'es' ? c.ddi_warning_es : c.ddi_warning;
         var diffHints   = (entry && Array.isArray(entry.differential_hints) && entry.differential_hints.length)
                           ? entry.differential_hints : [];
 
         /* Use the richer field; for core it's recAction, for VIH it's clinNote */
-        var actionText  = recAction || clinNote;
+        var presentation = CE.getRecommendationPresentation(c.classification, entry || {}, cls[c.cascade_id]);
+        var actionText = currentLanguage === 'es' ? presentation.action_es : presentation.action_en;
 
         /* Confidence badge */
         var confColor   = c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d';
@@ -2406,9 +2418,10 @@ function renderCascadeCardHtml(c, opts) {
   var displayName = (lang === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name;
   var adeDisplay = (lang === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
   var ddiDisplay = (lang === 'es' && c.ddi_warning_es) ? c.ddi_warning_es : c.ddi_warning;
-  var recDisplay = (lang === 'es' ? c.recommended_action_es : c.recommended_action_en) || '';
-  var reasonDisplay = (lang === 'es' ? c.classification_reason_es : c.classification_reason_en) || '';
   var manualVerdict = state.cascadeClassifications[c.cascade_id];
+  var presentation = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), manualVerdict);
+  var recDisplay = (lang === 'es' ? presentation.action_es : presentation.action_en) || '';
+  var reasonDisplay = (lang === 'es' ? c.classification_reason_es : c.classification_reason_en) || '';
 
   var chain = (
     '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
@@ -2538,7 +2551,12 @@ function buildReport() {
       /* Aliases for the plain-text/CSV export surfaces, which pre-date the
          classification system and speak in terms of a single "recommendation"
          / "temporal support" string rather than the richer evidence object. */
-      clinical_recommendation: (currentLanguage === 'es' ? c.recommended_action_es : c.recommended_action_en) || '',
+      recommendation_presentation: CE.getRecommendationPresentation(
+        c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.cascade_id]),
+      clinical_recommendation: (function () {
+        var p = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.cascade_id]);
+        return currentLanguage === 'es' ? p.action_es : p.action_en;
+      }()),
       temporal_support: (c.evidence && c.evidence.temporal_order && c.evidence.temporal_order.status) || 'unknown',
       sequence: c.index_drug + ' → ' + adeDisplay + ' → ' + c.cascade_drug
     });
@@ -2567,6 +2585,9 @@ function buildReport() {
     kb_version: getKBVersion(),
     kb_mode: state.kbMode,
     drugs_detected: model.medications.map(function (m) { return m.normalized_name; }),
+    medication_mentions: model.allMedicationMentions,
+    inactive_or_negated_medications: model.inactiveOrNegatedMedications,
+    current_interactions: model.currentInteractions,
     drug_classes: model.drug_classes,
     activeProblems: model.activeProblems,
     clinicalMeasurements: model.clinicalMeasurements,
