@@ -781,19 +781,34 @@ function extractDateNear(noteText, matchIndex, matchLength) {
   }
 
   /* Month only, no year stated — e.g. "En enero no presentaba...", "En
-     marzo se diagnostica...". No absolute year to anchor to, so this is
-     kept as a WEAK relative-order signal only (comparable to other
-     month-only mentions in the same note), never invented as a real date:
-     `year` stays null and the value (1-12) is far smaller than any real
-     year*100 value, so a note that also has an actual dated event always
-     orders after a bare month-only one. */
+     marzo se diagnostica...". It remains a weak month-only value unless an
+     explicitly written year elsewhere in the note can anchor it. */
   var reMonthOnly = new RegExp('\\b(desde|en|since|in)\\s+(' + monthNames + ')\\b', 'i');
   var m2 = reMonthOnly.exec(ctx);
   if (m2) {
     var monthName2 = m2[2].toLowerCase();
     var month2 = MONTHS_ES[monthName2] || MONTHS_EN[monthName2] || null;
     if (month2) {
-      return { year: null, month: month2, value: month2, raw: m2[0].trim(), index: start + m2.index };
+      /* A month-only event is commonly written after one fully dated event:
+         "En enero de 2026 ... En marzo ...".  Anchor it to the closest
+         explicitly stated year in the note.  This is not a clinical-date
+         invention: the returned object records that the year was inherited,
+         and it is used only for relative ordering within this note. */
+      var yearMatches = [];
+      var yearRe = /\b(19|20|21)\d{2}\b/g;
+      var ym;
+      while ((ym = yearRe.exec(noteText)) !== null) {
+        yearMatches.push({ year: parseInt(ym[0], 10), index: ym.index });
+      }
+      var anchor = yearMatches.sort(function (a, b) {
+        return Math.abs(a.index - (start + m2.index)) - Math.abs(b.index - (start + m2.index));
+      })[0];
+      return {
+        year: anchor ? anchor.year : null, month: month2,
+        value: anchor ? anchor.year * 100 + month2 : month2,
+        raw: m2[0].trim(), index: start + m2.index,
+        year_inherited_from_context: !!anchor
+      };
     }
   }
 
@@ -1653,7 +1668,12 @@ function suppressDuplicateSignals(signals) {
   if (!signals || signals.length < 2) return signals;
   var groups = {};
   signals.forEach(function (sig) {
-    var key = normalizeDrugText(sig.index_drug || '') + '|' + normalizeDrugText(sig.cascade_drug || '');
+    /* Equivalent means the same rule, clinical bridge and actual medication
+       pair.  Different rules which happen to use the same two drugs are not
+       duplicates and must retain their independent rationale/tracing. */
+    var key = (sig.rule_id || sig.cascade_id || '') + '|' + (sig.signal_type || '') + '|' +
+      normalizeDrugText(sig.ade_en || sig.ade_es || '') + '|' +
+      normalizeDrugText(sig.index_drug || '') + '|' + normalizeDrugText(sig.cascade_drug || '');
     if (!groups[key]) groups[key] = [];
     groups[key].push(sig);
   });
@@ -1675,6 +1695,43 @@ function suppressDuplicateSignals(signals) {
     result.push(winner);
   });
   return result;
+}
+
+/** Rank candidates without deleting any of them.  Patient-specific temporal
+ * evidence is considered before the KB confidence, and a medication whose
+ * explicitly documented indication matches this rule receives the strongest
+ * tie-break.  Later compatible drugs in the same sequence are retained and
+ * labelled as intensification rather than collapsed as duplicates. */
+function prioritizeCascadeCandidates(signals) {
+  var candidates = (signals || []).slice();
+  var groups = {};
+  candidates.forEach(function (signal) {
+    var key = (signal.rule_id || signal.cascade_id || '') + '|' + normalizeDrugText(signal.index_drug || '');
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(signal);
+  });
+  Object.keys(groups).forEach(function (key) {
+    var compatible = groups[key].filter(function (signal) {
+      return signal.classification === 'supported_possible_cascade' || signal.classification === 'possible_but_incomplete';
+    }).sort(function (a, b) {
+      var ad = a.evidence && a.evidence.temporal_order && a.evidence.temporal_order.cascade_date;
+      var bd = b.evidence && b.evidence.temporal_order && b.evidence.temporal_order.cascade_date;
+      return (ad ? ad.value : Number.MAX_SAFE_INTEGER) - (bd ? bd.value : Number.MAX_SAFE_INTEGER);
+    });
+    compatible.forEach(function (signal, index) {
+      signal.candidate_role = index === 0 ? 'initial_response' : 'subsequent_intensification';
+    });
+  });
+  candidates.forEach(function (signal) {
+    var temporal = signal.evidence && signal.evidence.temporal_order;
+    var linked = signal.evidence && signal.evidence.explicit_indication_compatible;
+    signal.candidate_priority_score = classificationRank(signal.classification) * 100 +
+      (temporal && temporal.status === 'supportive' ? 20 : 0) + (linked ? 10 : 0) +
+      confidenceRank(signal.confidence);
+  });
+  return candidates.sort(function (a, b) {
+    return b.candidate_priority_score - a.candidate_priority_score;
+  });
 }
 
 /* ============================================================
@@ -1746,12 +1803,14 @@ function verifyIntermediateProblem(noteText, cascade, kb, activeProblems) {
         contradiction: !!fromActive.contradiction, evidence_span: fromActive.evidence_span,
         first_active_date: fromActive.first_active_date || null,
         source: 'clinical_problems', linked_problem_id: problemEntry.id,
+        concept_es: problemEntry.concept_es || '', concept_en: problemEntry.concept_en || '',
         measurement_type: problemEntry.measurement_type || null,
         diagnostic_note_es: problemEntry.diagnostic_note_es || '',
         diagnostic_note_en: problemEntry.diagnostic_note_en || ''
       };
     }
-    return { checked: true, status: 'none', evidence_span: '', source: 'clinical_problems', linked_problem_id: problemEntry.id };
+    return { checked: true, status: 'none', evidence_span: '', source: 'clinical_problems', linked_problem_id: problemEntry.id,
+      concept_es: problemEntry.concept_es || '', concept_en: problemEntry.concept_en || '' };
   }
 
   var atmEntry = findAdeTreatmentEntry(cascade, kb);
@@ -1879,8 +1938,17 @@ function extractExplicitIndicationForMedication(noteText, mentionPos, kb) {
  * (e.g. "naproxen") would silently fail to find the Spanish spelling.
  */
 function detectDrugPairTemporality(noteText, indexMeta, cascadeMeta, problemCheck) {
-  var idxPos = indexMeta ? findTermInNote(noteText, indexMeta.mention) : null;
-  var casPos = cascadeMeta ? findTermInNote(noteText, cascadeMeta.mention) : null;
+  /* Candidate metadata points at the exact occurrence. Falling back to a
+     lexical search is only for legacy callers. Using the first occurrence
+     here made repeated medications share the wrong date/assertion. */
+  var idxPos = indexMeta ? {
+    index: indexMeta.actual_start_index != null ? indexMeta.actual_start_index : indexMeta.start_index,
+    length: (indexMeta.mention || '').length
+  } : null;
+  var casPos = cascadeMeta ? {
+    index: cascadeMeta.actual_start_index != null ? cascadeMeta.actual_start_index : cascadeMeta.start_index,
+    length: (cascadeMeta.mention || '').length
+  } : null;
   var idxDate = idxPos ? extractDateNear(noteText, idxPos.index, idxPos.length) : null;
   var casDate = casPos ? extractDateNear(noteText, casPos.index, casPos.length) : null;
   var problemDate = problemCheck && problemCheck.first_active_date ? problemCheck.first_active_date : null;
@@ -1961,6 +2029,26 @@ function classifyCascadeSignal(problemCheck, altIndication, temporality, measure
     return { classification: 'supported_possible_cascade', reason_code: 'temporality_supportive' };
   }
   return { classification: 'possible_but_incomplete', reason_code: 'temporality_unknown' };
+}
+
+function buildCandidateExplanation(decision, indexDrug, cascadeDrug, problemCheck) {
+  if (decision.classification !== 'supported_possible_cascade') {
+    return {
+      es: classificationReason(decision.classification, 'es'),
+      en: classificationReason(decision.classification, 'en')
+    };
+  }
+  function title(value) { return value ? value.charAt(0).toUpperCase() + value.slice(1) : value; }
+  var problemEs = (problemCheck && (problemCheck.concept_es || problemCheck.matched_term)) || 'el problema clínico intermedio';
+  var problemEn = (problemCheck && (problemCheck.concept_en || problemCheck.matched_term)) || 'the intermediate clinical problem';
+  return {
+    es: 'La secuencia temporal y farmacológica es compatible con una posible cascada terapéutica. ' +
+      title(indexDrug) + ' precede a la aparición de ' + problemEs + ' y ' + cascadeDrug +
+      ' se inicia posteriormente para tratarla. La relación causal requiere validación profesional.',
+    en: 'The temporal and pharmacological sequence is compatible with a possible prescribing cascade. ' +
+      title(indexDrug) + ' precedes the onset of ' + problemEn + ', and ' + cascadeDrug +
+      ' is subsequently started to treat it. The causal relationship requires professional validation.'
+  };
 }
 
 /** Check whether an active-problem's associated measurement (if any) is
@@ -2052,15 +2140,25 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
        an EXPLICIT indication in the note that names a different concept
        than the one THIS rule proposes, and this rule has no independent
        evidence of its own problem — the explicit, textual indication wins. */
-    var cascadeIndication = indicationByCanonical[normalizeDrugText(foundCascade)];
+    var cascadePosition = {
+      index: foundCascadeMeta.actual_start_index != null ? foundCascadeMeta.actual_start_index : foundCascadeMeta.start_index,
+      length: (foundCascadeMeta.mention || '').length
+    };
+    var cascadeIndication = extractExplicitIndicationForMedication(noteText, cascadePosition, kb);
+    if (!cascadeIndication.found) cascadeIndication = indicationByCanonical[normalizeDrugText(foundCascade)];
     var linkedProblemEntry = findClinicalProblemForCascade(cascade, kb);
     var indicationMismatch = false;
+    var explicitIndicationCompatible = false;
     if (cascadeIndication && cascadeIndication.found && problemCheck.status !== 'active') {
       var matchesThisRule = linkedProblemEntry && cascadeIndication.concept_id === linkedProblemEntry.id;
       if (!matchesThisRule) indicationMismatch = true;
     }
+    if (cascadeIndication && cascadeIndication.found && linkedProblemEntry) {
+      explicitIndicationCompatible = cascadeIndication.concept_id === linkedProblemEntry.id;
+    }
 
     var decision = classifyCascadeSignal(problemCheck, altIndication, temporality, measDiscordance.discordant, indicationMismatch);
+    var candidateExplanation = buildCandidateExplanation(decision, foundIndex, foundCascade, problemCheck);
 
     var adeDisplay = { es: cascade.ade_es || '', en: cascade.ade_en || '' };
 
@@ -2096,8 +2194,8 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       recommended_action_en: getLocalizedField(cascade, 'recommended_first_action', 'en') || getLocalizedField(cascade, 'clinical_note', 'en'),
       classification: decision.classification,
       classification_reason_code: decision.reason_code,
-      classification_reason_es: classificationReason(decision.classification, 'es'),
-      classification_reason_en: classificationReason(decision.classification, 'en'),
+      classification_reason_es: candidateExplanation.es,
+      classification_reason_en: candidateExplanation.en,
       classification_evidence_reason_es: msg(decision.reason_code, 'es'),
       classification_evidence_reason_en: msg(decision.reason_code, 'en'),
       knowledge_validation_status: (cascade.references && cascade.references.length) ? 'reviewed_source' : 'pending_review',
@@ -2112,7 +2210,8 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
         temporal_order: temporality,
         alternative_indication: altIndication,
         measurement_discordance: measDiscordance,
-        indication_mismatch: indicationMismatch
+        indication_mismatch: indicationMismatch,
+        explicit_indication_compatible: explicitIndicationCompatible
       },
       merged_from: cascade.merged_from || [],
       references: cascade.references || []
@@ -2327,6 +2426,7 @@ function buildCaseModel(noteText, kb, options) {
   allSignals = allSignals.map(function (sig) { return applyPatientLevelModifiers(sig, split.patientLevel); });
 
   allSignals = suppressDuplicateSignals(allSignals);
+  allSignals = prioritizeCascadeCandidates(allSignals);
 
   var globalAlertsResult = buildGlobalMedicationAlerts(corrected, kb, activeMentions);
 
@@ -2504,6 +2604,7 @@ return {
   findCascadeEntryForSignal: findCascadeEntryForSignal,
   isNonspecificSymptom: isNonspecificSymptom,
   suppressDuplicateSignals: suppressDuplicateSignals,
+  prioritizeCascadeCandidates: prioritizeCascadeCandidates,
   confidenceRank: confidenceRank,
   priorityRank: priorityRank,
   classificationRank: classificationRank,
