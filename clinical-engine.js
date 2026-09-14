@@ -436,10 +436,16 @@ function classifyMedicationMention(noteText, mention) {
   var sentenceEnd = text.slice(index).search(/[.;\n]/);
   var sentence = normalizeDrugText(text.slice(boundary + 1, sentenceEnd < 0 ? text.length : index + sentenceEnd));
 
+  /* Canonical medication-state vocabulary.  Keep this deliberately small
+     and stable: every downstream consumer uses isActiveMedication(), rather
+     than inventing its own interpretation of these values. */
   var assertion = 'affirmed', status = 'active', temporality = 'current';
   if (/\b(no|ni)\s+(toma|tomaba|recibe|recibia|usa|utiliza|esta tomando|est[aá] tomando)\b/.test(clauseBefore) ||
              /\bno\s+(?:toma|recibe|usa)[^.;]*\bni\b/.test(clauseBefore)) {
     assertion = 'negated'; status = 'not_taking'; temporality = 'current';
+  } else if (/\b(nunca|jam[aá]s)\s+(?:se\s+)?(?:llego|lleg[oó])?\s*a?\s*(?:iniciar|iniciarlo|iniciarla|tomar|recibir)\b/.test(sentence) ||
+             /\b(no\s+(?:se\s+)?inicio|no\s+(?:se\s+)?inici[oó]|no\s+iniciado|no\s+iniciada)\b/.test(sentence)) {
+    assertion = 'negated'; status = 'never_started'; temporality = 'historical';
   } else if (/\bsi\s+(desarrolla|presenta|aparece|ocurre|desarrollara|desarrollar[aá])\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea|se plantearia|se plantear[ií]a)\b/.test(sentence)) {
     assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
     status = 'conditional_future'; temporality = 'future';
@@ -451,6 +457,7 @@ function classifyMedicationMention(noteText, mention) {
 }
 
 function medicationExclusionReason(m) {
+  if (m.status === 'never_started') return 'never_started';
   if (m.assertion === 'negated') return 'explicit_current_negation';
   if (m.status === 'discontinued') return 'discontinued_or_historical_therapy';
   if (m.assertion === 'conditional' || m.assertion === 'hypothetical' || m.temporality === 'future') return 'future_conditional_or_hypothetical_mention';
@@ -1995,31 +2002,31 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
     var indexExamples = getIndexExamples(cascade);
     var cascadeExamples = getCascadeExamples(cascade);
 
-    var foundIndex = null, foundIndexMeta = null;
-    indexExamples.some(function (d) {
-      var hit = mentionByCanonical[normalizeDrugText(d)];
-      if (hit && hit.length) { foundIndex = d; foundIndexMeta = hit[0]; return true; }
-      return false;
+    var foundIndexes = [];
+    indexExamples.forEach(function (d) {
+      (mentionByCanonical[normalizeDrugText(d)] || []).forEach(function (hit) {
+        foundIndexes.push({ drug: d, mention: hit });
+      });
     });
-    var foundCascade = null, foundCascadeMeta = null;
-    cascadeExamples.some(function (d) {
-      var hit = mentionByCanonical[normalizeDrugText(d)];
-      if (hit && hit.length) { foundCascade = d; foundCascadeMeta = hit[0]; return true; }
-      return false;
+    var foundCascades = [];
+    cascadeExamples.forEach(function (d) {
+      (mentionByCanonical[normalizeDrugText(d)] || []).forEach(function (hit) {
+        foundCascades.push({ drug: d, mention: hit });
+      });
     });
 
-    if (!foundIndex) return;
+    if (!foundIndexes.length) return;
 
     var problemCheck = verifyIntermediateProblem(noteText, cascade, kb, activeProblems);
 
-    if (!foundCascade) {
+    if (!foundCascades.length) {
       /* Index drug + an actively-documented intermediate problem, but no
          second (cascade) drug at all: this is a potential ADE worth
          surfacing, but it is NOT a cascade (no third element) — kept out
          of possibleCascades per the CaseModel contract. */
       if (problemCheck.checked && problemCheck.status === 'active') {
         potentialAdeNoCascadeDrug.push({
-          index_drug: foundIndex,
+          index_drug: foundIndexes[0].drug,
           ade_es: cascade.ade_es || '',
           ade_en: cascade.ade_en || '',
           evidence_span: problemCheck.evidence_span,
@@ -2028,6 +2035,14 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       }
       return;
     }
+
+    /* Evaluate every compatible active pair. A temporally incompatible first
+       antihypertensive must never prevent a later candidate from being
+       considered (the former .some()/first-hit logic did exactly that). */
+    foundIndexes.forEach(function (foundIndexPair) {
+      foundCascades.forEach(function (foundCascadePair) {
+    var foundIndex = foundIndexPair.drug, foundIndexMeta = foundIndexPair.mention;
+    var foundCascade = foundCascadePair.drug, foundCascadeMeta = foundCascadePair.mention;
 
     var altIndication = detectAlternativeIndication(noteText, foundCascade, kb, activeProblems, cascade.id);
     var temporality = detectDrugPairTemporality(noteText, foundIndexMeta, foundCascadeMeta, problemCheck);
@@ -2101,6 +2116,8 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       },
       merged_from: cascade.merged_from || [],
       references: cascade.references || []
+    });
+      });
     });
   });
 
