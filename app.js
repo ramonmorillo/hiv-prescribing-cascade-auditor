@@ -283,11 +283,12 @@ const UI_STRINGS = {
     btn_save_pdf:     '&#128438;&nbsp;Guardar como PDF',
     btn_export_json:  '&#8681;&nbsp;Exportar JSON',
     btn_export_csv:   '&#8681;&nbsp;Exportar CSV',
-    decision_support_warning: '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. No es un producto sanitario (MDR). No utilizar con identificadores reales de pacientes fuera de un contexto de investigaci&oacute;n seudonimizado.',
+    decision_support_warning: '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. Su cualificaci&oacute;n y clasificaci&oacute;n regulatoria est&aacute;n pendientes de evaluaci&oacute;n formal; no dispone de marcado CE. No utilizar identificadores reales de pacientes.',
 
     /* Toast messages */
     toast_storage_full:        'Almacenamiento lleno &mdash; el autoguardado ha fallado. Exporte el caso ahora para no perder datos.',
     toast_report_copied:       'Informe copiado al portapapeles.',
+    clipboard_no_text:         'No hay texto disponible para copiar.',
     toast_report_copy_failed:  'No se pudo generar el informe para copiar.',
     toast_clipboard_failed:    'No se pudo copiar autom&aacute;ticamente. Use Exportar JSON/CSV o Guardar como PDF.',
     toast_print_hint:          'Use &laquo;Guardar como PDF&raquo; en el di&aacute;logo de impresi&oacute;n.',
@@ -296,6 +297,7 @@ const UI_STRINGS = {
     toast_case_imported:       'Caso importado correctamente.',
     toast_import_type_error:   'Importaci&oacute;n fallida: el archivo debe ser un .json exportado por esta aplicaci&oacute;n.',
     toast_import_failed:       function (msg) { return 'Importaci&oacute;n fallida: ' + msg; },
+    import_no_recognizable_data:'El archivo no contiene datos de caso reconocibles. Compruebe que fue exportado por esta aplicaci&oacute;n.',
     toast_file_read_error:     'No se pudo leer el archivo seleccionado.',
     toast_export_failed:       function (msg) { return 'Error al exportar: ' + msg; },
     toast_report_exported:     function (fmt) { return 'Informe exportado (' + fmt + ').'; },
@@ -624,11 +626,12 @@ const UI_STRINGS = {
     btn_save_pdf:     '&#128438;&nbsp;Save as PDF',
     btn_export_json:  '&#8681;&nbsp;Export JSON',
     btn_export_csv:   '&#8681;&nbsp;Export CSV',
-    decision_support_warning: '&#9888;&nbsp;Decision support only. Not a medical device (MDR). Do not use with real patient identifiers outside a pseudonymised research context.',
+    decision_support_warning: '&#9888;&nbsp;Decision support only. Regulatory qualification and classification remain subject to formal assessment; the tool does not bear CE marking. Do not use real patient identifiers.',
 
     /* Toast messages */
     toast_storage_full:        'Storage full &mdash; auto-save failed. Export your case now to avoid data loss.',
     toast_report_copied:       'Report copied to clipboard.',
+    clipboard_no_text:         'There is no text available to copy.',
     toast_report_copy_failed:  'Could not generate the report for copying.',
     toast_clipboard_failed:    'Could not copy automatically. Use Export JSON/CSV or Save as PDF.',
     toast_print_hint:          'Use \u201CSave as PDF\u201D in the print dialog.',
@@ -637,6 +640,7 @@ const UI_STRINGS = {
     toast_case_imported:       'Case imported successfully.',
     toast_import_type_error:   'Import failed: file must be a .json export from this application.',
     toast_import_failed:       function (msg) { return 'Import failed: ' + msg; },
+    import_no_recognizable_data:'The file contains no recognisable case data. Make sure it was exported by this application.',
     toast_file_read_error:     'Could not read the selected file.',
     toast_export_failed:       function (msg) { return 'Export failed: ' + msg; },
     toast_report_exported:     function (fmt) { return 'Report exported (' + fmt + ').'; },
@@ -749,6 +753,17 @@ function tUI(key) {
   var val  = dict[key];
   /* Fallback to Spanish when key missing in EN dict */
   if (val === undefined) val = UI_STRINGS.es[key];
+  if (typeof val === 'function') return val.apply(null, args);
+  return val !== undefined ? String(val) : key;
+}
+
+/** Return a translated string for persistent HTML chrome. */
+function tStatic(key) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var strings = (typeof window !== 'undefined' && window.STATIC_UI_STRINGS) || {};
+  var dict = strings[currentLanguage] || strings.es || {};
+  var val = dict[key];
+  if (val === undefined && strings.es) val = strings.es[key];
   if (typeof val === 'function') return val.apply(null, args);
   return val !== undefined ? String(val) : key;
 }
@@ -946,7 +961,10 @@ function getKBVersion() {
   return (src && src.version) ? src.version : '';
 }
 
+var lastKBLoadStatus = { loaded: 0, failed: 0 };
+
 function updateKBStatus(loaded, failed) {
+  lastKBLoadStatus = { loaded: loaded, failed: failed };
   var mode = state.kbMode;
   var version = getKBVersion();
 
@@ -956,12 +974,12 @@ function updateKBStatus(loaded, failed) {
       statusEl.innerHTML = '<span class="kb-chip ok">&#10003; KB ' + mode + (version ? ' v' + version : '') + '</span>';
     } else if (loaded === 0) {
       /* Total failure — all files unavailable */
-      statusEl.innerHTML = '<span class="kb-chip fail">&#10007; KB unavailable &mdash; ' + failed + ' file(s) failed to load</span>';
+      statusEl.innerHTML = '<span class="kb-chip fail">&#10007; ' + tStatic('kb_status_unavailable', failed) + '</span>';
     } else {
       /* Partial failure — some files loaded, some failed */
       statusEl.innerHTML =
-        '<span class="kb-chip ok">&#10003; ' + loaded + ' loaded</span> ' +
-        '<span class="kb-chip fail">&#10007; ' + failed + ' failed</span> ' +
+        '<span class="kb-chip ok">&#10003; ' + tStatic('kb_status_loaded', loaded) + '</span> ' +
+        '<span class="kb-chip fail">&#10007; ' + tStatic('kb_status_failed', failed) + '</span> ' +
         '<span class="kb-chip ok">' + mode + '</span>';
     }
   }
@@ -996,7 +1014,7 @@ function runKBValidation() {
   var i18nDetailItems = Object.keys(byField).sort().map(function (field) {
     var count = byField[field];
     var ids   = byFieldIds[field] || [];
-    return '<li><code>' + escHtml(field) + '</code>: ' + count + ' cascade(s) using EN fallback' +
+    return '<li><code>' + escHtml(field) + '</code>: ' + escHtml(tStatic('kb_fallback_field', count)) +
       (ids.length ? ' \u2014 <span style="font-family:monospace;font-size:.72rem;word-break:break-all">' +
         escHtml(ids.join(', ')) + '</span>' : '') +
       '</li>';
@@ -1020,24 +1038,23 @@ function runKBValidation() {
   if (!opResult.ok && opResult.errors.length > 0) {
     /* ── Red blocking banner — structural / missing-EN errors ── */
     var redDetail =
-      '<strong>Errors:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+      '<strong>' + tStatic('kb_errors_label') + '</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
         opResult.errors.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('') +
       '</ul>' +
       (structuralItems.length ?
-        '<strong>Warnings:</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
+        '<strong>' + tStatic('kb_warnings_label') + '</strong><ul style="margin:.4rem 0 0 1.2rem;padding:0;">' +
           structuralItems.join('') + '</ul>' : '') +
       /* i18n note inside error detail, not as a separate banner */
       (hasFallback ?
         '<details style="margin-top:.5rem"><summary style="cursor:pointer;font-size:.75rem;">' +
-          'Show translation details (' + opResult.fallbackCascadeCount + ' cascade(s), ' +
-          opResult.fallbackFieldCount + ' field(s))</summary>' +
+          escHtml(tStatic('kb_translation_details', opResult.fallbackCascadeCount, opResult.fallbackFieldCount)) + '</summary>' +
           '<ul style="margin:.3rem 0 0 1.2rem;padding:0;">' + i18nDetailItems.join('') + '</ul>' +
         '</details>' : '');
     banner.innerHTML =
       '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
-        '<strong>&#9888; KB load error \u2014 ' + opResult.errors.length + ' schema error(s) detected. Some features may be unavailable.</strong>' +
+        '<strong>&#9888; ' + escHtml(tStatic('kb_load_error', opResult.errors.length)) + '</strong>' +
         '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
-          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">View errors</button>' +
+          'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">' + escHtml(tStatic('kb_view_errors')) + '</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fadbd8;color:#922b21;padding:.6rem 1rem;border-bottom:2px solid #c0392b;">' +
         redDetail +
@@ -1050,15 +1067,14 @@ function runKBValidation() {
 
     /* Headline: i18n summary takes priority; structural count appended if both present */
     var headlineText = hasFallback
-      ? 'Language: mixed (EN fallback active) \u2014 ' +
-        opResult.fallbackCascadeCount + ' cascade(s), ' + opResult.fallbackFieldCount + ' field(s).'
-      : 'KB notices (' + structuralItems.length + ')';
+      ? tStatic('kb_language_mixed', opResult.fallbackCascadeCount, opResult.fallbackFieldCount)
+      : tStatic('kb_notices', structuralItems.length);
 
     /* Detail panel: structural warnings first, then i18n per-field breakdown */
     var amberDetailParts = [];
     if (structuralItems.length > 0) {
       amberDetailParts.push(
-        '<strong style="display:block;margin-bottom:.2rem">Structural notices:</strong>' +
+        '<strong style="display:block;margin-bottom:.2rem">' + tStatic('kb_structural_notices') + '</strong>' +
         '<ul style="margin:.2rem 0 .5rem 1.2rem;padding:0;">' + structuralItems.join('') + '</ul>'
       );
     }
@@ -1068,7 +1084,7 @@ function runKBValidation() {
       );
     }
 
-    var detailBtnLabel = hasFallback ? 'Show translation details' : 'View notices';
+    var detailBtnLabel = hasFallback ? tStatic('kb_show_translation_details') : tStatic('kb_view_notices');
 
     banner.innerHTML =
       '<div style="background:#f39c12;color:#fff;padding:.4rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
@@ -1077,7 +1093,7 @@ function runKBValidation() {
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">' +
           escHtml(detailBtnLabel) + '</button>' +
         '<button onclick="this.parentElement.parentElement.style.display=\'none\'" ' +
-          'style="margin-left:auto;background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;" title="Dismiss">&times;</button>' +
+          'style="margin-left:auto;background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;" title="' + escHtml(tStatic('dismiss')) + '">&times;</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fef9e7;color:#7d6608;padding:.5rem 1rem;border-bottom:2px solid #f39c12;">' +
         amberDetailParts.join('') +
@@ -2676,7 +2692,7 @@ function formatReportForClinicalRecord(report) {
 }
 
 function copyTextToClipboard(text) {
-  if (!text) return Promise.reject(new Error('No text to copy.'));
+  if (!text) return Promise.reject(new Error(tUI('clipboard_no_text')));
 
   if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     return navigator.clipboard.writeText(text);
@@ -2869,7 +2885,7 @@ function importCase(file) {
       }
 
       if (imported === 0) {
-        throw new Error('No recognizable case data found in this file. Make sure it was exported by this application.');
+        throw new Error(tUI('import_no_recognizable_data'));
       }
 
       /* Reset derived state that depends on the imported note */
@@ -3312,7 +3328,7 @@ function showToast(message, type) {
   var toast = document.createElement('div');
   toast.className = 'toast ' + (type || 'info');
   toast.innerHTML = escHtml(message) +
-    '<button class="toast-close" aria-label="Dismiss">&times;</button>';
+    '<button class="toast-close" aria-label="' + escHtml(tStatic('dismiss')) + '">&times;</button>';
   toast.querySelector('.toast-close').addEventListener('click', function () {
     toast.classList.add('hiding');
     setTimeout(function () { toast.remove(); }, 350);
@@ -3330,6 +3346,22 @@ function showToast(message, type) {
    language changes.
    ============================================================ */
 function updateStaticUI() {
+  document.querySelectorAll('[data-i18n]').forEach(function (el) {
+    el.innerHTML = tStatic(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+    el.setAttribute('title', tStatic(el.getAttribute('data-i18n-title')));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+    el.setAttribute('placeholder', tStatic(el.getAttribute('data-i18n-placeholder')));
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(function (el) {
+    el.setAttribute('aria-label', tStatic(el.getAttribute('data-i18n-aria-label')));
+  });
+  document.querySelectorAll('[data-i18n-content]').forEach(function (el) {
+    el.setAttribute('content', tStatic(el.getAttribute('data-i18n-content')));
+  });
+
   /* Step nav labels */
   var stepLabels = [
     [1, 'nav_step1'], [2, 'nav_step2'], [3, 'nav_step3'],
@@ -3339,10 +3371,6 @@ function updateStaticUI() {
     var btn = document.querySelector('.step-btn[data-step="' + pair[0] + '"] .step-label');
     if (btn) btn.innerHTML = tUI(pair[1]);
   });
-
-  /* Demo button in patient bar */
-  var demoBtn = document.getElementById('btn-demo');
-  if (demoBtn) demoBtn.innerHTML = '&#9654; ' + (currentLanguage === 'es' ? 'Probar demo' : 'Try demo');
 }
 
 /* ============================================================
@@ -3442,7 +3470,7 @@ function wireEvents() {
         state.kb.clinicalModifiers = null;
         invalidateDetectedCascades();
         var statusEl = document.getElementById('kb-status');
-        if (statusEl) statusEl.innerHTML = '<span class="kb-chip loading"><span class="spinner" style="width:12px;height:12px;border-width:2px;" aria-hidden="true"></span> ' + newMode + '&hellip;</span>';
+        if (statusEl) statusEl.innerHTML = '<span class="kb-chip loading"><span class="spinner" style="width:12px;height:12px;border-width:2px;" aria-hidden="true"></span> ' + escHtml(tStatic('kb_status_loading')) + ' ' + newMode + '</span>';
         var ok = await loadKB(newMode);
         if (!ok) {
           console.error('[KB] Some files failed to load from ' + newMode + ' track.');
@@ -3482,6 +3510,10 @@ function wireEvents() {
     }
     /* Update static HTML strings (step nav labels, nav buttons) */
     updateStaticUI();
+    if (state.kb.coreCascades) {
+      updateKBStatus(lastKBLoadStatus.loaded, lastKBLoadStatus.failed);
+      runKBValidation();
+    }
     /* Update step counter / prev-next buttons */
     updateNavButtons(state.step);
     /* Re-render the current step so all text reflects the new language */
@@ -3512,7 +3544,7 @@ async function init() {
       kbStatusEl.innerHTML =
         '<span class="kb-chip loading">' +
         '<span class="spinner" style="width:10px;height:10px;border-width:2px;vertical-align:middle;margin-right:.3rem;" aria-hidden="true"></span>' +
-        'Loading KB&hellip;</span>';
+        escHtml(tStatic('kb_status_loading')) + '</span>';
     }
 
     /* Load knowledge base files */
@@ -3538,9 +3570,9 @@ async function init() {
     if (container) {
       container.innerHTML =
         '<div class="callout callout-danger">' +
-          '<strong>&#9888; Application failed to initialize.</strong> ' +
+          '<strong>&#9888; ' + escHtml(tStatic('app_init_error_title')) + '</strong> ' +
           'Error: ' + escHtml(err.message) + '. ' +
-          'Check the browser console for details.' +
+          escHtml(tStatic('app_init_error_detail')) +
         '</div>';
     }
   }

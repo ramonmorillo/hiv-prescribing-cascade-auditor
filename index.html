@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="HIV Prescribing Cascade Auditor – Decision support tool for detecting prescribing cascades in PLHIV">
+  <meta name="description" data-i18n-content="meta_description" content="HIV Prescribing Cascade Auditor — herramienta de apoyo a la decisión para detectar posibles cascadas de prescripción en personas con VIH">
   <meta name="theme-color" content="#12384b">
   <title>HIV Prescribing Cascade Auditor</title>
   <link rel="stylesheet" href="styles.css">
@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<a class="skip-link" href="#main-content">Saltar al contenido principal / Skip to main content</a>
+<a class="skip-link" href="#main-content" data-i18n="skip_link">Saltar al contenido principal</a>
 
 <header class="app-header">
   <div class="header-content">
@@ -19,18 +19,18 @@
       <span class="brand-mark" aria-hidden="true">HC</span>
       <div class="header-title">
         <h1>HIV Prescribing Cascade Auditor</h1>
-        <span class="subtitle">Auditor de Cascadas de Prescripción en VIH</span>
+        <span class="subtitle" data-i18n="product_subtitle">Auditor de Cascadas de Prescripción en VIH</span>
       </div>
     </div>
     <div class="header-actions">
-      <div class="lang-selector" role="group" aria-label="Language selector">
+      <div class="lang-selector" role="group" aria-label="Selección de idioma" data-i18n-aria-label="language_selector">
         <button id="lang-es" class="btn btn-sm lang-btn lang-btn-active" title="Español" aria-pressed="true">ES</button>
         <button id="lang-en" class="btn btn-sm lang-btn" title="English" aria-pressed="false">EN</button>
       </div>
       <button id="dev-panel-toggle" class="btn btn-sm header-dev-btn"
-        title="Tools &amp; Developer options"
+        title="Herramientas y opciones técnicas" data-i18n="tools_button" data-i18n-title="tools_button_title"
         aria-expanded="false" aria-controls="dev-panel">
-        &#9881; Tools
+        &#9881; Herramientas
       </button>
     </div>
   </div>
@@ -39,28 +39,28 @@
 <!-- Developer / Tools Panel (collapsed by default) -->
 <div id="dev-panel" class="dev-panel" hidden>
   <div class="dev-panel-inner">
-    <span class="dev-panel-section">Knowledge Base</span>
-    <label class="kb-mode-label" for="kb-mode-select">Track:</label>
-    <select id="kb-mode-select" class="kb-mode-select" title="Switch KB track (PROD / DEV)">
+    <span class="dev-panel-section" data-i18n="kb_section">Base de conocimiento</span>
+    <label class="kb-mode-label" for="kb-mode-select" data-i18n="kb_track_label">Entorno:</label>
+    <select id="kb-mode-select" class="kb-mode-select" title="Cambiar entorno de la base de conocimiento (PROD / DEV)" data-i18n-title="kb_track_title">
       <option value="PROD">PROD</option>
       <option value="DEV">DEV</option>
     </select>
-    <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Download source KB as-is (no normalization applied)">
-      &#128190; Export KB (source)
+    <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Descargar la base de conocimiento original sin normalización" data-i18n="export_kb_source" data-i18n-title="export_kb_source_title">
+      &#128190; Exportar KB (fuente)
     </button>
-    <button id="btn-export-kb-operational" class="btn btn-secondary btn-sm" title="Download normalized KB with EN→ES fallback applied">
-      &#128190; Export KB (operational)
+    <button id="btn-export-kb-operational" class="btn btn-secondary btn-sm" title="Descargar la base normalizada con contenido inglés de respaldo" data-i18n="export_kb_operational" data-i18n-title="export_kb_operational_title">
+      &#128190; Exportar KB (operativa)
     </button>
     <span class="dev-panel-sep"></span>
-    <span class="dev-panel-section">Case</span>
-    <button id="btn-export-json" class="btn btn-secondary btn-sm" title="Export case as JSON" disabled>
-      &#8595; Export JSON
+    <span class="dev-panel-section" data-i18n="case_section">Caso</span>
+    <button id="btn-export-json" class="btn btn-secondary btn-sm" title="Exportar el caso en formato JSON" data-i18n="export_json" data-i18n-title="export_json_title" disabled>
+      &#8595; Exportar JSON
     </button>
-    <button id="btn-export-csv" class="btn btn-secondary btn-sm" title="Export cascades as CSV" disabled>
-      &#8595; Export CSV
+    <button id="btn-export-csv" class="btn btn-secondary btn-sm" title="Exportar las cascadas en formato CSV" data-i18n="export_csv" data-i18n-title="export_csv_title" disabled>
+      &#8595; Exportar CSV
     </button>
-    <button id="btn-delete-data" class="btn btn-danger btn-sm" title="Delete all local data">
-      &#128465; Delete All Data
+    <button id="btn-delete-data" class="btn btn-danger btn-sm" title="Eliminar todos los datos locales" data-i18n="delete_data" data-i18n-title="delete_data_title">
+      &#128465; Eliminar todos los datos
     </button>
     <span class="dev-panel-sep"></span>
     <span class="dev-panel-meta" id="dev-panel-version">Pipeline v1.0</span>
@@ -72,26 +72,23 @@
 <div id="safety-banner" class="safety-banner">
   <button class="safety-toggle" id="safety-toggle" aria-expanded="false">
     <span class="safety-icon">&#9888;</span>
-    <strong>Decision support only &middot; No real patient data &middot; Interactions not exhaustive</strong>
-    <span class="safety-details-hint">— click to expand</span>
+    <strong data-i18n="safety_summary">Solo apoyo a la decisión · Sin datos identificables · Interacciones no exhaustivas</strong>
+    <span class="safety-details-hint" data-i18n="expand_hint">— pulse para ampliar</span>
     <span class="toggle-arrow collapsed" id="safety-arrow">&#9650;</span>
   </button>
   <div class="safety-content" id="safety-content" style="display:none">
     <div class="safety-grid">
       <div class="safety-item">
-        <strong>&#127468;&#127463; Decision Support Only / &#127466;&#127480; Solo Apoyo a la Decisión</strong>
-        <p>All findings must be reviewed by a qualified clinician. This tool does not make autonomous clinical decisions. /
-        Todos los hallazgos deben ser revisados por un clínico cualificado. Esta herramienta no toma decisiones clínicas autónomas.</p>
+        <strong data-i18n="safety_support_title">Solo apoyo a la decisión</strong>
+        <p data-i18n="safety_support_body">Todos los hallazgos deben ser revisados por un profesional sanitario cualificado. La herramienta no toma decisiones clínicas autónomas.</p>
       </div>
       <div class="safety-item">
-        <strong>&#128274; No Real Patient Data / Sin Datos Reales de Pacientes</strong>
-        <p>Use pseudonymized or anonymized identifiers only. Do not enter names, medical record numbers, or other personal identifiers. /
-        Use solo identificadores seudonimizados o anonimizados. No introduzca nombres, números de historia clínica u otros datos personales.</p>
+        <strong data-i18n="safety_privacy_title">Sin datos identificables de pacientes</strong>
+        <p data-i18n="safety_privacy_body">Utilice únicamente identificadores seudonimizados o anonimizados. No introduzca nombres, números de historia clínica ni otros identificadores personales.</p>
       </div>
       <div class="safety-item">
-        <strong>&#9888; Interactions Not Exhaustive / Interacciones No Exhaustivas</strong>
-        <p>The knowledge base is not exhaustive. Always verify with current HIV guidelines and consult a clinical pharmacist. /
-        La base de conocimiento no es exhaustiva. Verificar siempre con guías VIH actuales y consultar al farmacéutico clínico.</p>
+        <strong data-i18n="safety_coverage_title">Interacciones no exhaustivas</strong>
+        <p data-i18n="safety_coverage_body">La base de conocimiento no es exhaustiva. Verifique siempre los hallazgos con fuentes clínicas actualizadas y juicio profesional.</p>
       </div>
     </div>
   </div>
@@ -102,22 +99,22 @@
 
   <!-- Patient ID Bar -->
   <div class="patient-bar">
-    <label for="patient-id"><strong>Patient ID / ID Paciente:</strong></label>
-    <input type="text" id="patient-id" placeholder="e.g. PAT-001 (pseudonymized)" maxlength="50">
+    <label for="patient-id"><strong data-i18n="patient_id_label">ID seudonimizado:</strong></label>
+    <input type="text" id="patient-id" placeholder="p. ej., PAC-001" data-i18n-placeholder="patient_id_placeholder" maxlength="50">
     <span id="save-indicator" class="save-indicator" aria-live="polite"></span>
     <div class="patient-bar-actions">
-      <button id="btn-new-case" class="btn btn-primary btn-sm">+ New Case</button>
-      <button id="btn-import" class="btn btn-secondary btn-sm" title="Import saved case JSON">
-        &#8593; Import Case
+      <button id="btn-new-case" class="btn btn-primary btn-sm" data-i18n="new_case">+ Nuevo caso</button>
+      <button id="btn-import" class="btn btn-secondary btn-sm" title="Importar un caso guardado en JSON" data-i18n="import_case" data-i18n-title="import_case_title">
+        &#8593; Importar caso
       </button>
-      <button id="btn-demo" class="btn btn-outline btn-sm" title="Cargar caso demo clínico">
+      <button id="btn-demo" class="btn btn-outline btn-sm" title="Cargar un caso clínico de demostración" data-i18n="demo_case" data-i18n-title="demo_case_title">
         &#9654; Probar demo
       </button>
     </div>
   </div>
 
   <!-- Step Progress -->
-  <nav class="wizard-nav" aria-label="Pasos del caso clínico">
+  <nav class="wizard-nav" aria-label="Pasos del caso clínico" data-i18n-aria-label="wizard_label">
     <button class="step-btn active" data-step="1">
       <span class="step-num">1</span>
       <span class="step-label">Datos</span>
@@ -171,7 +168,7 @@
   <button class="safety-toggle help-toggle" id="help-toggle" aria-expanded="false"
     onclick="(function(b){var c=document.getElementById('help-content'),a=document.getElementById('help-arrow'),x=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!x));c.style.display=x?'none':'';a.classList.toggle('collapsed',x);})(this)">
     <span class="safety-icon">&#8505;</span>
-    <strong>Best Practices, Legal &amp; About / Buenas Prácticas, Aviso Legal &amp; Acerca de</strong>
+    <strong data-i18n="help_summary">Buenas prácticas, información científica y aspectos legales</strong>
     <span class="toggle-arrow collapsed" id="help-arrow">&#9650;</span>
   </button>
 
@@ -179,47 +176,34 @@
 
     <!-- ── Best Practices ── -->
     <div class="help-block">
-      <h3 class="help-heading">&#128273; Best Practices / Buenas Prácticas</h3>
+      <h3 class="help-heading" data-i18n="best_practices_title">&#128273; Buenas prácticas</h3>
       <div class="safety-grid">
         <div class="safety-item help-item">
-          <strong>Backups / Copias de seguridad</strong>
-          <p>Use "Export JSON" regularly to back up your cases. / Use «Export JSON» periódicamente para guardar sus casos.</p>
+          <strong data-i18n="backups_title">Copias de seguridad</strong>
+          <p data-i18n="backups_body">Utilice «Exportar JSON» periódicamente para conservar una copia de sus casos.</p>
         </div>
         <div class="safety-item help-item">
-          <strong>&#128274; Privacy / Privacidad (Local-first · GDPR/RGPD)</strong>
-          <p>Data is stored only in this browser — no server, no transmission. Use a pseudonymized ID. /
-          Los datos se guardan únicamente en este navegador. Use un ID seudonimizado.</p>
+          <strong data-i18n="privacy_title">&#128274; Privacidad (local-first · RGPD)</strong>
+          <p data-i18n="privacy_body">Los datos se almacenan únicamente en este navegador; no existe servidor ni transmisión. Utilice un identificador seudonimizado.</p>
         </div>
         <div class="safety-item help-item">
-          <strong>&#128200; Research / Investigación</strong>
-          <p>Export JSON/CSV for methodological analysis. All cascade findings require professional clinical validation. /
-          Exporta JSON/CSV para análisis. Los resultados requieren validación clínica profesional.</p>
+          <strong data-i18n="research_title">&#128200; Investigación</strong>
+          <p data-i18n="research_body">Exporte JSON o CSV para análisis metodológicos. Todos los hallazgos requieren validación clínica profesional.</p>
         </div>
       </div>
     </div>
 
     <!-- ── Authorship, scientific basis and legal aspects ── -->
     <div class="help-block">
-      <h3 class="help-heading">&#128196; Autoría, base científica y aspectos legales</h3>
-      <div class="safety-item help-item" style="max-width:100%;">
-        <p><strong>Esta herramienta ha sido desarrollada por:</strong></p>
-        <ul>
-          <li>Ramón Morillo Verdugo</li>
-          <li>Cecilia Solís Martín</li>
-        </ul>
-        <p>
-          <strong>Este proyecto se fundamenta en la tesis doctoral titulada:</strong><br>
-          <em>"UTILIDAD DE LA HERRAMIENTA SANPAT PARA LA PREVENCIÓN DE CASCADAS DE PRESCRIPCIÓN EN PACIENTES VIH MAYORES"</em>
-        </p>
-        <p><strong>Código de aprobación del comité de ética:</strong> SICEIA-2025-002829</p>
-        <p>Esta herramienta constituye un sistema de apoyo a la toma de decisiones clínicas y no sustituye el juicio clínico del profesional sanitario.</p>
-        <p>Esta herramienta constituye una obra original protegida por la legislación vigente en materia de propiedad intelectual.</p>
-        <p>Todos los derechos sobre el código, diseño, estructura, base de conocimiento y contenidos pertenecen a sus autores.</p>
-        <p>La estructura y contenido de la base de conocimiento está protegida como base de datos conforme a la normativa europea.</p>
-        <p>Queda prohibida la reproducción, distribución, transformación o explotación total o parcial sin autorización expresa de los titulares.</p>
-        <p>El uso de esta herramienta es responsabilidad del profesional sanitario. Los autores no se responsabilizan de decisiones clínicas derivadas de su uso.</p>
-        <p>Esta herramienta ha sido diseñada para su uso en farmacia hospitalaria dentro de modelos de atención farmacéutica basados en el modelo CMO.</p>
-        <p><strong>Versión:</strong> v1.0.0 &mdash; <strong>Año:</strong> 2026</p>
+      <h3 class="help-heading" data-i18n="legal_title">&#128196; Autoría, fundamento científico y aspectos legales</h3>
+      <div class="safety-item help-item" style="max-width:100%;" data-i18n="legal_content">
+        <p><strong>Coautores y cotitulares:</strong> Ramón Morillo Verdugo y Cecilia Solís Martín, al 50% cada uno.</p>
+        <p><strong>Registro de propiedad intelectual:</strong> 04/2026/2614.</p>
+        <p><strong>Fundamento investigador:</strong> tesis doctoral «Utilidad de la herramienta SANPAT para la prevención de cascadas de prescripción en pacientes VIH mayores».</p>
+        <p><strong>Código de aprobación del comité de ética:</strong> SICEIA-2025-002829.</p>
+        <p>La herramienta ofrece apoyo a la decisión clínica y no sustituye el juicio del profesional sanitario. Su cualificación y clasificación regulatoria están pendientes de evaluación formal; no dispone de marcado CE.</p>
+        <p>El código, diseño, estructura, base de conocimiento y contenidos están protegidos por la normativa de propiedad intelectual. La reutilización o explotación requiere autorización de los titulares.</p>
+        <p><strong>Versión:</strong> v1.0.0 — <strong>Año:</strong> 2026.</p>
       </div>
     </div>
 
@@ -234,17 +218,17 @@
 
 <footer class="app-footer">
   <div class="footer-main">
-    HIV Prescribing Cascade Auditor v1.0 &mdash;
-    Local-first, no external API calls &mdash;
+    <span data-i18n="footer_main">HIV Prescribing Cascade Auditor v1.0 — ejecución local, sin API externas —</span>
     <span id="kb-status"></span>
   </div>
   <div class="footer-legal">
-    &copy; HIV Prescribing Cascade Auditor. Programa de ordenador inscrito en el Registro de la Propiedad Intelectual. Número de asiento registral: 04/2026/2614. Fecha de presentación y efectos: 18/03/2026.
+    <span data-i18n="footer_legal">&copy; HIV Prescribing Cascade Auditor. Programa de ordenador inscrito en el Registro de la Propiedad Intelectual. Asiento registral 04/2026/2614. Fecha de presentación y efectos: 18/03/2026.</span>
   </div>
 </footer>
 
 <script src="kb/dev/kb_validator.js"></script>
 <script src="clinical-engine.js"></script>
+<script src="ui-static-i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
