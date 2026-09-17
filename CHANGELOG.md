@@ -9,6 +9,20 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Revisión farmacéutica editable de medicamentos (2026-09-17)
+
+#### Añadido
+
+- Modelo versionado e independiente para revisar la medicación extraída, conservando valor original, procedencia, inclusión, correcciones y fecha de confirmación.
+- Editor bilingüe en el Paso 2 para corregir nombre y grupo farmacológico, excluir menciones y añadir medicamentos omitidos.
+- Persistencia local e importación/exportación segura de la revisión profesional.
+- Invalidación automática de revisiones obsoletas cuando cambia la extracción de medicamentos.
+- Pruebas unitarias específicas de creación, edición, exclusión, adición, confirmación, duplicados, saneamiento e invalidación.
+
+Esta fase registra la revisión para trazabilidad, pero todavía no la utiliza como entrada del motor clínico. La interfaz lo advierte explícitamente; la integración con el análisis se realizará en un PR posterior y aislado.
+
+No se modifican reglas clínicas, base de conocimiento, clasificación de señales ni resultados actuales del motor.
+
 ### Endurecimiento del navegador (2026-09-17)
 
 #### Seguridad
