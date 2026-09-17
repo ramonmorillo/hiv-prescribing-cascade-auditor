@@ -9,6 +9,19 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Endurecimiento del navegador (2026-09-17)
+
+#### Seguridad
+
+- Política de seguridad de contenidos restrictiva: scripts, conexiones, fuentes y recursos ejecutables limitados al propio origen; marcos, objetos, formularios y workers bloqueados.
+- Política de referencia `no-referrer` para evitar la divulgación de la URL de origen al abandonar la aplicación.
+- Eliminados todos los controladores JavaScript inline; las acciones de ayuda, demo, clasificación, validación KB e informe usan delegación de eventos con valores permitidos explícitamente.
+- Prueba automática que impide reintroducir eventos inline, scripts o estilos externos, URL JavaScript, conexiones HTTP externas o acciones sin controlador.
+
+La política se implementa mediante una etiqueta `meta` compatible con GitHub Pages. Los encabezados HTTP de seguridad del dominio de producción se configurarán en la fase de alojamiento definitivo.
+
+Este bloque no modifica el motor clínico, la base de conocimiento, los datos del caso ni los criterios de clasificación.
+
 ### Arquitectura bilingüe de la interfaz (2026-09-17)
 
 #### Modificado

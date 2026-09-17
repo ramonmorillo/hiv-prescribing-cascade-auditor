@@ -16,7 +16,8 @@ const suites = [
   './medication-status-interactions.test.js',
   './multi-candidate-cascades.test.js',
   './final-adjustments.test.js',
-  './static-i18n.test.js'
+  './static-i18n.test.js',
+  './browser-security.test.js'
 ];
 
 let allOk = true;
