@@ -18,7 +18,8 @@ const suites = [
   './final-adjustments.test.js',
   './static-i18n.test.js',
   './browser-security.test.js',
-  './medication-review.test.js'
+  './medication-review.test.js',
+  './problem-review.test.js'
 ];
 
 let allOk = true;

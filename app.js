@@ -115,6 +115,38 @@ const UI_STRINGS = {
     med_review_reset_confirm:      'Se perder&aacute;n las correcciones de medicamentos realizadas. ¿Restaurar la extracci&oacute;n autom&aacute;tica?',
     med_review_boundary:           '<strong>Alcance de esta fase:</strong> las correcciones quedan guardadas y trazables, pero todav&iacute;a no modifican el an&aacute;lisis autom&aacute;tico de cascadas.',
     med_review_not_applied:        '<strong>Revisi&oacute;n de medicamentos modificada:</strong> estos cambios a&uacute;n no se aplican al motor de detecci&oacute;n. Interprete los resultados posteriores con esta limitaci&oacute;n.',
+    problem_review_title:              'Revisi&oacute;n de problemas cl&iacute;nicos y temporalidad',
+    problem_review_intro:              'Valide el problema, su estado actual, la relaci&oacute;n temporal y la fecha de inicio documentada.',
+    problem_review_status_draft:       'Pendiente de confirmar',
+    problem_review_status_confirmed:   'Revisi&oacute;n confirmada',
+    problem_review_source_extracted:   'Extra&iacute;do',
+    problem_review_source_manual:      'A&ntilde;adido',
+    problem_review_include:            'Incluir',
+    problem_review_concept:            'Problema cl&iacute;nico',
+    problem_review_status:             'Estado',
+    problem_review_temporality:        'Temporalidad',
+    problem_review_onset:              'Inicio documentado',
+    problem_review_onset_placeholder:  'Ej.: sep 2022',
+    problem_review_evidence:           'Evidencia original:',
+    problem_review_original:           function (concept) { return 'Valor extra&iacute;do: ' + concept; },
+    problem_review_add:                '+ A&ntilde;adir problema',
+    problem_review_remove:             'Eliminar',
+    problem_review_confirm:            'Confirmar revisi&oacute;n',
+    problem_review_reset:              'Restaurar extracci&oacute;n',
+    problem_review_empty:              'No se han extra&iacute;do problemas. Puede a&ntilde;adir uno manualmente.',
+    problem_review_validation_error:   'Revise los problemas vac&iacute;os o duplicados antes de confirmar.',
+    problem_review_confirmed_toast:    'Revisi&oacute;n de problemas confirmada.',
+    problem_review_reset_confirm:      'Se perder&aacute;n las correcciones de problemas realizadas. ¿Restaurar la extracci&oacute;n autom&aacute;tica?',
+    problem_review_boundary:           '<strong>Alcance de esta fase:</strong> la revisi&oacute;n de problemas queda guardada y trazable, pero todav&iacute;a no modifica el motor de cascadas.',
+    problem_review_not_applied:        '<strong>Revisi&oacute;n de problemas modificada:</strong> estos cambios a&uacute;n no se aplican al motor de detecci&oacute;n. Interprete los resultados posteriores con esta limitaci&oacute;n.',
+    problem_review_status_active:      'Activo',
+    problem_review_status_suspected:   'Sospechado',
+    problem_review_status_resolved:    'Resuelto',
+    problem_review_status_absent:      'Ausente / negado',
+    problem_review_status_unknown:     'Desconocido',
+    problem_review_temporality_current:      'Actual',
+    problem_review_temporality_historical:   'Previo / cr&oacute;nico',
+    problem_review_temporality_undetermined: 'No determinada',
     symptoms_dict_missing:         'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>',
     symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong>',
     symptoms_dict_unavailable_detail: 'Recargue la p&aacute;gina o compruebe el estado KB.',
@@ -486,6 +518,38 @@ const UI_STRINGS = {
     med_review_reset_confirm:      'Medication corrections will be lost. Restore the automatic extraction?',
     med_review_boundary:           '<strong>Scope of this phase:</strong> corrections are stored with an audit trail but do not yet change automatic cascade analysis.',
     med_review_not_applied:        '<strong>Medication review changed:</strong> these corrections are not yet applied to the detection engine. Interpret subsequent results with this limitation.',
+    problem_review_title:              'Clinical problem and temporality review',
+    problem_review_intro:              'Validate the problem, its current status, temporal relationship, and documented onset date.',
+    problem_review_status_draft:       'Awaiting confirmation',
+    problem_review_status_confirmed:   'Review confirmed',
+    problem_review_source_extracted:   'Extracted',
+    problem_review_source_manual:      'Added',
+    problem_review_include:            'Include',
+    problem_review_concept:            'Clinical problem',
+    problem_review_status:             'Status',
+    problem_review_temporality:        'Temporality',
+    problem_review_onset:              'Documented onset',
+    problem_review_onset_placeholder:  'E.g. Sep 2022',
+    problem_review_evidence:           'Original evidence:',
+    problem_review_original:           function (concept) { return 'Extracted value: ' + concept; },
+    problem_review_add:                '+ Add problem',
+    problem_review_remove:             'Remove',
+    problem_review_confirm:            'Confirm review',
+    problem_review_reset:              'Restore extraction',
+    problem_review_empty:              'No problems were extracted. You may add one manually.',
+    problem_review_validation_error:   'Resolve blank or duplicate problems before confirming.',
+    problem_review_confirmed_toast:    'Problem review confirmed.',
+    problem_review_reset_confirm:      'Problem corrections will be lost. Restore the automatic extraction?',
+    problem_review_boundary:           '<strong>Scope of this phase:</strong> problem review is stored with an audit trail but does not yet change cascade analysis.',
+    problem_review_not_applied:        '<strong>Problem review changed:</strong> these corrections are not yet applied to the detection engine. Interpret subsequent results with this limitation.',
+    problem_review_status_active:      'Active',
+    problem_review_status_suspected:   'Suspected',
+    problem_review_status_resolved:    'Resolved',
+    problem_review_status_absent:      'Absent / negated',
+    problem_review_status_unknown:     'Unknown',
+    problem_review_temporality_current:      'Current',
+    problem_review_temporality_historical:   'Previous / chronic',
+    problem_review_temporality_undetermined: 'Undetermined',
     symptoms_dict_missing:         'Active problems &mdash; <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>',
     symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Symptom dictionary unavailable.</strong>',
     symptoms_dict_unavailable_detail: 'Reload the page or check KB status.',
@@ -823,6 +887,9 @@ const state = {
   /* Pharmacist-reviewed medication list. This audit layer is deliberately
      separate from caseModel until the reviewed-input engine milestone. */
   medicationReview: null,
+  /* Pharmacist-reviewed clinical problems and temporality. Kept separate
+     from caseModel until the reviewed-input engine milestone. */
+  problemReview: null,
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
   /* Step 2 — rule-based clinical problems (e.g. urologic/renal) found in the
@@ -849,6 +916,7 @@ function saveState() {
       patientId: state.patientId,
       clinicalNote: state.clinicalNote,
       medicationReview: state.medicationReview,
+      problemReview: state.problemReview,
       symptomsDetected: state.symptomsDetected,
       cascadeClassifications: state.cascadeClassifications
     };
@@ -872,6 +940,7 @@ function loadState() {
     if (typeof saved.patientId === 'string')    state.patientId    = saved.patientId;
     if (typeof saved.clinicalNote === 'string') state.clinicalNote = saved.clinicalNote;
     if (window.MedicationReview) state.medicationReview = window.MedicationReview.sanitize(saved.medicationReview);
+    if (window.ProblemReview) state.problemReview = window.ProblemReview.sanitize(saved.problemReview);
     /* Guard against corrupted or out-of-range step values */
     if (Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 6) state.step = saved.step;
     if (Array.isArray(saved.symptomsDetected))                 state.symptomsDetected       = saved.symptomsDetected;
@@ -907,6 +976,7 @@ function clearState() {
     state.patientId = '';
     state.clinicalNote = '';
     state.medicationReview = null;
+    state.problemReview = null;
     state.symptomsDetected = [];
     state.cascadeClassifications = {};
     state.detectedCascades = null;
@@ -1260,6 +1330,7 @@ function downloadJSON(obj, filename) {
 
 var CE = window.ClinicalEngine;
 var MR = window.MedicationReview;
+var ProblemReview = window.ProblemReview;
 
 function normalizeClinicalText(text) { return CE.normalizeClinicalText(text); }
 function normalizeDrugText(text) { return CE.normalizeDrugText(text); }
@@ -1422,6 +1493,93 @@ function renderMedicationReview(medications) {
   );
 }
 
+function ensureProblemReview(problems) {
+  if (!ProblemReview) return null;
+  var next = ProblemReview.ensureCurrent(state.problemReview, problems || []);
+  if (JSON.stringify(next) !== JSON.stringify(state.problemReview)) {
+    state.problemReview = next;
+    saveState();
+  }
+  return state.problemReview;
+}
+
+function reviewOption(value, current, labelKey) {
+  return '<option value="' + value + '"' + (value === current ? ' selected' : '') + '>' + tUI(labelKey) + '</option>';
+}
+
+function renderProblemReview(problems) {
+  var review = ensureProblemReview(problems);
+  if (!review) return '';
+  var includedCount = ProblemReview.reviewedProblems(review).length;
+  var statusKey = review.status === 'confirmed' ? 'problem_review_status_confirmed' : 'problem_review_status_draft';
+  var statusClass = review.status === 'confirmed' ? 'is-confirmed' : 'is-draft';
+  var rows = review.items.map(function (item) {
+    var prefix = 'problem-review-' + item.id;
+    var sourceKey = item.source === 'manual' ? 'problem_review_source_manual' : 'problem_review_source_extracted';
+    var removeButton = item.source === 'manual'
+      ? '<button type="button" class="btn btn-ghost btn-sm problem-review-remove" data-action="remove-problem-row" data-problem-id="' + escHtml(item.id) + '">' + tUI('problem_review_remove') + '</button>'
+      : '';
+    var original = item.source === 'extracted'
+      ? '<div class="problem-review-original">' + tUI('problem_review_original', escHtml(item.original_concept)) + '</div>'
+      : '';
+    var evidence = item.evidence_span
+      ? '<div class="problem-review-evidence"><strong>' + tUI('problem_review_evidence') + '</strong> “' + escHtml(item.evidence_span) + '”</div>'
+      : '';
+    var statusOptions = [
+      reviewOption('active', item.status, 'problem_review_status_active'),
+      reviewOption('suspected', item.status, 'problem_review_status_suspected'),
+      reviewOption('resolved', item.status, 'problem_review_status_resolved'),
+      reviewOption('absent', item.status, 'problem_review_status_absent'),
+      reviewOption('unknown', item.status, 'problem_review_status_unknown')
+    ].join('');
+    var temporalityOptions = [
+      reviewOption('current', item.temporality, 'problem_review_temporality_current'),
+      reviewOption('historical', item.temporality, 'problem_review_temporality_historical'),
+      reviewOption('undetermined', item.temporality, 'problem_review_temporality_undetermined')
+    ].join('');
+    return (
+      '<div class="problem-review-row' + (item.included ? '' : ' is-excluded') + '">' +
+        '<div class="problem-review-row-head">' +
+          '<span class="problem-review-source ' + (item.source === 'manual' ? 'is-manual' : '') + '">' + tUI(sourceKey) + '</span>' +
+          '<label class="problem-review-include"><input type="checkbox" data-problem-field="included" data-problem-id="' + escHtml(item.id) + '"' + (item.included ? ' checked' : '') + '> ' + tUI('problem_review_include') + '</label>' +
+          removeButton +
+        '</div>' +
+        '<div class="problem-review-fields">' +
+          '<label class="problem-review-concept" for="' + prefix + '-concept"><span>' + tUI('problem_review_concept') + '</span>' +
+            '<input id="' + prefix + '-concept" type="text" maxlength="300" autocomplete="off" data-problem-field="concept" data-problem-id="' + escHtml(item.id) + '" value="' + escHtml(item.concept) + '">' + original +
+          '</label>' +
+          '<label for="' + prefix + '-status"><span>' + tUI('problem_review_status') + '</span>' +
+            '<select id="' + prefix + '-status" data-problem-field="status" data-problem-id="' + escHtml(item.id) + '">' + statusOptions + '</select>' +
+          '</label>' +
+          '<label for="' + prefix + '-temporality"><span>' + tUI('problem_review_temporality') + '</span>' +
+            '<select id="' + prefix + '-temporality" data-problem-field="temporality" data-problem-id="' + escHtml(item.id) + '">' + temporalityOptions + '</select>' +
+          '</label>' +
+          '<label for="' + prefix + '-onset"><span>' + tUI('problem_review_onset') + '</span>' +
+            '<input id="' + prefix + '-onset" type="text" maxlength="80" autocomplete="off" placeholder="' + tUI('problem_review_onset_placeholder') + '" data-problem-field="onset_date" data-problem-id="' + escHtml(item.id) + '" value="' + escHtml(item.onset_date) + '">' +
+          '</label>' +
+        '</div>' + evidence +
+      '</div>'
+    );
+  }).join('');
+
+  if (!rows) rows = '<p class="problem-review-empty">' + tUI('problem_review_empty') + '</p>';
+  return (
+    '<section class="problem-review-panel" aria-labelledby="problem-review-title">' +
+      '<div class="problem-review-heading">' +
+        '<div><h3 id="problem-review-title">' + tUI('problem_review_title') + '</h3><p>' + tUI('problem_review_intro') + '</p></div>' +
+        '<span class="problem-review-review-status ' + statusClass + '">' + tUI(statusKey) + ' · ' + includedCount + '</span>' +
+      '</div>' +
+      '<div class="problem-review-list">' + rows + '</div>' +
+      '<div class="problem-review-actions">' +
+        '<button type="button" class="btn btn-outline btn-sm" data-action="add-problem-row">' + tUI('problem_review_add') + '</button>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-action="confirm-problem-review">' + tUI('problem_review_confirm') + '</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="reset-problem-review">' + tUI('problem_review_reset') + '</button>' +
+      '</div>' +
+      '<div class="callout callout-warning problem-review-boundary">' + tUI('problem_review_boundary') + '</div>' +
+    '</section>'
+  );
+}
+
 /** One-time migration for clinician verdicts recorded before candidate_id
  * existed, when Step 5's buttons were keyed by the bare cascade_id (the KB
  * rule id). That collided whenever one rule produced more than one
@@ -1531,6 +1689,7 @@ const STEP_CONTENT = {
         ta.addEventListener('input', function () {
           state.clinicalNote = ta.value;
           state.medicationReview = null;
+          state.problemReview = null;
           invalidateDetectedCascades();
           invalidateDrugResolver();
           saveState();
@@ -1645,32 +1804,7 @@ const STEP_CONTENT = {
        * in this note? */
       var clinicalProblems = detectClinicalProblems(state.clinicalNote);
 
-      var CERTAINTY_COLOR = { confirmed: '#922b21', suspected: '#a04000', symptom: '#6c3483', rule_out: '#7f8c8d', negated: '#95a5a6' };
-      var renderProblemCard = function (p) {
-        var certColor = CERTAINTY_COLOR[p.certainty] || '#555';
-        var evidenceHtml = p.evidence.length
-          ? '<div style="margin-top:.35rem;font-size:.82rem;"><strong>' + tUI('problem_evidence_lbl') + '</strong> ' +
-              p.evidence.map(escHtml).join('; ') + '</div>'
-          : '';
-        var negatedHtml = p.negatedFindings.length
-          ? '<div style="margin-top:.25rem;font-size:.8rem;color:#777;font-style:italic;"><strong style="font-style:normal;">' +
-              tUI('problem_negated_lbl') + '</strong> ' + p.negatedFindings.map(escHtml).join('; ') + '</div>'
-          : '';
-        return (
-          '<div style="border:1px solid #e0c9a6;border-left:4px solid ' + certColor + ';border-radius:4px;' +
-            'padding:.55rem .7rem;margin:.35rem 0;background:#fffaf3;">' +
-            '<div style="font-weight:700;font-size:.9rem;color:#222;">' + escHtml(p.problem) + '</div>' +
-            '<div style="font-size:.78rem;color:#666;margin-top:.15rem;">' +
-              tUI('problem_category_lbl') + ' ' + escHtml(p.category_label) + ' &middot; ' +
-              tUI('problem_certainty_lbl') + ' <span style="color:' + certColor + ';font-weight:600;">' +
-                tUI('certainty_' + p.certainty) +
-              '</span>' +
-            '</div>' +
-            evidenceHtml + negatedHtml +
-          '</div>'
-        );
-      };
-      var clinicalProblemsHtml = clinicalProblems.map(renderProblemCard).join('');
+      var clinicalProblemsHtml = renderProblemReview(clinicalProblems);
 
       var symCountLabel;
       var symptomSection;
@@ -1680,14 +1814,14 @@ const STEP_CONTENT = {
           '<div class="callout callout-warning" style="font-size:.84rem;">' +
             tUI('symptoms_dict_unavailable_title') + ' ' +
             tUI('symptoms_dict_unavailable_detail') +
-          '</div>'
+          '</div>' + clinicalProblemsHtml
         );
       } else if (symptoms.length === 0 && clinicalProblems.length === 0) {
         symCountLabel = tUI('symptoms_zero_label');
         symptomSection = (
           '<div class="callout callout-success">' +
             tUI('no_symptoms') +
-          '</div>'
+          '</div>' + clinicalProblemsHtml
         );
       } else if (symptoms.length === 0) {
         symCountLabel = tUI('symptoms_count', clinicalProblems.length, 0);
@@ -1787,6 +1921,27 @@ const STEP_CONTENT = {
               status.classList.remove('is-confirmed');
               status.classList.add('is-draft');
               status.textContent = tUI('med_review_status_draft') + ' · ' + MR.reviewedMedications(state.medicationReview).length;
+            }
+          }
+        });
+      });
+      container.querySelectorAll('[data-problem-field]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          if (!ProblemReview || !state.problemReview) return;
+          var field = input.getAttribute('data-problem-field');
+          var id = input.getAttribute('data-problem-id');
+          var patch = {};
+          patch[field] = field === 'included' ? input.checked : input.value;
+          state.problemReview = ProblemReview.updateItem(state.problemReview, id, patch);
+          saveState();
+          if (field === 'included') {
+            renderStepContent(2);
+          } else {
+            var status = container.querySelector('.problem-review-review-status');
+            if (status) {
+              status.classList.remove('is-confirmed');
+              status.classList.add('is-draft');
+              status.textContent = tUI('problem_review_status_draft') + ' · ' + ProblemReview.reviewedProblems(state.problemReview).length;
             }
           }
         });
@@ -2324,9 +2479,13 @@ function renderStepContent(step) {
   }
 
   var titleText = typeof cfg.title === 'function' ? cfg.title() : cfg.title;
-  var reviewBoundary = step >= 3 && MR && MR.hasChanges(state.medicationReview)
-    ? '<div class="callout callout-warning med-review-downstream-warning">' + tUI('med_review_not_applied') + '</div>'
-    : '';
+  var reviewBoundary = '';
+  if (step >= 3 && MR && MR.hasChanges(state.medicationReview)) {
+    reviewBoundary += '<div class="callout callout-warning med-review-downstream-warning">' + tUI('med_review_not_applied') + '</div>';
+  }
+  if (step >= 3 && ProblemReview && ProblemReview.hasChanges(state.problemReview)) {
+    reviewBoundary += '<div class="callout callout-warning problem-review-downstream-warning">' + tUI('problem_review_not_applied') + '</div>';
+  }
   container.innerHTML =
     '<div class="step-header"><h2>' + titleText + '</h2></div>' +
     '<div class="step-section">' + reviewBoundary + cfg.body() + '</div>';
@@ -2369,6 +2528,7 @@ function exportJSON() {
       patientId: state.patientId,
       clinicalNote: state.clinicalNote,
       medicationReview: state.medicationReview,
+      problemReview: state.problemReview,
       step: state.step,
       cascadeClassifications: state.cascadeClassifications
     };
@@ -2773,6 +2933,13 @@ function buildReport() {
       reviewed_medications: MR.reviewedMedications(state.medicationReview),
       audit_items: MR.sanitize(state.medicationReview).items
     } : null,
+    problem_review: state.problemReview && ProblemReview ? {
+      status: state.problemReview.status,
+      confirmed_at: state.problemReview.confirmed_at,
+      applied_to_engine: false,
+      reviewed_problems: ProblemReview.reviewedProblems(state.problemReview),
+      audit_items: ProblemReview.sanitize(state.problemReview).items
+    } : null,
     medication_mentions: model.allMedicationMentions,
     inactive_or_negated_medications: model.inactiveOrNegatedMedications,
     current_interactions: model.currentInteractions,
@@ -3033,6 +3200,7 @@ function importCase(file) {
       /* Restore fields with strict type guards to prevent state corruption */
       var imported = 0;
       state.medicationReview = null;
+      state.problemReview = null;
       if (typeof data.patientId === 'string' && data.patientId.length <= 200) {
         state.patientId = data.patientId;
         imported++;
@@ -3045,6 +3213,13 @@ function importCase(file) {
         var importedReview = MR.sanitize(data.medicationReview);
         if (importedReview) {
           state.medicationReview = importedReview;
+          imported++;
+        }
+      }
+      if (data.problemReview !== undefined && ProblemReview) {
+        var importedProblemReview = ProblemReview.sanitize(data.problemReview);
+        if (importedProblemReview) {
+          state.problemReview = importedProblemReview;
           imported++;
         }
       }
@@ -3117,6 +3292,7 @@ function loadDemoCase() {
   clearState();
   state.patientId = 'DEMO-001';
   state.medicationReview = null;
+  state.problemReview = null;
   state.clinicalNote = [
     'NOTA CLÍNICA — CASO PSEUDONIMIZADO (DEMO)',
     'Paciente ID: DEMO-001 | Fecha: 2024-03-15 | Servicio: VIH / Enfermedades Infecciosas',
@@ -3640,6 +3816,46 @@ function handleDelegatedAction(event) {
     return;
   }
 
+  if (action === 'add-problem-row') {
+    if (!ProblemReview || !state.problemReview) return;
+    state.problemReview = ProblemReview.addManualItem(state.problemReview);
+    saveState();
+    renderStepContent(2);
+    var problemInputs = document.querySelectorAll('.problem-review-row input[data-problem-field="concept"]');
+    if (problemInputs.length) problemInputs[problemInputs.length - 1].focus();
+    return;
+  }
+
+  if (action === 'remove-problem-row') {
+    if (!ProblemReview || !state.problemReview) return;
+    state.problemReview = ProblemReview.removeManualItem(state.problemReview, trigger.getAttribute('data-problem-id'));
+    saveState();
+    renderStepContent(2);
+    return;
+  }
+
+  if (action === 'confirm-problem-review') {
+    if (!ProblemReview || !state.problemReview) return;
+    var problemConfirmation = ProblemReview.confirm(state.problemReview);
+    if (!problemConfirmation.ok) {
+      showToast(tUI('problem_review_validation_error'), 'error');
+      return;
+    }
+    state.problemReview = problemConfirmation.review;
+    saveState();
+    renderStepContent(2);
+    showToast(tUI('problem_review_confirmed_toast'), 'success');
+    return;
+  }
+
+  if (action === 'reset-problem-review') {
+    if (!ProblemReview || !confirm(tUI('problem_review_reset_confirm'))) return;
+    state.problemReview = ProblemReview.create(getCaseModel(state.clinicalNote).activeProblems);
+    saveState();
+    renderStepContent(2);
+    return;
+  }
+
   if (action === 'copy-report') {
     copyReportForClinicalRecord();
     return;
@@ -3747,6 +3963,7 @@ function wireEvents() {
       if (newMode !== state.kbMode) {
         state.kbMode = newMode;
         state.medicationReview = null;
+        state.problemReview = null;
         state.kb.coreCascades = null;
         state.kb.vihModifiers = null;
         state.kb.ddiWatchlist = null;

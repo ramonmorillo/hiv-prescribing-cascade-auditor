@@ -924,6 +924,129 @@ td.badge-cell { white-space: nowrap; }
 .med-review-downstream-warning { margin: 0 0 0.85rem; font-size: 0.82rem; }
 .med-review-empty { margin: 0; color: #68777e; font-size: 0.82rem; }
 
+/* ---------- Professional problem and temporality review (Step 2) ---------- */
+.problem-review-panel {
+  margin: 0.85rem 0 0.75rem;
+  padding: 1rem;
+  border: 1px solid #d8c6a8;
+  border-radius: 10px;
+  background: #fffdf8;
+}
+.problem-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+.problem-review-heading h3 {
+  margin: 0 0 0.25rem;
+  color: #694b20;
+  font-size: 1rem;
+}
+.problem-review-heading p {
+  margin: 0;
+  color: #665d50;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.problem-review-review-status {
+  flex-shrink: 0;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.problem-review-review-status.is-draft { background: #fff3cd; color: #785600; }
+.problem-review-review-status.is-confirmed { background: #dff2e6; color: #17623a; }
+.problem-review-list { display: grid; gap: 0.65rem; }
+.problem-review-row {
+  padding: 0.7rem;
+  border: 1px solid #e2d8c8;
+  border-left: 4px solid #9a6b2f;
+  border-radius: 7px;
+  background: #fff;
+}
+.problem-review-row.is-excluded { opacity: 0.62; border-left-color: #8a969c; }
+.problem-review-row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.55rem;
+}
+.problem-review-source {
+  padding: 0.15rem 0.42rem;
+  border-radius: 4px;
+  background: #f3eadb;
+  color: #694b20;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.problem-review-source.is-manual { background: #e8f3e8; color: #27633d; }
+.problem-review-include {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #4f473d;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.problem-review-remove { margin-left: auto; color: #9b2c2c; }
+.problem-review-fields {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
+  gap: 0.65rem;
+}
+.problem-review-fields label > span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #665d50;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.problem-review-fields input,
+.problem-review-fields select {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid #cbbda7;
+  border-radius: 5px;
+  background: #fff;
+  color: #2f2a23;
+  font: inherit;
+  font-size: 0.82rem;
+}
+.problem-review-fields input:focus,
+.problem-review-fields select:focus {
+  outline: 3px solid rgba(154, 107, 47, 0.18);
+  border-color: #9a6b2f;
+}
+.problem-review-original {
+  margin-top: 0.2rem;
+  color: #83786a;
+  font-size: 0.68rem;
+}
+.problem-review-evidence {
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee6da;
+  color: #675f54;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.problem-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+.problem-review-boundary { margin: 0.8rem 0 0; font-size: 0.78rem; }
+.problem-review-downstream-warning { margin: 0 0 0.85rem; font-size: 0.82rem; }
+.problem-review-empty { margin: 0; color: #756b5e; font-size: 0.82rem; }
+
 /* ---------- Responsive: dev panel ---------- */
 @media (max-width: 600px) {
   .dev-panel-inner { padding: 0.5rem 1rem; }
@@ -931,4 +1054,11 @@ td.badge-cell { white-space: nowrap; }
   .patient-bar { flex-wrap: wrap; }
   .med-review-heading { flex-direction: column; }
   .med-review-fields { grid-template-columns: 1fr; }
+  .problem-review-heading { flex-direction: column; }
+  .problem-review-fields { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 601px) and (max-width: 1000px) {
+  .problem-review-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .problem-review-concept { grid-column: 1 / -1; }
 }
