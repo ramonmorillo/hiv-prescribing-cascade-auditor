@@ -1053,7 +1053,7 @@ function runKBValidation() {
     banner.innerHTML =
       '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
         '<strong>&#9888; ' + escHtml(tStatic('kb_load_error', opResult.errors.length)) + '</strong>' +
-        '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
+        '<button type="button" data-action="toggle-kb-validation" aria-expanded="false" aria-controls="kb-val-detail" ' +
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.2rem .5rem;cursor:pointer;border-radius:3px;font-size:.75rem;">' + escHtml(tStatic('kb_view_errors')) + '</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fadbd8;color:#922b21;padding:.6rem 1rem;border-bottom:2px solid #c0392b;">' +
@@ -1089,10 +1089,10 @@ function runKBValidation() {
     banner.innerHTML =
       '<div style="background:#f39c12;color:#fff;padding:.4rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">' +
         '<span>&#9888; ' + headlineText + '</span>' +
-        '<button onclick="document.getElementById(\'kb-val-detail\').style.display=document.getElementById(\'kb-val-detail\').style.display===\'none\'?\'block\':\'none\'" ' +
+        '<button type="button" data-action="toggle-kb-validation" aria-expanded="false" aria-controls="kb-val-detail" ' +
           'style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.15rem .45rem;cursor:pointer;border-radius:3px;font-size:.75rem;">' +
           escHtml(detailBtnLabel) + '</button>' +
-        '<button onclick="this.parentElement.parentElement.style.display=\'none\'" ' +
+        '<button type="button" data-action="dismiss-kb-validation" ' +
           'style="margin-left:auto;background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;" title="' + escHtml(tStatic('dismiss')) + '">&times;</button>' +
       '</div>' +
       '<div id="kb-val-detail" style="display:none;background:#fef9e7;color:#7d6608;padding:.5rem 1rem;border-bottom:2px solid #f39c12;">' +
@@ -1397,7 +1397,7 @@ const STEP_CONTENT = {
             '</div>' +
             '<div class="onboarding-actions">' +
               '<span class="onboarding-hint">' + tUI('onboarding_hint') + '</span>' +
-              '<button class="btn btn-outline btn-sm" onclick="loadDemoCase()" type="button">' + tUI('onboarding_demo_btn') + '</button>' +
+              '<button class="btn btn-outline btn-sm" data-action="load-demo" type="button">' + tUI('onboarding_demo_btn') + '</button>' +
             '</div>' +
           '</div>'
         );
@@ -1974,7 +1974,7 @@ const STEP_CONTENT = {
         function classBtn(value, label, activeColor, activeText) {
           var isActive = current === value;
           return (
-            '<button onclick="classifyCascade(\'' + id + '\',\'' + value + '\')" ' +
+            '<button type="button" data-action="classify-cascade" data-cascade-id="' + id + '" data-classification="' + value + '" ' +
               'style="font-size:.78rem;padding:.28rem .75rem;border-radius:4px;cursor:pointer;' +
                 'font-weight:' + (isActive ? '700' : '500') + ';' +
                 'background:' + (isActive ? activeColor : '#f0f0f0') + ';' +
@@ -2097,22 +2097,22 @@ const STEP_CONTENT = {
       /* ── Export buttons ── */
       var exportRow = (
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
-          '<button onclick="copyReportForClinicalRecord()" ' +
+          '<button type="button" data-action="copy-report" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#34495e;color:#fff;border:none;font-weight:600;">' +
             tUI('btn_copy_record') +
           '</button>' +
-          '<button onclick="printReportAsPDF()" ' +
+          '<button type="button" data-action="print-report" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#8e44ad;color:#fff;border:none;font-weight:600;">' +
             tUI('btn_save_pdf') +
           '</button>' +
-          '<button onclick="exportReport(\'json\')" ' +
+          '<button type="button" data-action="export-report" data-format="json" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
             tUI('btn_export_json') +
           '</button>' +
-          '<button onclick="exportReport(\'csv\')" ' +
+          '<button type="button" data-action="export-report" data-format="csv" ' +
             'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
               'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
             tUI('btn_export_csv') +
@@ -3417,7 +3417,69 @@ function updateStaticUI() {
 /* ============================================================
    Event wiring
    ============================================================ */
+function handleDelegatedAction(event) {
+  var trigger = event.target.closest('[data-action]');
+  if (!trigger) return;
+  var action = trigger.getAttribute('data-action');
+
+  if (action === 'toggle-help') {
+    var helpContent = document.getElementById('help-content');
+    var helpArrow = document.getElementById('help-arrow');
+    var helpOpen = trigger.getAttribute('aria-expanded') === 'true';
+    trigger.setAttribute('aria-expanded', String(!helpOpen));
+    if (helpContent) helpContent.style.display = helpOpen ? 'none' : '';
+    if (helpArrow) helpArrow.classList.toggle('collapsed', helpOpen);
+    return;
+  }
+
+  if (action === 'toggle-kb-validation') {
+    var detail = document.getElementById('kb-val-detail');
+    if (!detail) return;
+    var detailOpen = detail.style.display !== 'none';
+    detail.style.display = detailOpen ? 'none' : 'block';
+    trigger.setAttribute('aria-expanded', String(!detailOpen));
+    return;
+  }
+
+  if (action === 'dismiss-kb-validation') {
+    var banner = trigger.closest('#kb-validation-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  if (action === 'load-demo') {
+    loadDemoCase();
+    return;
+  }
+
+  if (action === 'classify-cascade') {
+    var classification = trigger.getAttribute('data-classification');
+    var cascadeId = trigger.getAttribute('data-cascade-id');
+    if (cascadeId && ['confirmed', 'possible', 'not_cascade'].indexOf(classification) !== -1) {
+      classifyCascade(cascadeId, classification);
+    }
+    return;
+  }
+
+  if (action === 'copy-report') {
+    copyReportForClinicalRecord();
+    return;
+  }
+
+  if (action === 'print-report') {
+    printReportAsPDF();
+    return;
+  }
+
+  if (action === 'export-report') {
+    var format = trigger.getAttribute('data-format');
+    if (format === 'json' || format === 'csv') exportReport(format);
+  }
+}
+
 function wireEvents() {
+  document.addEventListener('click', handleDelegatedAction);
+
   /* Step tab buttons */
   document.querySelectorAll('.step-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
