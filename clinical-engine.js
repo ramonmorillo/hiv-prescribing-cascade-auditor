@@ -1550,12 +1550,33 @@ function buildGlobalMedicationAlerts(noteText, kb, mentions) {
  *   need this review.
  * @param {string[]} presentCanonicals  canonical drug names resolved from
  *   the note (state.kb-independent — just the plain list).
+ * @param {string[]} [ownCascadeExamples]  the rule's own cascade_drugs_examples
+ *   (e.g. VIH003's metformin/sitagliptin/liraglutide/enalapril/atorvastatin).
+ *   When a required drug is ALSO one of these — i.e. it can itself be the
+ *   candidate cascade_drug picked for some signal generated from this same
+ *   rule — presence must be scoped to `matchedCascadeDrug` rather than "is
+ *   it anywhere in the note", or the warning bleeds from the one relevant
+ *   candidate onto every unrelated candidate the same rule produces (e.g.
+ *   VIH003's dolutegravir–metformin dosing warning appearing on an
+ *   unrelated atorvastatin candidate just because metformin happens to be
+ *   present elsewhere in the note). A required drug absent from this list
+ *   is a genuine third party (e.g. VIH001's simvastatin/lovastatin, never a
+ *   member of its own rosuvastatin/pravastatin/... cascade_drugs_examples)
+ *   and keeps the unscoped, note-wide presence check.
+ * @param {string} [matchedCascadeDrug]  the specific cascade_drug matched
+ *   for the signal being evaluated right now.
  */
-function allRequiredEntitiesPresent(requiredGroups, presentCanonicals) {
+function allRequiredEntitiesPresent(requiredGroups, presentCanonicals, ownCascadeExamples, matchedCascadeDrug) {
   if (!requiredGroups || !requiredGroups.length) return true;
   var normPresent = (presentCanonicals || []).map(normalizeDrugText);
+  var normOwnExamples = (ownCascadeExamples || []).map(normalizeDrugText);
+  var normMatchedCascadeDrug = normalizeDrugText(matchedCascadeDrug || '');
   return requiredGroups.every(function (group) {
-    return (group || []).some(function (drug) { return normPresent.indexOf(normalizeDrugText(drug)) !== -1; });
+    return (group || []).some(function (drug) {
+      var normDrug = normalizeDrugText(drug);
+      if (normOwnExamples.indexOf(normDrug) !== -1) return normDrug === normMatchedCascadeDrug;
+      return normPresent.indexOf(normDrug) !== -1;
+    });
   });
 }
 
@@ -2168,12 +2189,24 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
        metformin in the note" (VIH003) and the same pattern in the other
        rules audited in kb/CHANGELOG.md. Rules with ddi_required_drugs still
        empty (not yet reviewed) keep their pre-audit unconditional display. */
-    var ddiVisible = allRequiredEntitiesPresent(cascade.ddi_required_drugs, presentCanonicals) &&
+    var ddiVisible = allRequiredEntitiesPresent(cascade.ddi_required_drugs, presentCanonicals,
+        cascade.cascade_drugs_examples, foundCascade) &&
       (!cascade.ddi_required_index_drugs || cascade.ddi_required_index_drugs.map(normalizeDrugText)
         .indexOf(normalizeDrugText(foundIndex)) !== -1);
 
     signals.push({
       cascade_id: cascade.id,
+      /* cascade_id stays the bare rule id (findCascadeEntry() and every
+         `cascade_id === 'VIH003'`-style test/lookup depends on that), but a
+         single rule can produce several independent candidates here — one
+         per compatible (index_drug, cascade_drug) pair, e.g. VIH003 firing
+         once for metformin and once for atorvastatin. Without a key that
+         distinguishes those, Step 5's per-card "confirmar/posible/descartar"
+         buttons and the final-report filter both keyed off cascade_id alone,
+         so classifying ANY one candidate silently overwrote every other
+         candidate of the same rule (shared object key) — the actual cause
+         of the cards in Step 5 looking "duplicated" and behaving as one. */
+      candidate_id: cascade.id + '::' + normalizeDrugText(foundIndex) + '::' + normalizeDrugText(foundCascade),
       rule_id: cascade.id,
       cascade_name: cascade.name_en || cascade.id,
       cascade_name_es: cascade.name_es || '',
@@ -2298,6 +2331,9 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
 
     signals.push({
       cascade_id: ds.id + ':' + foundCause + ':' + foundTreatment,
+      /* Already unique per (cause, treatment) pair, unlike drug_drug
+         signals above — see the note on candidate_id there. */
+      candidate_id: ds.id + ':' + foundCause + ':' + foundTreatment,
       rule_id: ds.id,
       cascade_name: foundCause + ' → ' + symLabel + ' → ' + foundTreatment,
       index_drug: foundCause,
