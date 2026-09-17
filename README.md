@@ -3,7 +3,7 @@
 **Auditor de Cascadas de Prescripción en VIH**
 
 Versión de software: **1.0.0** · Base de conocimiento: **2.0.0 (PROD)**
-Autor: **Ramón Morillo** · Licencia: consulte `LICENSE` si existe, o contacte al autor.
+Autores: **Ramón Morillo Verdugo y Cecilia Solís Martín** · Licencia: consulte `LICENSE` si existe, o contacte con los autores.
 
 ---
 
@@ -56,7 +56,7 @@ La herramienta está orientada a la revisión farmacoterapéutica de:
 - **No se conecta a ningún servicio externo** durante su uso: no hay llamadas a APIs de LLM, no hay telemetría, no hay sincronización en la nube.
 - **No valida la completitud de la nota clínica.** Si el texto es incompleto o ambiguo, los hallazgos serán necesariamente parciales.
 - **No sustituye la consulta de guías clínicas actualizadas** (DHHS, EACS, BHIVA, GeSIDA u otras) ni el juicio del profesional sanitario cualificado.
-- **No está validada como dispositivo médico.** La herramienta no ha sido sometida a evaluación regulatoria como producto sanitario en ninguna jurisdicción.
+- **Su situación regulatoria está en evaluación.** La herramienta no ha completado una evaluación regulatoria formal ni dispone de marcado CE. Su cualificación y clasificación deben establecerse a partir de la finalidad prevista antes de un despliegue clínico abierto.
 - **No gestiona datos reales de pacientes.** Está diseñada para notas pseudonimizadas; no debe introducirse información identificable de pacientes reales.
 - **No cubre todos los fármacos ni todas las cascadas posibles.** La KB es curada y representa un subconjunto de cascadas con evidencia documentada; muchos patrones no están aún incorporados.
 
@@ -156,6 +156,20 @@ node tests/run.js
 
 No requiere dependencias ni navegador: `clinical-engine.js` se carga vía `require()` directamente.
 
+También puede ejecutarse mediante el comando estable utilizado por integración continua:
+
+```bash
+npm test
+```
+
+## Gobierno y calidad
+
+- [`docs/PRODUCT_BASELINE.md`](docs/PRODUCT_BASELINE.md): línea base congelada, límites del producto y titularidad.
+- [`docs/RELEASE_GATES.md`](docs/RELEASE_GATES.md): clasificación de cambios, evidencias y revisiones obligatorias.
+- [`.github/pull_request_template.md`](.github/pull_request_template.md): declaración de impacto clínico, privacidad, bilingüismo y verificación para cada cambio.
+
+La rama principal debe aceptar cambios mediante pull request y exigir que la suite completa de regresión finalice correctamente.
+
 ---
 
 ## Base de conocimiento (KB)
@@ -190,9 +204,9 @@ Resumen de los cuatro ficheros PROD:
 
 Los hallazgos generados por el auditor son hipótesis de trabajo que requieren validación por un profesional sanitario cualificado con acceso a la historia completa del paciente, los datos analíticos actualizados y las guías clínicas vigentes.
 
-La herramienta no ha sido evaluada ni registrada como producto sanitario. No cumple los requisitos de los Reglamentos (UE) 2017/745 (MDR) ni 2017/746 (IVDR), ni de ninguna otra normativa equivalente. Su uso es de exclusiva responsabilidad del profesional que la emplea.
+La herramienta no ha completado una evaluación regulatoria formal ni dispone de marcado CE. Su cualificación y clasificación bajo el Reglamento (UE) 2017/745 (MDR) deben determinarse a partir de la finalidad prevista antes de un despliegue clínico abierto. Hasta entonces, su uso se limita a evaluación y apoyo supervisado por profesionales cualificados.
 
-*This tool is for clinical decision support purposes only. It does not constitute medical advice, clinical diagnosis, or prescribing guidance. All outputs must be reviewed by a qualified healthcare professional. The tool has not been evaluated or registered as a medical device under any regulatory framework.*
+*This tool is for clinical decision support purposes only. It does not constitute medical advice, clinical diagnosis, or prescribing guidance. All outputs must be reviewed by a qualified healthcare professional. It has not completed formal regulatory assessment and does not bear CE marking; qualification and classification under Regulation (EU) 2017/745 must be determined from its intended purpose before open clinical deployment.*
 
 ---
 
@@ -212,10 +226,12 @@ La herramienta no ha sido evaluada ni registrada como producto sanitario. No cum
 
 ---
 
-## Autoría
+## Autoría y titularidad
 
-**Autor:** Ramón Morillo
+**Coautores y cotitulares:** Ramón Morillo Verdugo y Cecilia Solís Martín, al 50% cada uno.
 
-Esta herramienta fue diseñada y desarrollada por Ramón Morillo como instrumento de apoyo a la decisión clínica en el contexto de la farmacia especializada en VIH. La base de conocimiento ha sido elaborada a partir de evidencia publicada en guías clínicas internacionales y literatura científica revisada por pares.
+**Registro de propiedad intelectual:** 04/2026/2614.
 
-Para consultas sobre licencia, reutilización o colaboración, contacte directamente con el autor.
+La herramienta se desarrolla como instrumento de apoyo a la decisión clínica en el contexto de la atención farmacéutica especializada en VIH. La base de conocimiento se elabora a partir de guías clínicas y literatura científica, con trazabilidad y revisión clínica progresivas.
+
+Para consultas sobre licencia, reutilización o colaboración, contacte con los autores.

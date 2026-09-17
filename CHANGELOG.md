@@ -9,6 +9,22 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Gobierno y calidad (2026-09-17)
+
+#### Añadido
+
+- Línea base congelada de la versión 1.0.0 y matriz de controles de publicación en `docs/`.
+- Flujo de GitHub Actions que ejecuta la suite completa de regresión en cada pull request y cambio de `main`.
+- Plantilla de pull request con declaraciones explícitas de impacto clínico, KB, privacidad, bilingüismo, accesibilidad y reversibilidad.
+- `package.json` mínimo para ofrecer `npm test` como comando estable y reproducible, sin añadir dependencias.
+
+#### Documentación
+
+- Autoría y titularidad actualizadas para reflejar la cotitularidad al 50% de Ramón Morillo Verdugo y Cecilia Solís Martín.
+- El estado regulatorio se expresa como pendiente de cualificación y clasificación formal, sin afirmar conformidad ni una clasificación no evaluada.
+
+Este bloque no modifica la interfaz, el motor clínico, la base de conocimiento ni el comportamiento de la aplicación.
+
 ### Auditoría del motor clínico (2026-09-14) — refactor de arquitectura
 
 Auditoría completa del pipeline de extracción/normalización/inferencia/detección de cascadas, motivada por un caso índice real: una paciente en Dovato desde 2019, con AINE (naproxeno) y a la que se prescribe enalapril por una única lectura de TA 130/80 mmHg descrita como "hipertensión". La herramienta generaba la cascada AINE→hipertensión→enalapril sin verificar nunca que la hipertensión estuviera realmente documentada, no reconocía Dovato como dolutegravir+lamivudina, no detectaba anastrozol, mostraba alertas de carga anticolinérgica/depresora del SNC dentro de la tarjeta de esa cascada, e informaba de 7 posibles cascadas sin distinguir su nivel de certeza. Diagnóstico completo, mapa de flujo y diseño propuesto documentados en el informe de auditoría de esta sesión; cambios de base de conocimiento en `kb/CHANGELOG.md`.
