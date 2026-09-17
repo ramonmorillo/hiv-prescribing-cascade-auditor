@@ -9,6 +9,21 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Arquitectura bilingüe de la interfaz (2026-09-17)
+
+#### Modificado
+
+- El selector ES/EN traduce ahora toda la estructura persistente: cabecera, herramientas, avisos de seguridad, identificación del caso, ayuda, información científica, estado de la KB y pie legal.
+- Los bloques que mostraban simultáneamente español e inglés se sustituyen por una única versión coherente con el idioma seleccionado.
+- Metadescripción, atributos accesibles, ayudas, títulos y marcadores de posición cambian también de idioma.
+- La información legal se alinea con la cotitularidad al 50%, el registro 04/2026/2614 y el estado regulatorio pendiente de evaluación formal.
+
+#### Añadido
+
+- Diccionario estático ES/EN independiente del DOM y prueba automática que exige paridad de claves y cobertura de todos los elementos traducibles.
+
+Este bloque no modifica el motor clínico, la base de conocimiento, los datos del caso ni los criterios de clasificación.
+
 ### Sistema visual profesional (2026-09-17)
 
 #### Modificado

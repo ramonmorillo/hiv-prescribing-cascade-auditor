@@ -15,7 +15,8 @@ const suites = [
   './kb-audit.test.js',
   './medication-status-interactions.test.js',
   './multi-candidate-cascades.test.js',
-  './final-adjustments.test.js'
+  './final-adjustments.test.js',
+  './static-i18n.test.js'
 ];
 
 let allOk = true;
