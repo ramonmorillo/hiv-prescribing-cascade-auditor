@@ -9,6 +9,21 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Revisión profesional de problemas y temporalidad (2026-09-17)
+
+#### Añadido
+
+- Modelo versionado e independiente para revisar problemas clínicos, estado, temporalidad y fecha de inicio.
+- Valores controlados para evitar estados no válidos: activo, sospechado, resuelto, ausente o desconocido; actual, previo/crónico o no determinado.
+- Editor bilingüe en el Paso 2 con corrección, exclusión, alta manual, evidencia original y confirmación profesional.
+- Persistencia local e importación/exportación JSON con trazabilidad de valores originales y revisados.
+- Invalidación automática de revisiones obsoletas cuando cambia la nota, la KB o la extracción de problemas.
+- Pruebas específicas de edición, temporalidad, validación, saneamiento, confirmación e invalidación.
+
+Esta fase registra la revisión, pero todavía no la utiliza como entrada del motor clínico. La interfaz y los informes estructurados lo declaran mediante `applied_to_engine: false` hasta la integración aislada del siguiente PR.
+
+No se modifican `clinical-engine.js`, las reglas clínicas, la base de conocimiento ni los resultados actuales del motor.
+
 ### Revisión farmacéutica editable de medicamentos (2026-09-17)
 
 #### Añadido
