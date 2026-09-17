@@ -1,0 +1,12 @@
+{
+  "name": "hiv-prescribing-cascade-auditor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-first clinical decision-support prototype for auditing possible prescribing cascades in people living with HIV.",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
