@@ -9,6 +9,23 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Sistema visual profesional (2026-09-17)
+
+#### Modificado
+
+- Nueva jerarquía visual del encabezado, espacio de trabajo, flujo por pasos, formularios, tablas, tarjetas clínicas, avisos e informe.
+- Sistema de tokens propio del producto para color, tipografía, espaciado, radios, elevación y estados semánticos.
+- Diseño adaptable reforzado para escritorio, tableta y móvil, con objetivos táctiles y navegación horizontal controlada.
+- Foco de teclado uniforme, enlace para saltar al contenido y respeto a la preferencia de movimiento reducido.
+- El idioma del documento se sincroniza con el selector ES/EN para que las tecnologías de asistencia pronuncien la interfaz correctamente.
+
+#### Eliminado
+
+- Dependencia de Google Fonts: la interfaz usa fuentes del sistema y mantiene el funcionamiento local-first sin solicitudes externas de tipografía.
+- Referencia estética a una identidad institucional SEFH no formalmente atribuida al producto.
+
+Este bloque modifica exclusivamente presentación y estructura semántica no funcional. No cambia el motor clínico, la base de conocimiento, los datos persistidos ni el significado de los informes.
+
 ### Gobierno y calidad (2026-09-17)
 
 #### Añadido
