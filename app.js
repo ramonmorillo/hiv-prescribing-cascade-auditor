@@ -95,6 +95,26 @@ const UI_STRINGS = {
     no_drugs_title:                '&#10003; Sin medicamentos identificados.',
     no_drugs_detail:               'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medicamento' + (n === 1 ? '' : 's') + ' detectado' + (n === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.'; },
+    med_review_title:              'Revisi&oacute;n farmac&eacute;utica de la medicaci&oacute;n',
+    med_review_intro:              'Compruebe la lista extra&iacute;da, corrija nombres o grupos, excluya menciones no activas y a&ntilde;ada los medicamentos omitidos.',
+    med_review_status_draft:       'Pendiente de confirmar',
+    med_review_status_confirmed:   'Revisi&oacute;n confirmada',
+    med_review_source_extracted:   'Extra&iacute;do',
+    med_review_source_manual:      'A&ntilde;adido',
+    med_review_include:            'Incluir',
+    med_review_name:               'Medicamento',
+    med_review_class:              'Grupo farmacol&oacute;gico',
+    med_review_original:           function (name) { return 'Valor extra&iacute;do: ' + name; },
+    med_review_add:                '+ A&ntilde;adir medicamento',
+    med_review_remove:             'Eliminar',
+    med_review_confirm:            'Confirmar revisi&oacute;n',
+    med_review_reset:              'Restaurar extracci&oacute;n',
+    med_review_empty:              'No hay medicamentos incluidos en la revisi&oacute;n.',
+    med_review_validation_error:   'Revise los nombres vac&iacute;os o duplicados antes de confirmar.',
+    med_review_confirmed_toast:    'Revisi&oacute;n de medicamentos confirmada.',
+    med_review_reset_confirm:      'Se perder&aacute;n las correcciones de medicamentos realizadas. ¿Restaurar la extracci&oacute;n autom&aacute;tica?',
+    med_review_boundary:           '<strong>Alcance de esta fase:</strong> las correcciones quedan guardadas y trazables, pero todav&iacute;a no modifican el an&aacute;lisis autom&aacute;tico de cascadas.',
+    med_review_not_applied:        '<strong>Revisi&oacute;n de medicamentos modificada:</strong> estos cambios a&uacute;n no se aplican al motor de detecci&oacute;n. Interprete los resultados posteriores con esta limitaci&oacute;n.',
     symptoms_dict_missing:         'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>',
     symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong>',
     symptoms_dict_unavailable_detail: 'Recargue la p&aacute;gina o compruebe el estado KB.',
@@ -446,6 +466,26 @@ const UI_STRINGS = {
     no_drugs_title:                '&#10003; No medications identified.',
     no_drugs_detail:               'The note may use brand names, abbreviations or drugs not included in the current KB.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medication' + (n === 1 ? '' : 's') + ' detected</strong> in the clinical note.'; },
+    med_review_title:              'Pharmacist medication review',
+    med_review_intro:              'Check the extracted list, correct names or groups, exclude inactive mentions, and add omitted medications.',
+    med_review_status_draft:       'Awaiting confirmation',
+    med_review_status_confirmed:   'Review confirmed',
+    med_review_source_extracted:   'Extracted',
+    med_review_source_manual:      'Added',
+    med_review_include:            'Include',
+    med_review_name:               'Medication',
+    med_review_class:              'Pharmacological group',
+    med_review_original:           function (name) { return 'Extracted value: ' + name; },
+    med_review_add:                '+ Add medication',
+    med_review_remove:             'Remove',
+    med_review_confirm:            'Confirm review',
+    med_review_reset:              'Restore extraction',
+    med_review_empty:              'No medications are included in the review.',
+    med_review_validation_error:   'Resolve blank or duplicate medication names before confirming.',
+    med_review_confirmed_toast:    'Medication review confirmed.',
+    med_review_reset_confirm:      'Medication corrections will be lost. Restore the automatic extraction?',
+    med_review_boundary:           '<strong>Scope of this phase:</strong> corrections are stored with an audit trail but do not yet change automatic cascade analysis.',
+    med_review_not_applied:        '<strong>Medication review changed:</strong> these corrections are not yet applied to the detection engine. Interpret subsequent results with this limitation.',
     symptoms_dict_missing:         'Active problems &mdash; <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>',
     symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Symptom dictionary unavailable.</strong>',
     symptoms_dict_unavailable_detail: 'Reload the page or check KB status.',
@@ -780,6 +820,9 @@ const state = {
      truth for medications/activeProblems/possibleCascades/globalMedicationAlerts;
      Step 2-6 all read from it instead of re-deriving their own view. */
   caseModel: null,
+  /* Pharmacist-reviewed medication list. This audit layer is deliberately
+     separate from caseModel until the reviewed-input engine milestone. */
+  medicationReview: null,
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
   /* Step 2 — rule-based clinical problems (e.g. urologic/renal) found in the
@@ -805,6 +848,7 @@ function saveState() {
       step: state.step,
       patientId: state.patientId,
       clinicalNote: state.clinicalNote,
+      medicationReview: state.medicationReview,
       symptomsDetected: state.symptomsDetected,
       cascadeClassifications: state.cascadeClassifications
     };
@@ -827,6 +871,7 @@ function loadState() {
     const saved = JSON.parse(raw);
     if (typeof saved.patientId === 'string')    state.patientId    = saved.patientId;
     if (typeof saved.clinicalNote === 'string') state.clinicalNote = saved.clinicalNote;
+    if (window.MedicationReview) state.medicationReview = window.MedicationReview.sanitize(saved.medicationReview);
     /* Guard against corrupted or out-of-range step values */
     if (Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 6) state.step = saved.step;
     if (Array.isArray(saved.symptomsDetected))                 state.symptomsDetected       = saved.symptomsDetected;
@@ -861,6 +906,7 @@ function clearState() {
     state.step = 1;
     state.patientId = '';
     state.clinicalNote = '';
+    state.medicationReview = null;
     state.symptomsDetected = [];
     state.cascadeClassifications = {};
     state.detectedCascades = null;
@@ -1213,6 +1259,7 @@ function downloadJSON(obj, filename) {
    ============================================================ */
 
 var CE = window.ClinicalEngine;
+var MR = window.MedicationReview;
 
 function normalizeClinicalText(text) { return CE.normalizeClinicalText(text); }
 function normalizeDrugText(text) { return CE.normalizeDrugText(text); }
@@ -1311,6 +1358,70 @@ function getCaseModel(noteText) {
   return state.caseModel;
 }
 
+function ensureMedicationReview(medications) {
+  if (!MR) return null;
+  var next = MR.ensureCurrent(state.medicationReview, medications || []);
+  if (JSON.stringify(next) !== JSON.stringify(state.medicationReview)) {
+    state.medicationReview = next;
+    saveState();
+  }
+  return state.medicationReview;
+}
+
+function renderMedicationReview(medications) {
+  var review = ensureMedicationReview(medications);
+  if (!review) return '';
+  var includedCount = MR.reviewedMedications(review).length;
+  var statusKey = review.status === 'confirmed' ? 'med_review_status_confirmed' : 'med_review_status_draft';
+  var statusClass = review.status === 'confirmed' ? 'is-confirmed' : 'is-draft';
+  var rows = review.items.map(function (item) {
+    var inputId = 'med-review-name-' + item.id;
+    var classId = 'med-review-class-' + item.id;
+    var sourceKey = item.source === 'manual' ? 'med_review_source_manual' : 'med_review_source_extracted';
+    var original = item.source === 'extracted'
+      ? '<div class="med-review-original">' + tUI('med_review_original', escHtml(item.original_name)) + '</div>'
+      : '';
+    var removeButton = item.source === 'manual'
+      ? '<button type="button" class="btn btn-ghost btn-sm med-review-remove" data-action="remove-medication-row" data-medication-id="' + escHtml(item.id) + '">' + tUI('med_review_remove') + '</button>'
+      : '';
+    return (
+      '<div class="med-review-row' + (item.included ? '' : ' is-excluded') + '">' +
+        '<div class="med-review-row-head">' +
+          '<span class="med-review-source ' + (item.source === 'manual' ? 'is-manual' : '') + '">' + tUI(sourceKey) + '</span>' +
+          '<label class="med-review-include"><input type="checkbox" data-medication-field="included" data-medication-id="' + escHtml(item.id) + '"' + (item.included ? ' checked' : '') + '> ' + tUI('med_review_include') + '</label>' +
+          removeButton +
+        '</div>' +
+        '<div class="med-review-fields">' +
+          '<label for="' + inputId + '"><span>' + tUI('med_review_name') + '</span>' +
+            '<input id="' + inputId + '" type="text" maxlength="200" autocomplete="off" data-medication-field="normalized_name" data-medication-id="' + escHtml(item.id) + '" value="' + escHtml(item.normalized_name) + '">' +
+            original +
+          '</label>' +
+          '<label for="' + classId + '"><span>' + tUI('med_review_class') + '</span>' +
+            '<input id="' + classId + '" type="text" maxlength="200" autocomplete="off" data-medication-field="drug_class" data-medication-id="' + escHtml(item.id) + '" value="' + escHtml(item.drug_class) + '">' +
+          '</label>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  if (!rows) rows = '<p class="med-review-empty">' + tUI('med_review_empty') + '</p>';
+  return (
+    '<section class="med-review-panel" aria-labelledby="med-review-title">' +
+      '<div class="med-review-heading">' +
+        '<div><h3 id="med-review-title">' + tUI('med_review_title') + '</h3><p>' + tUI('med_review_intro') + '</p></div>' +
+        '<span class="med-review-status ' + statusClass + '">' + tUI(statusKey) + ' · ' + includedCount + '</span>' +
+      '</div>' +
+      '<div class="med-review-list">' + rows + '</div>' +
+      '<div class="med-review-actions">' +
+        '<button type="button" class="btn btn-outline btn-sm" data-action="add-medication-row">' + tUI('med_review_add') + '</button>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-action="confirm-medication-review">' + tUI('med_review_confirm') + '</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="reset-medication-review">' + tUI('med_review_reset') + '</button>' +
+      '</div>' +
+      '<div class="callout callout-warning med-review-boundary">' + tUI('med_review_boundary') + '</div>' +
+    '</section>'
+  );
+}
+
 /** One-time migration for clinician verdicts recorded before candidate_id
  * existed, when Step 5's buttons were keyed by the bare cascade_id (the KB
  * rule id). That collided whenever one rule produced more than one
@@ -1341,7 +1452,7 @@ function getDetectedCascades(noteText) {
 }
 /* ============================================================
    Step 5 — clinician classification handler
-   Called via inline onclick: classifyCascade(id, value)
+   Called by the delegated classify-cascade action.
    value: 'confirmed' | 'possible' | 'not_cascade'
    ============================================================ */
 window.classifyCascade = function (cascadeId, value) {
@@ -1419,6 +1530,7 @@ const STEP_CONTENT = {
       if (ta) {
         ta.addEventListener('input', function () {
           state.clinicalNote = ta.value;
+          state.medicationReview = null;
           invalidateDetectedCascades();
           invalidateDrugResolver();
           saveState();
@@ -1461,9 +1573,6 @@ const STEP_CONTENT = {
        *    the cascade detection engine. */
       var medicationModel = getCaseModel(state.clinicalNote);
       var drugs = medicationModel.medications.map(function (m) { return m.normalized_name; });
-      var normalized = medicationModel.medications.map(function (m) { return { drug: m.normalized_name, class: m.drug_class }; });
-      var classLookup = {};
-      normalized.forEach(function (n) { classLookup[n.drug.toLowerCase()] = n.class; });
 
       var drugSection;
       if (drugs.length === 0) {
@@ -1474,27 +1583,14 @@ const STEP_CONTENT = {
           '</div>'
         );
       } else {
-        var drugTags = drugs.map(function (d) {
-          var cls = classLookup[d.toLowerCase()] || '';
-          var clsLabel = cls
-            ? '<span style="display:block;font-size:.68rem;opacity:.85;margin-top:.1rem;font-weight:400;">' +
-                escHtml(cls) + '</span>'
-            : '';
-          return (
-            '<span style="display:inline-block;background:#1a6b9a;color:#fff;border-radius:4px;' +
-              'padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;font-weight:600;' +
-              'vertical-align:top;line-height:1.3;">' +
-              escHtml(d) + clsLabel +
-            '</span>'
-          );
-        }).join('');
         drugSection = (
           '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
             tUI('drugs_detected', drugs.length) +
-          '</div>' +
-          '<div style="padding:.2rem 0 .65rem;">' + drugTags + '</div>'
+          '</div>'
         );
       }
+
+      drugSection += renderMedicationReview(medicationModel.medications);
 
       var inactiveRows = medicationModel.inactiveOrNegatedMedications || [];
       if (inactiveRows.length) {
@@ -1672,6 +1768,29 @@ const STEP_CONTENT = {
           tUI('detection_warning') +
         '</div>'
       );
+    },
+    onMount: function (container) {
+      container.querySelectorAll('[data-medication-field]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          if (!MR || !state.medicationReview) return;
+          var field = input.getAttribute('data-medication-field');
+          var id = input.getAttribute('data-medication-id');
+          var patch = {};
+          patch[field] = field === 'included' ? input.checked : input.value;
+          state.medicationReview = MR.updateItem(state.medicationReview, id, patch);
+          saveState();
+          if (field === 'included') {
+            renderStepContent(2);
+          } else {
+            var status = container.querySelector('.med-review-status');
+            if (status) {
+              status.classList.remove('is-confirmed');
+              status.classList.add('is-draft');
+              status.textContent = tUI('med_review_status_draft') + ' · ' + MR.reviewedMedications(state.medicationReview).length;
+            }
+          }
+        });
+      });
     }
   },
   3: {
@@ -2205,9 +2324,12 @@ function renderStepContent(step) {
   }
 
   var titleText = typeof cfg.title === 'function' ? cfg.title() : cfg.title;
+  var reviewBoundary = step >= 3 && MR && MR.hasChanges(state.medicationReview)
+    ? '<div class="callout callout-warning med-review-downstream-warning">' + tUI('med_review_not_applied') + '</div>'
+    : '';
   container.innerHTML =
     '<div class="step-header"><h2>' + titleText + '</h2></div>' +
-    '<div class="step-section">' + cfg.body() + '</div>';
+    '<div class="step-section">' + reviewBoundary + cfg.body() + '</div>';
 
   if (typeof cfg.onMount === 'function') {
     cfg.onMount(container);
@@ -2246,6 +2368,7 @@ function exportJSON() {
       exportedAt: new Date().toISOString(),
       patientId: state.patientId,
       clinicalNote: state.clinicalNote,
+      medicationReview: state.medicationReview,
       step: state.step,
       cascadeClassifications: state.cascadeClassifications
     };
@@ -2643,6 +2766,13 @@ function buildReport() {
     kb_version: getKBVersion(),
     kb_mode: state.kbMode,
     drugs_detected: model.medications.map(function (m) { return m.normalized_name; }),
+    medication_review: state.medicationReview && MR ? {
+      status: state.medicationReview.status,
+      confirmed_at: state.medicationReview.confirmed_at,
+      applied_to_engine: false,
+      reviewed_medications: MR.reviewedMedications(state.medicationReview),
+      audit_items: MR.sanitize(state.medicationReview).items
+    } : null,
     medication_mentions: model.allMedicationMentions,
     inactive_or_negated_medications: model.inactiveOrNegatedMedications,
     current_interactions: model.currentInteractions,
@@ -2786,7 +2916,7 @@ window.printReportAsPDF = function () {
 };
 
 /* ── exportReport ─────────────────────────────────────────────────────────
-   Inline export buttons in Step 6 call: exportReport('json') / ('csv')
+   Delegated Step 6 actions call: exportReport('json') / ('csv')
    ──────────────────────────────────────────────────────────────────────── */
 window.exportReport = function (format) {
   var report, filename;
@@ -2902,6 +3032,7 @@ function importCase(file) {
 
       /* Restore fields with strict type guards to prevent state corruption */
       var imported = 0;
+      state.medicationReview = null;
       if (typeof data.patientId === 'string' && data.patientId.length <= 200) {
         state.patientId = data.patientId;
         imported++;
@@ -2909,6 +3040,13 @@ function importCase(file) {
       if (typeof data.clinicalNote === 'string') {
         state.clinicalNote = data.clinicalNote;
         imported++;
+      }
+      if (data.medicationReview !== undefined && MR) {
+        var importedReview = MR.sanitize(data.medicationReview);
+        if (importedReview) {
+          state.medicationReview = importedReview;
+          imported++;
+        }
       }
       /* Validate step is a safe integer in range */
       if (Number.isInteger(data.step) && data.step >= 1 && data.step <= 6) {
@@ -2978,6 +3116,7 @@ function loadDemoCase() {
   if (state.clinicalNote && !confirm(tUI('confirm_load_demo'))) return;
   clearState();
   state.patientId = 'DEMO-001';
+  state.medicationReview = null;
   state.clinicalNote = [
     'NOTA CLÍNICA — CASO PSEUDONIMIZADO (DEMO)',
     'Paciente ID: DEMO-001 | Fecha: 2024-03-15 | Servicio: VIH / Enfermedades Infecciosas',
@@ -3461,6 +3600,46 @@ function handleDelegatedAction(event) {
     return;
   }
 
+  if (action === 'add-medication-row') {
+    if (!MR || !state.medicationReview) return;
+    state.medicationReview = MR.addManualItem(state.medicationReview);
+    saveState();
+    renderStepContent(2);
+    var manualInputs = document.querySelectorAll('.med-review-row .med-review-fields input[data-medication-field="normalized_name"]');
+    if (manualInputs.length) manualInputs[manualInputs.length - 1].focus();
+    return;
+  }
+
+  if (action === 'remove-medication-row') {
+    if (!MR || !state.medicationReview) return;
+    state.medicationReview = MR.removeManualItem(state.medicationReview, trigger.getAttribute('data-medication-id'));
+    saveState();
+    renderStepContent(2);
+    return;
+  }
+
+  if (action === 'confirm-medication-review') {
+    if (!MR || !state.medicationReview) return;
+    var confirmation = MR.confirm(state.medicationReview);
+    if (!confirmation.ok) {
+      showToast(tUI('med_review_validation_error'), 'error');
+      return;
+    }
+    state.medicationReview = confirmation.review;
+    saveState();
+    renderStepContent(2);
+    showToast(tUI('med_review_confirmed_toast'), 'success');
+    return;
+  }
+
+  if (action === 'reset-medication-review') {
+    if (!MR || !confirm(tUI('med_review_reset_confirm'))) return;
+    state.medicationReview = MR.create(getCaseModel(state.clinicalNote).medications);
+    saveState();
+    renderStepContent(2);
+    return;
+  }
+
   if (action === 'copy-report') {
     copyReportForClinicalRecord();
     return;
@@ -3567,6 +3746,7 @@ function wireEvents() {
       var newMode = kbModeSelect.value;
       if (newMode !== state.kbMode) {
         state.kbMode = newMode;
+        state.medicationReview = null;
         state.kb.coreCascades = null;
         state.kb.vihModifiers = null;
         state.kb.ddiWatchlist = null;

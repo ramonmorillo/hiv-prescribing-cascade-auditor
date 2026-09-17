@@ -809,9 +809,126 @@ td.badge-cell { white-space: nowrap; }
   min-width: 0;
 }
 
+/* ---------- Pharmacist medication review (Step 2) ---------- */
+.med-review-panel {
+  margin: 1rem 0 0.75rem;
+  padding: 1rem;
+  border: 1px solid #b8cbd6;
+  border-radius: 10px;
+  background: #f8fbfc;
+}
+.med-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+.med-review-heading h3 {
+  margin: 0 0 0.25rem;
+  color: var(--color-primary-dk);
+  font-size: 1rem;
+}
+.med-review-heading p {
+  margin: 0;
+  color: #52636c;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.med-review-status {
+  flex-shrink: 0;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.med-review-status.is-draft { background: #fff3cd; color: #785600; }
+.med-review-status.is-confirmed { background: #dff2e6; color: #17623a; }
+.med-review-list { display: grid; gap: 0.65rem; }
+.med-review-row {
+  padding: 0.7rem;
+  border: 1px solid #d5e0e5;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 7px;
+  background: #fff;
+}
+.med-review-row.is-excluded { opacity: 0.62; border-left-color: #8a969c; }
+.med-review-row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.55rem;
+}
+.med-review-source {
+  padding: 0.15rem 0.42rem;
+  border-radius: 4px;
+  background: #e5f0f6;
+  color: #245a76;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.med-review-source.is-manual { background: #e8f3e8; color: #27633d; }
+.med-review-include {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #34454d;
+}
+.med-review-remove { margin-left: auto; color: #9b2c2c; }
+.med-review-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+}
+.med-review-fields label > span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #52636c;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.med-review-fields input {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid #b7c8d0;
+  border-radius: 5px;
+  background: #fff;
+  color: #1f2d33;
+  font: inherit;
+  font-size: 0.83rem;
+}
+.med-review-fields input:focus {
+  outline: 3px solid rgba(26, 107, 154, 0.18);
+  border-color: var(--color-primary);
+}
+.med-review-original {
+  margin-top: 0.2rem;
+  color: #74838a;
+  font-size: 0.68rem;
+}
+.med-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+.btn-ghost { background: transparent; border: 1px solid transparent; color: #52636c; }
+.btn-ghost:hover:not(:disabled) { background: #edf2f4; }
+.med-review-boundary { margin: 0.8rem 0 0; font-size: 0.78rem; }
+.med-review-downstream-warning { margin: 0 0 0.85rem; font-size: 0.82rem; }
+.med-review-empty { margin: 0; color: #68777e; font-size: 0.82rem; }
+
 /* ---------- Responsive: dev panel ---------- */
 @media (max-width: 600px) {
   .dev-panel-inner { padding: 0.5rem 1rem; }
   .patient-bar-actions { margin-left: 0; margin-top: 0.4rem; width: 100%; }
   .patient-bar { flex-wrap: wrap; }
+  .med-review-heading { flex-direction: column; }
+  .med-review-fields { grid-template-columns: 1fr; }
 }
