@@ -3466,6 +3466,7 @@ function wireEvents() {
 
   function applyLanguage(lang) {
     currentLanguage = lang;
+    document.documentElement.lang = lang;
     try { localStorage.setItem(LS_LANG_KEY, lang); } catch (e) { /* ignore */ }
     /* Re-run detection so language-specific free-text fields (e.g. the
        urologic/renal problem label) reflect the new language too. */
