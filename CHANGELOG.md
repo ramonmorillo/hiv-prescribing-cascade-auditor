@@ -9,6 +9,16 @@ El versionado del software sigue [Semantic Versioning](https://semver.org/lang/e
 
 ## [Unreleased]
 
+### Corrección: candidatos de cascada compartiendo identificador en el Paso 5, e informe final respetando el descarte clínico (2026-09-17)
+
+#### Corregido
+
+- **Colisión de identificador entre candidatos de una misma regla.** Cuando una regla (p. ej. VIH003, INSTI → ganancia de peso → antidiabético/antihipertensivo) generaba más de un candidato para la misma nota — uno por cada fármaco de cascada compatible presente (p. ej. metformina y atorvastatina) —, ambas tarjetas del Paso 5 compartían el mismo `cascade_id` como clave de estado. Clasificar una tarjeta ("Cascada confirmada", "Cascada posible", "Descartar") sobrescribía silenciosamente el veredicto de la otra, dando la apariencia de una cascada "duplicada" que además reaccionaba de forma acoplada. Se introduce `candidate_id` (identificador único por par fármaco índice/fármaco de cascada) como clave real de la revisión clínica en `clinical-engine.js` y `app.js`; `cascade_id` se mantiene sin cambios como referencia a la regla de la KB. Los veredictos ya guardados se migran automáticamente cuando la migración es inequívoca (la regla solo producía un candidato en esa nota).
+- **Alerta de interacción (DDI) filtrada al candidato equivocado.** La alerta "Dolutegravir aumenta los niveles de metformina" de VIH003 se mostraba en cualquier candidato de esa regla — incluido uno sobre atorvastatina — en cuanto la metformina apareciera en cualquier parte de la nota, en vez de solo en el candidato cuyo fármaco de cascada es realmente la metformina. `allRequiredEntitiesPresent()` ahora exige que un fármaco requerido que también sea uno de los `cascade_drugs_examples` de la propia regla coincida con el fármaco de cascada de ESE candidato concreto; un fármaco requerido ajeno a esa lista (p. ej. simvastatina en VIH001, rifampicina en VIH011/VIH014) conserva la comprobación previa sobre toda la nota.
+- **El informe final ignoraba el descarte clínico del Paso 5.** Una cascada marcada como "Descartada" por el farmacéutico en el Paso 5 seguía apareciendo íntegramente en el informe final (pantalla, copia al registro clínico, exportación JSON y CSV), porque `buildReport()` agrupaba por la clasificación automática del sistema sin considerar el veredicto profesional. Ahora se excluye toda cascada con veredicto `not_cascade`; las confirmadas y las posibles se mantienen, y una cascada aún sin revisar se conserva (nunca se oculta en silencio) para que una revisión incompleta siga siendo visible en el informe.
+
+Este bloque no modifica los criterios clínicos de clasificación automática (`classification`) ni el contenido de la base de conocimiento; solo corrige cómo se identifica cada candidato y cómo el veredicto profesional del Paso 5 se traslada al informe final.
+
 ### Arquitectura bilingüe de la interfaz (2026-09-17)
 
 #### Modificado

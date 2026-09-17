@@ -1306,8 +1306,32 @@ function findCascadeEntryForSignal(signal) { return CE.findCascadeEntryForSignal
 function getCaseModel(noteText) {
   if (!state.caseModel) {
     state.caseModel = CE.buildCaseModel(noteText, state.kb, { lang: currentLanguage });
+    migrateClassificationsToCandidateId(state.caseModel.possibleCascades);
   }
   return state.caseModel;
+}
+
+/** One-time migration for clinician verdicts recorded before candidate_id
+ * existed, when Step 5's buttons were keyed by the bare cascade_id (the KB
+ * rule id). That collided whenever one rule produced more than one
+ * candidate (e.g. VIH003 for both metformin and atorvastatin): classifying
+ * either card silently overwrote the same shared key. Now that each
+ * candidate has its own candidate_id, an old flat verdict is carried
+ * forward only when it is unambiguous — i.e. this note's rule produced
+ * exactly one candidate — since with two or more candidates there is no
+ * way to know which one the old verdict was actually about. */
+function migrateClassificationsToCandidateId(possibleCascades) {
+  var byRule = {};
+  (possibleCascades || []).forEach(function (c) {
+    (byRule[c.cascade_id] = byRule[c.cascade_id] || []).push(c);
+  });
+  Object.keys(byRule).forEach(function (ruleId) {
+    var group = byRule[ruleId];
+    var oldVerdict = state.cascadeClassifications[ruleId];
+    if (group.length === 1 && oldVerdict && !state.cascadeClassifications[group[0].candidate_id]) {
+      state.cascadeClassifications[group[0].candidate_id] = oldVerdict;
+    }
+  });
 }
 
 /** Back-compat name: Step 4/6 and the self-test call getDetectedCascades()
@@ -1846,9 +1870,9 @@ const STEP_CONTENT = {
 
       /* ── Classification tally banner ── */
       var cls = state.cascadeClassifications;
-      var nConfirmed  = detected.filter(function (c) { return cls[c.cascade_id] === 'confirmed';   }).length;
-      var nPossible   = detected.filter(function (c) { return cls[c.cascade_id] === 'possible';    }).length;
-      var nNot        = detected.filter(function (c) { return cls[c.cascade_id] === 'not_cascade'; }).length;
+      var nConfirmed  = detected.filter(function (c) { return cls[c.candidate_id] === 'confirmed';   }).length;
+      var nPossible   = detected.filter(function (c) { return cls[c.candidate_id] === 'possible';    }).length;
+      var nNot        = detected.filter(function (c) { return cls[c.candidate_id] === 'not_cascade'; }).length;
       var nUnreviewed = detected.length - nConfirmed - nPossible - nNot;
 
       var tallyHtml = (
@@ -1878,7 +1902,7 @@ const STEP_CONTENT = {
                           ? entry.differential_hints : [];
 
         /* Use the richer field; for core it's recAction, for VIH it's clinNote */
-        var presentation = CE.getRecommendationPresentation(c.classification, entry || {}, cls[c.cascade_id]);
+        var presentation = CE.getRecommendationPresentation(c.classification, entry || {}, cls[c.candidate_id]);
         var actionText = currentLanguage === 'es' ? presentation.action_es : presentation.action_en;
 
         /* Confidence badge */
@@ -1938,9 +1962,14 @@ const STEP_CONTENT = {
             '</div>'
           : '';
 
-        /* Classification buttons */
-        var current = cls[c.cascade_id] || '';
-        var id      = escHtml(c.cascade_id);   /* safe for HTML attr; IDs are alphanumeric */
+        /* Classification buttons — keyed by candidate_id, not cascade_id: a
+           single rule (cascade_id) can produce several independent
+           candidates, one per (index_drug, cascade_drug) pair (e.g. VIH003
+           for both metformin and atorvastatin), and keying this off the
+           shared rule id would make classifying one candidate silently
+           overwrite every other candidate from the same rule. */
+        var current = cls[c.candidate_id] || '';
+        var id      = escHtml(c.candidate_id);   /* safe for HTML attr; IDs are alphanumeric/colon */
 
         function classBtn(value, label, activeColor, activeText) {
           var isActive = current === value;
@@ -2435,7 +2464,7 @@ function renderCascadeCardHtml(c, opts) {
   var displayName = (lang === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name;
   var adeDisplay = (lang === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
   var ddiDisplay = (lang === 'es' && c.ddi_warning_es) ? c.ddi_warning_es : c.ddi_warning;
-  var manualVerdict = state.cascadeClassifications[c.cascade_id];
+  var manualVerdict = state.cascadeClassifications[c.candidate_id];
   var presentation = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), manualVerdict);
   var recDisplay = (lang === 'es' ? presentation.action_es : presentation.action_en) || '';
   var reasonDisplay = (lang === 'es' ? c.classification_reason_es : c.classification_reason_en) || '';
@@ -2561,17 +2590,29 @@ function renderMissingInformationSection(missing) {
 function buildReport() {
   var model = getCaseModel(state.clinicalNote);
 
-  var cascades = model.possibleCascades.map(function (c) {
+  /* Step 5's clinician review (confirmed / possible / discarded via
+     classifyCascade) is the pharmacist's own verdict on each signal and
+     must be respected downstream: a cascade explicitly discarded in Step 5
+     ("Descartar") is never carried into the final report — on screen, in
+     the copy-to-record text, nor in the JSON/CSV export — even though the
+     system's own automated classification may still list it. A cascade the
+     clinician has not yet reviewed is kept (never silently dropped) so an
+     incomplete review is visible in the report rather than hidden. */
+  var possibleCascades = model.possibleCascades.filter(function (c) {
+    return state.cascadeClassifications[c.candidate_id] !== 'not_cascade';
+  });
+
+  var cascades = possibleCascades.map(function (c) {
     var adeDisplay = (currentLanguage === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || tUI('seq_potential_ade'));
     return Object.assign({}, c, {
-      verification_status: state.cascadeClassifications[c.cascade_id] || 'unreviewed',
+      verification_status: state.cascadeClassifications[c.candidate_id] || 'unreviewed',
       /* Aliases for the plain-text/CSV export surfaces, which pre-date the
          classification system and speak in terms of a single "recommendation"
          / "temporal support" string rather than the richer evidence object. */
       recommendation_presentation: CE.getRecommendationPresentation(
-        c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.cascade_id]),
+        c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.candidate_id]),
       clinical_recommendation: (function () {
-        var p = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.cascade_id]);
+        var p = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), state.cascadeClassifications[c.candidate_id]);
         return currentLanguage === 'es' ? p.action_es : p.action_en;
       }()),
       temporal_support: (c.evidence && c.evidence.temporal_order && c.evidence.temporal_order.status) || 'unknown',

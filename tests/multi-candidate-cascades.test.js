@@ -62,6 +62,24 @@ function run() {
   ]);
   assert('different rules for the same pair are not falsely deduplicated', nonEquivalent.length === 2);
 
+  /* ---- VIH003 with BOTH metformin and atorvastatin present: two distinct,
+     legitimate candidates are expected (one per cascade_drug) — but the
+     dolutegravir-metformin dosing warning must only appear on the metformin
+     candidate. Before the fix, `ddiVisible` only checked "is metformin
+     anywhere in the note", so the same metformin-specific warning bled onto
+     the unrelated atorvastatin candidate, making the two cards look like a
+     duplicated finding in the review step. ---- */
+  const vih003note = CE.buildCaseModel('Varón con VIH en tratamiento con dolutegravir. Presenta ganancia de peso significativa y síndrome metabólico. Toma metformina para diabetes tipo 2 y atorvastatina para dislipemia.', kb, { lang: 'es' });
+  const vih003candidates = vih003note.possibleCascades.filter((c) => c.cascade_id === 'VIH003');
+  assert('VIH003 produces one candidate per cascade drug (metformin and atorvastatin)',
+    vih003candidates.length === 2 &&
+    vih003candidates.some((c) => c.cascade_drug === 'metformin') &&
+    vih003candidates.some((c) => c.cascade_drug === 'atorvastatin'));
+  assert('the dolutegravir-metformin DDI warning is shown on the metformin candidate',
+    !!vih003candidates.find((c) => c.cascade_drug === 'metformin').ddi_warning_es);
+  assert('the same DDI warning is NOT leaked onto the unrelated atorvastatin candidate',
+    !vih003candidates.find((c) => c.cascade_drug === 'atorvastatin').ddi_warning_es);
+
   const r = summary(); console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`); return r.fail === 0;
 }
 module.exports = { run };
