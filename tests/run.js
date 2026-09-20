@@ -24,7 +24,9 @@ const suites = [
   './reviewed-input-integration.test.js',
   './reviewed-input-wiring.test.js',
   './reviewed-input-e2e.test.js',
-  './reviewed-input-edge-cases.test.js'
+  './reviewed-input-edge-cases.test.js',
+  './report-contract.test.js',
+  './report-wiring.test.js'
 ];
 
 let allOk = true;
