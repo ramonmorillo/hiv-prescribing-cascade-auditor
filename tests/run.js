@@ -22,7 +22,9 @@ const suites = [
   './problem-review.test.js',
   './reviewed-input-adapter.test.js',
   './reviewed-input-integration.test.js',
-  './reviewed-input-wiring.test.js'
+  './reviewed-input-wiring.test.js',
+  './reviewed-input-e2e.test.js',
+  './reviewed-input-edge-cases.test.js'
 ];
 
 let allOk = true;
