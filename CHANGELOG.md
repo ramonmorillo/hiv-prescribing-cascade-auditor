@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — unified clinical report contract (PR 9)
+
+- Added a DOM-free, versioned report contract shared by the on-screen report, clinical-record text, JSON and CSV.
+- Added explicit source/effective input provenance, review-application state, professional changes, audit-only discarded findings and structured limitations.
+- Replaced the duplicated inline CSV builder with one tested RFC 4180-compatible export schema.
+- Added bilingual clinical-record output and parity tests across all report surfaces.
+- Professionally discarded findings remain outside clinical findings and recommendations while retaining a minimal audit identifier.
+
 ## Unreleased — integral reviewed-input QA (PR 8)
 
 - Added end-to-end coverage from extraction through confirmed professional review and renewed clinical reasoning.

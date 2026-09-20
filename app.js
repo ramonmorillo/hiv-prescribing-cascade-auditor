@@ -224,6 +224,20 @@ const UI_STRINGS = {
     label_patient_id:       'ID de paciente',
     label_generated:        'Generado',
     label_kb_version:       'Versi&oacute;n KB',
+    label_report_schema:    'Esquema del informe',
+    section_input_review:   'Entrada cl&iacute;nica y revisi&oacute;n profesional',
+    label_source_meds:      'Medicamentos extra&iacute;dos',
+    label_effective_meds:   'Medicamentos utilizados por el motor',
+    label_med_review:       'Revisi&oacute;n de medicamentos',
+    label_problem_review:   'Revisi&oacute;n de problemas',
+    review_applied_yes:     'Confirmada y aplicada',
+    review_applied_no:      'No aplicada',
+    section_prof_changes:   'Cambios y decisiones profesionales',
+    med_changes_count:      function (n) { return 'Cambios/altas/exclusiones de medicamentos: ' + n; },
+    problem_changes_count:  function (n) { return 'Cambios/altas/exclusiones de problemas: ' + n; },
+    discarded_count:        function (n) { return 'Hallazgos descartados profesionalmente: ' + n; },
+    section_limitations_report: 'Limitaciones e informaci&oacute;n ausente',
+    no_report_limitations:  'Sin limitaciones estructuradas registradas.',
     not_set:                'No establecido',
     section_drugs:          function (n) { return 'Medicamentos detectados (' + n + ')'; },
     section_classes:        function (n) { return 'Grupos farmacol&oacute;gicos (' + n + ')'; },
@@ -629,6 +643,20 @@ const UI_STRINGS = {
     label_patient_id:       'Patient ID',
     label_generated:        'Generated',
     label_kb_version:       'KB version',
+    label_report_schema:    'Report schema',
+    section_input_review:   'Clinical input and professional review',
+    label_source_meds:      'Extracted medications',
+    label_effective_meds:   'Medications used by the engine',
+    label_med_review:       'Medication review',
+    label_problem_review:   'Problem review',
+    review_applied_yes:     'Confirmed and applied',
+    review_applied_no:      'Not applied',
+    section_prof_changes:   'Professional changes and decisions',
+    med_changes_count:      function (n) { return 'Medication changes/additions/exclusions: ' + n; },
+    problem_changes_count:  function (n) { return 'Problem changes/additions/exclusions: ' + n; },
+    discarded_count:        function (n) { return 'Professionally discarded findings: ' + n; },
+    section_limitations_report: 'Limitations and missing information',
+    no_report_limitations:  'No structured limitations recorded.',
     not_set:                'Not set',
     section_drugs:          function (n) { return 'Medications detected (' + n + ')'; },
     section_classes:        function (n) { return 'Pharmacological groups (' + n + ')'; },
@@ -1336,6 +1364,7 @@ var CE = window.ClinicalEngine;
 var MR = window.MedicationReview;
 var ProblemReview = window.ProblemReview;
 var ReviewedInputAdapter = window.ReviewedInputAdapter;
+var ReportContract = window.ReportContract;
 
 function normalizeClinicalText(text) { return CE.normalizeClinicalText(text); }
 function normalizeDrugText(text) { return CE.normalizeDrugText(text); }
@@ -2401,6 +2430,41 @@ const STEP_CONTENT = {
           '</ul>'
         : '<p style="margin:.35rem 0 0;color:#6b7280;font-size:.82rem;">' + tUI('no_dominant_interventions') + '</p>';
 
+      var provenance = r.input_provenance || {};
+      var medReviewState = provenance.medication_review || {};
+      var problemReviewState = provenance.problem_review || {};
+      var professionalChanges = r.professional_changes || {};
+      var medChangeCount = professionalChanges.medications && professionalChanges.medications.counts
+        ? professionalChanges.medications.counts.total : 0;
+      var problemChangeCount = professionalChanges.problems && professionalChanges.problems.counts
+        ? professionalChanges.problems.counts.total : 0;
+      var inputReviewHtml = (
+        '<div style="font-size:.84rem;line-height:1.55;">' +
+          '<div><strong>' + tUI('label_source_meds') + ':</strong> ' +
+            escHtml((provenance.source_medications || []).join(', ') || tUI('none_detected')) + '</div>' +
+          '<div><strong>' + tUI('label_effective_meds') + ':</strong> ' +
+            escHtml((provenance.effective_medications || []).join(', ') || tUI('none_detected')) + '</div>' +
+          '<div><strong>' + tUI('label_med_review') + ':</strong> ' +
+            (medReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</div>' +
+          '<div><strong>' + tUI('label_problem_review') + ':</strong> ' +
+            (problemReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</div>' +
+        '</div>'
+      );
+      var professionalChangesHtml = (
+        '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' +
+          '<li>' + tUI('med_changes_count', medChangeCount) + '</li>' +
+          '<li>' + tUI('problem_changes_count', problemChangeCount) + '</li>' +
+          '<li>' + tUI('discarded_count', (r.discarded_findings || []).length) + '</li>' +
+        '</ul>'
+      );
+      var limitationsHtml = (r.limitations || []).length
+        ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' +
+            r.limitations.map(function (item) {
+              var message = currentLanguage === 'en' ? item.message_en : item.message_es;
+              return '<li>' + escHtml(message || item.message_es || '') + '</li>';
+            }).join('') + '</ul>'
+        : '<p style="font-size:.84rem;color:#68777e;">' + tUI('no_report_limitations') + '</p>';
+
       /* ── Export buttons ── */
       var exportRow = (
         '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
@@ -2447,8 +2511,12 @@ const STEP_CONTENT = {
                   '<td style="padding:.28rem 0;">' +
                     escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
                   '</td></tr>' +
+              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_report_schema') + '</td>' +
+                  '<td style="padding:.28rem 0;">v' + escHtml(r.report_schema_version) + ' · ' + escHtml(r.language) + '</td></tr>' +
             '</table>'
           ) +
+
+          section(tUI('section_input_review'), inputReviewHtml) +
 
           section(tUI('section_drugs', r.drugs_detected.length),
             (r.drugs_detected.length
@@ -2476,7 +2544,9 @@ const STEP_CONTENT = {
 
           section(tUI('section_global_alerts'), renderGlobalAlertsSection(r.globalMedicationAlerts)) +
 
-          renderMissingInformationSection(r.missingInformation) +
+          section(tUI('section_prof_changes'), professionalChangesHtml) +
+
+          section(tUI('section_limitations_report'), limitationsHtml) +
 
           '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
             tUI('decision_support_warning') +
@@ -2955,7 +3025,7 @@ function buildReport() {
      above by classification rank, so the highest-priority ones come first. */
   var topInterventions = CE.selectTopInterventions(cascades, currentLanguage, 3);
 
-  return {
+  var baseReport = {
     patient_id: state.patientId || '',
     generated_at: new Date().toISOString(),
     kb_version: getKBVersion(),
@@ -2999,6 +3069,13 @@ function buildReport() {
       validation_warning: tUI('validation_warning')
     }
   };
+  return ReportContract ? ReportContract.enrich(baseReport, {
+    language: currentLanguage,
+    softwareVersion: '1.0.0',
+    extractedClinicalInput: model.extractedClinicalInput,
+    allCandidates: model.possibleCascades,
+    professionalVerdicts: state.cascadeClassifications
+  }) : baseReport;
 }
 
 var CLASSIFICATION_ORDER = [
@@ -3007,6 +3084,7 @@ var CLASSIFICATION_ORDER = [
 ];
 
 function formatReportForClinicalRecord(report) {
+  if (ReportContract) return ReportContract.toClinicalText(report, currentLanguage);
   var lines = [];
   lines.push(tUI('report_header'));
   lines.push(tUI('report_patient') + (report.patient_id || tUI('report_not_set')));
@@ -3135,60 +3213,8 @@ window.exportReport = function (format) {
   var blob, mime;
 
   if (format === 'csv') {
-    /* One row per cascade; header + data rows */
-    /* Fase 7: the four label dimensions get their own explicit CSV columns
-       (potential_clinical_relevance / knowledge_validation_status /
-       classification / verification_status) — never collapsed into one
-       ambiguous "confidence" or "status" column. */
-    var csvCols = [
-      'patient_id', 'generated_at', 'kb_version',
-      'cascade_id', 'cascade_name',
-      'index_drug', 'cascade_drug', 'ade_en',
-      'potential_clinical_relevance', 'knowledge_validation_status',
-      'classification', 'verification_status',
-      'clinical_recommendation', 'classification_reason', 'temporal_support',
-      'inactive_medication_mentions_json'
-    ];
-    /* RFC 4180 cell quoting: wrap in " and double any inner " */
-    function csvCell(v) {
-      var s = v === null || v === undefined ? '' : String(v);
-      return '"' + s.replace(/"/g, '""') + '"';
-    }
-    var rows = [csvCols.join(',')];
-    if (report.cascades.length === 0) {
-      /* Single data row indicating no cascades */
-      rows.push([
-        csvCell(report.patient_id), csvCell(report.generated_at), csvCell(report.kb_version),
-        csvCell(''), csvCell(tUI('report_no_cascades')),
-        csvCell(''), csvCell(''), csvCell(''),
-        csvCell(''), csvCell(''),
-        csvCell(''), csvCell(''),
-        csvCell(''), csvCell(''), csvCell(''),
-        csvCell(JSON.stringify(report.inactive_or_negated_medications || []))
-      ].join(','));
-    } else {
-      report.cascades.forEach(function (c) {
-        rows.push([
-          csvCell(report.patient_id),
-          csvCell(report.generated_at),
-          csvCell(report.kb_version),
-          csvCell(c.cascade_id),
-          csvCell(c.cascade_name),
-          csvCell(c.index_drug),
-          csvCell(c.cascade_drug),
-          csvCell(c.ade_en),
-          csvCell(c.potential_clinical_relevance),
-          csvCell(c.knowledge_validation_status),
-          csvCell(c.classification),
-          csvCell(c.verification_status),
-          csvCell(c.clinical_recommendation),
-          csvCell(currentLanguage === 'es' ? c.classification_reason_es : c.classification_reason_en),
-          csvCell(c.temporal_support),
-          csvCell(JSON.stringify(report.inactive_or_negated_medications || []))
-        ].join(','));
-      });
-    }
-    blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var csvText = ReportContract ? ReportContract.toCsv(report, currentLanguage) : '';
+    blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
     mime = 'text/csv';
     filename += '.csv';
   } else {
