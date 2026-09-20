@@ -20,7 +20,9 @@ const suites = [
   './browser-security.test.js',
   './medication-review.test.js',
   './problem-review.test.js',
-  './reviewed-input-adapter.test.js'
+  './reviewed-input-adapter.test.js',
+  './reviewed-input-integration.test.js',
+  './reviewed-input-wiring.test.js'
 ];
 
 let allOk = true;

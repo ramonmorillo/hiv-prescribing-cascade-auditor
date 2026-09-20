@@ -33,3 +33,13 @@ date. No day is inferred.
 This contract is tested but not yet consumed by the clinical engine. PR 7B is
 the separate activation change and must demonstrate the before/after clinical
 effects with end-to-end tests.
+
+## PR 7B activation
+
+The application first builds an immutable source-extraction model, applies this
+adapter, and invokes the clinical engine a second time only when at least one
+domain has a confirmed current review. Step 2 remains anchored to the source
+extraction, while Steps 3–6 and every report/export consume the effective
+reviewed model. Editing or resetting either review invalidates cached results
+and previous cascade verdicts because those verdicts belong to the earlier
+candidate set.

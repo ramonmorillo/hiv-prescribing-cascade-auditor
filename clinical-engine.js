@@ -121,6 +121,10 @@ var MESSAGES = {
   }
 };
 
+function cloneJson(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
 /* Common automated conclusion text. Rule-specific evidence remains in
  * MESSAGES, but every rule and output surface receives the same cautious
  * interpretation for a given classification. */
@@ -1962,14 +1966,10 @@ function detectDrugPairTemporality(noteText, indexMeta, cascadeMeta, problemChec
   /* Candidate metadata points at the exact occurrence. Falling back to a
      lexical search is only for legacy callers. Using the first occurrence
      here made repeated medications share the wrong date/assertion. */
-  var idxPos = indexMeta ? {
-    index: indexMeta.actual_start_index != null ? indexMeta.actual_start_index : indexMeta.start_index,
-    length: (indexMeta.mention || '').length
-  } : null;
-  var casPos = cascadeMeta ? {
-    index: cascadeMeta.actual_start_index != null ? cascadeMeta.actual_start_index : cascadeMeta.start_index,
-    length: (cascadeMeta.mention || '').length
-  } : null;
+  var idxIndex = indexMeta && (indexMeta.actual_start_index != null ? indexMeta.actual_start_index : indexMeta.start_index);
+  var casIndex = cascadeMeta && (cascadeMeta.actual_start_index != null ? cascadeMeta.actual_start_index : cascadeMeta.start_index);
+  var idxPos = idxIndex != null ? { index: idxIndex, length: (indexMeta.mention || '').length } : null;
+  var casPos = casIndex != null ? { index: casIndex, length: (cascadeMeta.mention || '').length } : null;
   var idxDate = idxPos ? extractDateNear(noteText, idxPos.index, idxPos.length) : null;
   var casDate = casPos ? extractDateNear(noteText, casPos.index, casPos.length) : null;
   var problemDate = problemCheck && problemCheck.first_active_date ? problemCheck.first_active_date : null;
@@ -2161,11 +2161,14 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
        an EXPLICIT indication in the note that names a different concept
        than the one THIS rule proposes, and this rule has no independent
        evidence of its own problem — the explicit, textual indication wins. */
-    var cascadePosition = {
-      index: foundCascadeMeta.actual_start_index != null ? foundCascadeMeta.actual_start_index : foundCascadeMeta.start_index,
-      length: (foundCascadeMeta.mention || '').length
-    };
-    var cascadeIndication = extractExplicitIndicationForMedication(noteText, cascadePosition, kb);
+    var cascadeIndex = foundCascadeMeta.actual_start_index != null
+      ? foundCascadeMeta.actual_start_index : foundCascadeMeta.start_index;
+    var cascadePosition = cascadeIndex != null ? {
+      index: cascadeIndex, length: (foundCascadeMeta.mention || '').length
+    } : null;
+    var cascadeIndication = cascadePosition
+      ? extractExplicitIndicationForMedication(noteText, cascadePosition, kb)
+      : { found: false };
     if (!cascadeIndication.found) cascadeIndication = indicationByCanonical[normalizeDrugText(foundCascade)];
     var linkedProblemEntry = findClinicalProblemForCascade(cascade, kb);
     var indicationMismatch = false;
@@ -2295,7 +2298,7 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
            which is an offset into the resolver's internally-normalized
            (whitespace/punctuation-collapsed) copy and therefore not a valid
            offset into `noteText` — see clinical-engine.js history/CHANGELOG. */
-        causePos = findTermInNote(noteText, foundCauseMeta.mention) || { index: 0, length: foundCauseMeta.mention.length };
+        causePos = findTermInNote(noteText, foundCauseMeta.mention);
         break;
       }
       var cp = findTermInNote(noteText, causedBy[ci]);
@@ -2307,7 +2310,7 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
       var tHit = mentionByCanonical[tKey];
       if (tHit && tHit.length) {
         foundTreatment = treatedBy[ti]; foundTreatmentMeta = tHit[0];
-        treatPos = findTermInNote(noteText, foundTreatmentMeta.mention) || { index: 0, length: foundTreatmentMeta.mention.length };
+        treatPos = findTermInNote(noteText, foundTreatmentMeta.mention);
         break;
       }
       var tp = findTermInNote(noteText, treatedBy[ti]);
@@ -2316,8 +2319,8 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
     if (!foundCause || !foundTreatment) return;
 
     var timeSym = detectTimeCues(noteText, typeof ds.startIndex === 'number' ? ds.startIndex : 0);
-    var timeCause = detectTimeCues(noteText, causePos.index);
-    var timeTreat = detectTimeCues(noteText, treatPos.index);
+    var timeCause = causePos ? detectTimeCues(noteText, causePos.index) : {};
+    var timeTreat = treatPos ? detectTimeCues(noteText, treatPos.index) : {};
 
     var supportive = (timeCause.drugStartHint || timeCause.treatmentAddedHint) && (timeSym.symptomNewHint || timeTreat.treatmentAddedHint);
     var chronic = timeSym.chronicHint || timeTreat.chronicHint;
@@ -2392,9 +2395,11 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
 function buildCaseModel(noteText, kb, options) {
   options = options || {};
   var lang = options.lang || 'es';
+  var reviewedInput = options.reviewedInput || null;
   kb = kb || {};
+  noteText = typeof noteText === 'string' ? noteText : '';
 
-  if (!noteText || !noteText.trim()) {
+  if ((!noteText || !noteText.trim()) && !reviewedInput) {
     return {
       medications: [], activeMedications: [], allMedicationMentions: [], inactiveOrNegatedMedications: [],
       currentInteractions: [], activeProblems: [], clinicalMeasurements: [], events: [],
@@ -2420,9 +2425,44 @@ function buildCaseModel(noteText, kb, options) {
     var state = classifyMedicationMention(corrected, m);
     m.assertion = state.assertion; m.status = state.status; m.temporality = state.temporality;
   });
-  var activeMentions = mentions.filter(function (m) {
+  var extractedActiveMentions = mentions.filter(function (m) {
     return isActiveMedication({ assertion: m.assertion, status: m.status });
   });
+  /* A confirmed professional review can replace the active medication set.
+     Extracted mention metadata is retained whenever a reviewed item maps to
+     one of the original medicines, preserving literal evidence and dates.
+     Manual additions deliberately carry no invented position or chronology. */
+  var activeMentions = reviewedInput && Array.isArray(reviewedInput.medications)
+    ? reviewedInput.medications.map(function (medication) {
+        var provenance = medication.review_provenance || {};
+        var originalName = provenance.original_name || medication.normalized_name;
+        var base = extractedActiveMentions.find(function (mention) {
+          return normalizeDrugText(mention.canonical) === normalizeDrugText(originalName);
+        });
+        if (base) {
+          return Object.assign({}, base, {
+            canonical: medication.normalized_name,
+            drug_class: medication.drug_class || '',
+            brand: medication.brand || null,
+            brand_ingredients: medication.active_ingredients || [medication.normalized_name],
+            review_provenance: cloneJson(provenance)
+          });
+        }
+        return {
+          mention: medication.original_text || medication.normalized_name,
+          canonical: medication.normalized_name,
+          start_index: null,
+          actual_start_index: null,
+          match_type: 'professional_review',
+          confidence: 'professional_review',
+          brand: medication.brand || null,
+          brand_ingredients: medication.active_ingredients || [medication.normalized_name],
+          drug_class: medication.drug_class || '',
+          assertion: 'affirmed', status: 'active', temporality: medication.temporality || 'undetermined',
+          review_provenance: cloneJson(provenance)
+        };
+      })
+    : extractedActiveMentions;
   var mentionByCanonical = {};
   activeMentions.forEach(function (m) {
     var key = normalizeDrugText(m.canonical);
@@ -2430,7 +2470,10 @@ function buildCaseModel(noteText, kb, options) {
     mentionByCanonical[key].push(m);
   });
 
-  var activeProblems = detectActiveProblems(corrected, kb, lang, resolver);
+  var extractedActiveProblems = detectActiveProblems(corrected, kb, lang, resolver);
+  var activeProblems = reviewedInput && Array.isArray(reviewedInput.activeProblems)
+    ? cloneJson(reviewedInput.activeProblems)
+    : extractedActiveProblems;
   var measurements = extractClinicalMeasurements(corrected);
   var symptomsDetected = extractSymptoms(corrected, kb);
 
@@ -2447,9 +2490,12 @@ function buildCaseModel(noteText, kb, options) {
   var indicationByCanonical = {};
   reconciledDrugCanonicals.forEach(function (canonical) {
     var m = activeMentions.find(function (x) { return x.canonical === canonical; });
-    var pos = { index: m.actual_start_index, length: (m.mention || '').length };
+    var mentionIndex = m.actual_start_index != null ? m.actual_start_index : m.start_index;
+    var pos = mentionIndex != null ? { index: mentionIndex, length: (m.mention || '').length } : null;
     positionByCanonical[canonical] = pos;
-    indicationByCanonical[normalizeDrugText(canonical)] = extractExplicitIndicationForMedication(corrected, pos, kb);
+    indicationByCanonical[normalizeDrugText(canonical)] = pos
+      ? extractExplicitIndicationForMedication(corrected, pos, kb)
+      : { found: false };
   });
 
   var drugDrug = evaluateDrugDrugCascades(corrected, kb, activeMentions, activeProblems, measurements, indicationByCanonical);
@@ -2514,11 +2560,13 @@ function buildCaseModel(noteText, kb, options) {
     }
   }
 
-  var medications = reconciledDrugCanonicals.map(function (canonical) {
+  var derivedMedications = reconciledDrugCanonicals.map(function (canonical) {
     var m = mentions.find(function (x) { return x.canonical === canonical; });
-    var pos = positionByCanonical[canonical] || { index: 0, length: (m.mention || '').length };
-    var posology = extractDosePosology(corrected, pos.index, pos.length);
-    var startDate = extractDateNear(corrected, pos.index, pos.length);
+    var activeMention = activeMentions.find(function (x) { return x.canonical === canonical; });
+    m = m || activeMention;
+    var pos = positionByCanonical[canonical];
+    var posology = pos ? extractDosePosology(corrected, pos.index, pos.length) : { dose: null, frequency: null, prn: false };
+    var startDate = pos ? extractDateNear(corrected, pos.index, pos.length) : null;
     var indication = indicationByCanonical[normalizeDrugText(canonical)];
     return {
       original_text: m.mention,
@@ -2538,9 +2586,13 @@ function buildCaseModel(noteText, kb, options) {
       explicit_indication: indication && indication.found ? indication : null,
       source: m.match_type === 'combo_brand' ? 'inferred' : 'explicit',
       confidence: m.confidence || 'medium',
-      evidence_span: extractSentenceSnippet(corrected, pos.index, pos.length)
+      evidence_span: pos ? extractSentenceSnippet(corrected, pos.index, pos.length) : ''
     };
   });
+
+  var medications = reviewedInput && Array.isArray(reviewedInput.medications)
+    ? cloneJson(reviewedInput.medications)
+    : derivedMedications;
 
   var uniqueClasses = [];
   medications.forEach(function (m) { if (m.drug_class && uniqueClasses.indexOf(m.drug_class) === -1) uniqueClasses.push(m.drug_class); });
@@ -2600,7 +2652,9 @@ function buildCaseModel(noteText, kb, options) {
     possibleCascades: allSignals,
     globalMedicationAlerts: globalAlertsResult.alerts,
     missingInformation: missingInformation,
-    symptomsDetected: symptomsDetected
+    symptomsDetected: symptomsDetected,
+    reviewedInputApplication: reviewedInput ? cloneJson(reviewedInput.application || null) : null,
+    reviewAudit: reviewedInput ? cloneJson(reviewedInput.audit || null) : null
   };
 }
 
