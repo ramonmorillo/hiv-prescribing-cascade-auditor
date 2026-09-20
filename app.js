@@ -113,8 +113,9 @@ const UI_STRINGS = {
     med_review_validation_error:   'Revise los nombres vac&iacute;os o duplicados antes de confirmar.',
     med_review_confirmed_toast:    'Revisi&oacute;n de medicamentos confirmada.',
     med_review_reset_confirm:      'Se perder&aacute;n las correcciones de medicamentos realizadas. ¿Restaurar la extracci&oacute;n autom&aacute;tica?',
-    med_review_boundary:           '<strong>Alcance de esta fase:</strong> las correcciones quedan guardadas y trazables, pero todav&iacute;a no modifican el an&aacute;lisis autom&aacute;tico de cascadas.',
-    med_review_not_applied:        '<strong>Revisi&oacute;n de medicamentos modificada:</strong> estos cambios a&uacute;n no se aplican al motor de detecci&oacute;n. Interprete los resultados posteriores con esta limitaci&oacute;n.',
+    med_review_boundary:           '<strong>Entrada cl&iacute;nica controlada:</strong> solo una revisi&oacute;n confirmada y vigente modifica el an&aacute;lisis. Cualquier cambio posterior vuelve a dejarla en borrador.',
+    med_review_not_applied:        '<strong>Revisi&oacute;n de medicamentos pendiente:</strong> los cambios permanecer&aacute;n fuera del motor hasta que confirme la revisi&oacute;n.',
+    med_review_applied:            '<strong>Revisi&oacute;n de medicamentos aplicada:</strong> el an&aacute;lisis utiliza la lista confirmada por el profesional.',
     problem_review_title:              'Revisi&oacute;n de problemas cl&iacute;nicos y temporalidad',
     problem_review_intro:              'Valide el problema, su estado actual, la relaci&oacute;n temporal y la fecha de inicio documentada.',
     problem_review_status_draft:       'Pendiente de confirmar',
@@ -137,8 +138,9 @@ const UI_STRINGS = {
     problem_review_validation_error:   'Revise los problemas vac&iacute;os o duplicados antes de confirmar.',
     problem_review_confirmed_toast:    'Revisi&oacute;n de problemas confirmada.',
     problem_review_reset_confirm:      'Se perder&aacute;n las correcciones de problemas realizadas. ¿Restaurar la extracci&oacute;n autom&aacute;tica?',
-    problem_review_boundary:           '<strong>Alcance de esta fase:</strong> la revisi&oacute;n de problemas queda guardada y trazable, pero todav&iacute;a no modifica el motor de cascadas.',
-    problem_review_not_applied:        '<strong>Revisi&oacute;n de problemas modificada:</strong> estos cambios a&uacute;n no se aplican al motor de detecci&oacute;n. Interprete los resultados posteriores con esta limitaci&oacute;n.',
+    problem_review_boundary:           '<strong>Entrada cl&iacute;nica controlada:</strong> solo una revisi&oacute;n confirmada y vigente modifica el an&aacute;lisis. Cualquier cambio posterior vuelve a dejarla en borrador.',
+    problem_review_not_applied:        '<strong>Revisi&oacute;n de problemas pendiente:</strong> los cambios permanecer&aacute;n fuera del motor hasta que confirme la revisi&oacute;n.',
+    problem_review_applied:            '<strong>Revisi&oacute;n de problemas aplicada:</strong> el an&aacute;lisis utiliza los problemas y la temporalidad confirmados por el profesional.',
     problem_review_status_active:      'Activo',
     problem_review_status_suspected:   'Sospechado',
     problem_review_status_resolved:    'Resuelto',
@@ -516,8 +518,9 @@ const UI_STRINGS = {
     med_review_validation_error:   'Resolve blank or duplicate medication names before confirming.',
     med_review_confirmed_toast:    'Medication review confirmed.',
     med_review_reset_confirm:      'Medication corrections will be lost. Restore the automatic extraction?',
-    med_review_boundary:           '<strong>Scope of this phase:</strong> corrections are stored with an audit trail but do not yet change automatic cascade analysis.',
-    med_review_not_applied:        '<strong>Medication review changed:</strong> these corrections are not yet applied to the detection engine. Interpret subsequent results with this limitation.',
+    med_review_boundary:           '<strong>Controlled clinical input:</strong> only a confirmed, current review changes the analysis. Any later edit returns it to draft status.',
+    med_review_not_applied:        '<strong>Medication review pending:</strong> changes remain outside the engine until the review is confirmed.',
+    med_review_applied:            '<strong>Medication review applied:</strong> the analysis uses the professionally confirmed list.',
     problem_review_title:              'Clinical problem and temporality review',
     problem_review_intro:              'Validate the problem, its current status, temporal relationship, and documented onset date.',
     problem_review_status_draft:       'Awaiting confirmation',
@@ -540,8 +543,9 @@ const UI_STRINGS = {
     problem_review_validation_error:   'Resolve blank or duplicate problems before confirming.',
     problem_review_confirmed_toast:    'Problem review confirmed.',
     problem_review_reset_confirm:      'Problem corrections will be lost. Restore the automatic extraction?',
-    problem_review_boundary:           '<strong>Scope of this phase:</strong> problem review is stored with an audit trail but does not yet change cascade analysis.',
-    problem_review_not_applied:        '<strong>Problem review changed:</strong> these corrections are not yet applied to the detection engine. Interpret subsequent results with this limitation.',
+    problem_review_boundary:           '<strong>Controlled clinical input:</strong> only a confirmed, current review changes the analysis. Any later edit returns it to draft status.',
+    problem_review_not_applied:        '<strong>Problem review pending:</strong> changes remain outside the engine until the review is confirmed.',
+    problem_review_applied:            '<strong>Problem review applied:</strong> the analysis uses the professionally confirmed problems and temporality.',
     problem_review_status_active:      'Active',
     problem_review_status_suspected:   'Suspected',
     problem_review_status_resolved:    'Resolved',
@@ -884,11 +888,11 @@ const state = {
      truth for medications/activeProblems/possibleCascades/globalMedicationAlerts;
      Step 2-6 all read from it instead of re-deriving their own view. */
   caseModel: null,
-  /* Pharmacist-reviewed medication list. This audit layer is deliberately
-     separate from caseModel until the reviewed-input engine milestone. */
+  /* Pharmacist-reviewed medication list. Only a confirmed, current review
+     enters caseModel through ReviewedInputAdapter. */
   medicationReview: null,
-  /* Pharmacist-reviewed clinical problems and temporality. Kept separate
-     from caseModel until the reviewed-input engine milestone. */
+  /* Pharmacist-reviewed clinical problems and temporality. Only a confirmed,
+     current review enters caseModel through ReviewedInputAdapter. */
   problemReview: null,
   /* Step 2 — symptoms found in the clinical note */
   symptomsDetected: [],
@@ -1331,6 +1335,7 @@ function downloadJSON(obj, filename) {
 var CE = window.ClinicalEngine;
 var MR = window.MedicationReview;
 var ProblemReview = window.ProblemReview;
+var ReviewedInputAdapter = window.ReviewedInputAdapter;
 
 function normalizeClinicalText(text) { return CE.normalizeClinicalText(text); }
 function normalizeDrugText(text) { return CE.normalizeDrugText(text); }
@@ -1345,6 +1350,13 @@ function getCascadeExamples(cascade) { return CE.getCascadeExamples(cascade); }
 
 function invalidateDrugResolver() { state.drugResolver = null; }
 function invalidateDetectedCascades() { state.detectedCascades = null; state.caseModel = null; }
+function invalidateReviewedClinicalInput() {
+  invalidateDetectedCascades();
+  /* A verdict belongs to the exact candidate set that was reviewed. Once a
+     medication/problem input changes, retaining old verdicts could silently
+     attach them to a clinically different analysis. */
+  state.cascadeClassifications = {};
+}
 
 function getDrugResolver() {
   if (!state.drugResolver) state.drugResolver = CE.buildDrugResolver(state.kb);
@@ -1423,7 +1435,24 @@ function findCascadeEntryForSignal(signal) { return CE.findCascadeEntryForSignal
  */
 function getCaseModel(noteText) {
   if (!state.caseModel) {
-    state.caseModel = CE.buildCaseModel(noteText, state.kb, { lang: currentLanguage });
+    var extractedModel = CE.buildCaseModel(noteText, state.kb, { lang: currentLanguage });
+    var reviewedInput = ReviewedInputAdapter
+      ? ReviewedInputAdapter.build(extractedModel, state.medicationReview, state.problemReview, state.kb)
+      : null;
+    var reviewApplied = reviewedInput && (
+      reviewedInput.application.medications.applied || reviewedInput.application.problems.applied
+    );
+    state.caseModel = reviewApplied
+      ? CE.buildCaseModel(noteText, state.kb, { lang: currentLanguage, reviewedInput: reviewedInput })
+      : extractedModel;
+    state.caseModel.reviewedInputApplication = reviewedInput ? reviewedInput.application : null;
+    state.caseModel.reviewAudit = reviewedInput ? reviewedInput.audit : null;
+    /* Step 2 must always compare the professional review against the source
+       extraction, never against its own already-corrected output. */
+    state.caseModel.extractedClinicalInput = {
+      medications: extractedModel.medications,
+      activeProblems: extractedModel.activeProblems
+    };
     migrateClassificationsToCandidateId(state.caseModel.possibleCascades);
   }
   return state.caseModel;
@@ -1731,7 +1760,9 @@ const STEP_CONTENT = {
        * 3. Unique canonical names are returned for display and forwarded to
        *    the cascade detection engine. */
       var medicationModel = getCaseModel(state.clinicalNote);
-      var drugs = medicationModel.medications.map(function (m) { return m.normalized_name; });
+      var extractedMedications = medicationModel.extractedClinicalInput
+        ? medicationModel.extractedClinicalInput.medications : medicationModel.medications;
+      var drugs = extractedMedications.map(function (m) { return m.normalized_name; });
 
       var drugSection;
       if (drugs.length === 0) {
@@ -1749,7 +1780,7 @@ const STEP_CONTENT = {
         );
       }
 
-      drugSection += renderMedicationReview(medicationModel.medications);
+      drugSection += renderMedicationReview(extractedMedications);
 
       var inactiveRows = medicationModel.inactiveOrNegatedMedications || [];
       if (inactiveRows.length) {
@@ -1912,6 +1943,7 @@ const STEP_CONTENT = {
           var patch = {};
           patch[field] = field === 'included' ? input.checked : input.value;
           state.medicationReview = MR.updateItem(state.medicationReview, id, patch);
+          invalidateReviewedClinicalInput();
           saveState();
           if (field === 'included') {
             renderStepContent(2);
@@ -1933,11 +1965,12 @@ const STEP_CONTENT = {
           var patch = {};
           patch[field] = field === 'included' ? input.checked : input.value;
           state.problemReview = ProblemReview.updateItem(state.problemReview, id, patch);
+          invalidateReviewedClinicalInput();
           saveState();
           if (field === 'included') {
             renderStepContent(2);
           } else {
-            var status = container.querySelector('.problem-review-review-status');
+            var status = container.querySelector('.problem-review-status');
             if (status) {
               status.classList.remove('is-confirmed');
               status.classList.add('is-draft');
@@ -2481,10 +2514,12 @@ function renderStepContent(step) {
   var titleText = typeof cfg.title === 'function' ? cfg.title() : cfg.title;
   var reviewBoundary = '';
   if (step >= 3 && MR && MR.hasChanges(state.medicationReview)) {
-    reviewBoundary += '<div class="callout callout-warning med-review-downstream-warning">' + tUI('med_review_not_applied') + '</div>';
+    reviewBoundary += '<div class="callout ' + (state.medicationReview.status === 'confirmed' ? 'callout-success' : 'callout-warning') +
+      ' med-review-downstream-warning">' + tUI(state.medicationReview.status === 'confirmed' ? 'med_review_applied' : 'med_review_not_applied') + '</div>';
   }
   if (step >= 3 && ProblemReview && ProblemReview.hasChanges(state.problemReview)) {
-    reviewBoundary += '<div class="callout callout-warning problem-review-downstream-warning">' + tUI('problem_review_not_applied') + '</div>';
+    reviewBoundary += '<div class="callout ' + (state.problemReview.status === 'confirmed' ? 'callout-success' : 'callout-warning') +
+      ' problem-review-downstream-warning">' + tUI(state.problemReview.status === 'confirmed' ? 'problem_review_applied' : 'problem_review_not_applied') + '</div>';
   }
   container.innerHTML =
     '<div class="step-header"><h2>' + titleText + '</h2></div>' +
@@ -2929,14 +2964,14 @@ function buildReport() {
     medication_review: state.medicationReview && MR ? {
       status: state.medicationReview.status,
       confirmed_at: state.medicationReview.confirmed_at,
-      applied_to_engine: false,
+      applied_to_engine: !!(model.reviewedInputApplication && model.reviewedInputApplication.medications.applied),
       reviewed_medications: MR.reviewedMedications(state.medicationReview),
       audit_items: MR.sanitize(state.medicationReview).items
     } : null,
     problem_review: state.problemReview && ProblemReview ? {
       status: state.problemReview.status,
       confirmed_at: state.problemReview.confirmed_at,
-      applied_to_engine: false,
+      applied_to_engine: !!(model.reviewedInputApplication && model.reviewedInputApplication.problems.applied),
       reviewed_problems: ProblemReview.reviewedProblems(state.problemReview),
       audit_items: ProblemReview.sanitize(state.problemReview).items
     } : null,
@@ -2948,6 +2983,8 @@ function buildReport() {
     clinicalMeasurements: model.clinicalMeasurements,
     globalMedicationAlerts: model.globalMedicationAlerts,
     missingInformation: model.missingInformation,
+    reviewed_input_application: model.reviewedInputApplication,
+    review_audit: model.reviewAudit,
     diagnostics: { inferredDrugsFromCascades: false, inferredDrugCount: 0 },
     symptoms_detected: model.symptomsDetected.map(function (s) {
       return { id: s.id, term: s.term, matched_term: s.matched_term, category: s.category };
@@ -3779,6 +3816,7 @@ function handleDelegatedAction(event) {
   if (action === 'add-medication-row') {
     if (!MR || !state.medicationReview) return;
     state.medicationReview = MR.addManualItem(state.medicationReview);
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     var manualInputs = document.querySelectorAll('.med-review-row .med-review-fields input[data-medication-field="normalized_name"]');
@@ -3789,6 +3827,7 @@ function handleDelegatedAction(event) {
   if (action === 'remove-medication-row') {
     if (!MR || !state.medicationReview) return;
     state.medicationReview = MR.removeManualItem(state.medicationReview, trigger.getAttribute('data-medication-id'));
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     return;
@@ -3802,6 +3841,7 @@ function handleDelegatedAction(event) {
       return;
     }
     state.medicationReview = confirmation.review;
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     showToast(tUI('med_review_confirmed_toast'), 'success');
@@ -3810,7 +3850,9 @@ function handleDelegatedAction(event) {
 
   if (action === 'reset-medication-review') {
     if (!MR || !confirm(tUI('med_review_reset_confirm'))) return;
-    state.medicationReview = MR.create(getCaseModel(state.clinicalNote).medications);
+    var medicationSource = getCaseModel(state.clinicalNote).extractedClinicalInput;
+    state.medicationReview = MR.create(medicationSource ? medicationSource.medications : []);
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     return;
@@ -3819,6 +3861,7 @@ function handleDelegatedAction(event) {
   if (action === 'add-problem-row') {
     if (!ProblemReview || !state.problemReview) return;
     state.problemReview = ProblemReview.addManualItem(state.problemReview);
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     var problemInputs = document.querySelectorAll('.problem-review-row input[data-problem-field="concept"]');
@@ -3829,6 +3872,7 @@ function handleDelegatedAction(event) {
   if (action === 'remove-problem-row') {
     if (!ProblemReview || !state.problemReview) return;
     state.problemReview = ProblemReview.removeManualItem(state.problemReview, trigger.getAttribute('data-problem-id'));
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     return;
@@ -3842,6 +3886,7 @@ function handleDelegatedAction(event) {
       return;
     }
     state.problemReview = problemConfirmation.review;
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     showToast(tUI('problem_review_confirmed_toast'), 'success');
@@ -3850,7 +3895,9 @@ function handleDelegatedAction(event) {
 
   if (action === 'reset-problem-review') {
     if (!ProblemReview || !confirm(tUI('problem_review_reset_confirm'))) return;
-    state.problemReview = ProblemReview.create(getCaseModel(state.clinicalNote).activeProblems);
+    var problemSource = getCaseModel(state.clinicalNote).extractedClinicalInput;
+    state.problemReview = ProblemReview.create(problemSource ? problemSource.activeProblems : []);
+    invalidateReviewedClinicalInput();
     saveState();
     renderStepContent(2);
     return;

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — reviewed input activation (PR 7B)
+
+- Confirmed, current medication and clinical-problem reviews now become the effective input to cascade reasoning.
+- Draft, invalid, stale, or identity-ambiguous reviews continue to fall back safely to source extraction.
+- Editing reviewed input invalidates cached findings and prior candidate verdicts.
+- Reports and exports now state whether each review was applied and include its audit trail.
+
 ## Unreleased — reviewed-input adapter (PR 7A)
 
 - Added a pure, versioned adapter for confirmed medication and clinical-problem reviews.
