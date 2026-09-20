@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — reviewed-input adapter (PR 7A)
+
+- Added a pure, versioned adapter for confirmed medication and clinical-problem reviews.
+- Draft, invalid, or stale reviews safely retain the extracted clinical input.
+- Added item-level provenance and separate change/addition/exclusion audit trails.
+- No reviewed input is consumed by the clinical engine in this PR.
+
 Todos los cambios notables de este proyecto se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
