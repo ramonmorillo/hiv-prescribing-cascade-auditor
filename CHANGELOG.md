@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — integral reviewed-input QA (PR 8)
+
+- Added end-to-end coverage from extraction through confirmed professional review and renewed clinical reasoning.
+- Added regression cases for drafts, stale reviews, partial confirmation, temporal corrections, JSON round-trips, DDIs, medication-burden alerts, multiple candidates, bilingual stability, malformed imports and duplicate KB identities.
+- Added an explicit QA matrix linking each clinical risk to an automated test.
+- No production logic, clinical rule or knowledge-base entry is changed in this PR.
+
 ## Unreleased — reviewed input activation (PR 7B)
 
 - Confirmed, current medication and clinical-problem reviews now become the effective input to cascade reasoning.
