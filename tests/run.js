@@ -19,7 +19,8 @@ const suites = [
   './static-i18n.test.js',
   './browser-security.test.js',
   './medication-review.test.js',
-  './problem-review.test.js'
+  './problem-review.test.js',
+  './reviewed-input-adapter.test.js'
 ];
 
 let allOk = true;
