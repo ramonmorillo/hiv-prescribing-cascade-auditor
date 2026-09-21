@@ -11,6 +11,7 @@ const suites = [
   './negative-cases.test.js',
   './temporal-events.test.js',
   './regression.test.js',
+  './demo-case-regression.test.js',
   './legacy-nlp.test.js',
   './kb-audit.test.js',
   './medication-status-interactions.test.js',

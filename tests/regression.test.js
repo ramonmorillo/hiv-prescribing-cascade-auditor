@@ -60,7 +60,10 @@ function run() {
 
   let rA = probeCascades('New onset oedema noted after amlodipine was started. Furosemide prescribed.');
   let sA = rA.sigs.find((s) => s.ade_en === 'oedema' || s.ade_en === 'peripheral oedema');
-  assert('EN: amlodipine -> oedema -> furosemide fires', !!sA);
+  const consolidatedA = CE.buildCaseModel('New onset oedema noted after amlodipine was started. Furosemide prescribed.', kb)
+    .possibleCascades.find((s) => s.rule_id === 'CC004');
+  assert('EN: amlodipine -> oedema -> furosemide bridge is consolidated into CC004', !sA && consolidatedA &&
+    consolidatedA.evidence.symptom_bridge_provenance.some((item) => item.rule_id === 'SYM008'));
 
   /* ---- Spanish negation / historical ---- */
   syms = CE.extractSymptoms('Niega estreñimiento. No caídas.', kb);

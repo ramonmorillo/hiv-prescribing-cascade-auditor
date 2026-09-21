@@ -718,7 +718,7 @@ function detectTimeCues(noteText, matchIndex) {
     drugStartHint: (
       /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx) ||
       /\b(inicia|se\s+inicia|se\s+empez[oó]|tras\s+iniciar|al\s+iniciar|comienza|se\s+pauta)\b/.test(ctx) ||
-      /\bdesde\s+(\d|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/.test(ctx) ||
+      /\bdesde\s+(\d|ene(?:ro)?|feb(?:rero)?|mar(?:zo)?|abr(?:il)?|may(?:o)?|jun(?:io)?|jul(?:io)?|ago(?:sto)?|sept?(?:iembre)?|oct(?:ubre)?|nov(?:iembre)?|dic(?:iembre)?)/.test(ctx) ||
       /\bsince\s+\d/.test(ctx)
     ),
     symptomNewHint: (
@@ -740,11 +740,15 @@ function detectTimeCues(noteText, matchIndex) {
 var MONTHS_ES = {
   enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
   julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10,
-  noviembre: 11, diciembre: 12
+  noviembre: 11, diciembre: 12,
+  ene: 1, feb: 2, mar: 3, abr: 4, may: 5, jun: 6, jul: 7,
+  ago: 8, sep: 9, sept: 9, oct: 10, nov: 11, dic: 12
 };
 var MONTHS_EN = {
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8,
+  sep: 9, sept: 9, oct: 10, nov: 11, dec: 12
 };
 
 /**
@@ -770,10 +774,11 @@ function extractDateNear(noteText, matchIndex, matchLength) {
   while (sentEnd < noteText.length && !/[.\n]/.test(noteText.charAt(sentEnd))) sentEnd++;
   var start = sentStart;
   var ctx = noteText.slice(sentStart, sentEnd);
-  var monthNames = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|january|february|march|april|may|june|july|august|september|october|november|december';
+  var monthNames = Object.keys(MONTHS_ES).concat(Object.keys(MONTHS_EN))
+    .sort(function (a, b) { return b.length - a.length; }).join('|');
 
   /* Year (+ optional month): "desde 2019", "en agosto de 2026". */
-  var reYear = new RegExp('\\b(desde|en|since|in)\\s+(?:el\\s+mes\\s+de\\s+)?(' + monthNames + ')?\\s*(?:de\\s+|of\\s+)?(\\d{4})\\b', 'i');
+  var reYear = new RegExp('\\b(desde|en|since|in|inicio|onset)\\s+(?:el\\s+mes\\s+de\\s+)?(' + monthNames + ')?\\s*(?:de\\s+|of\\s+)?(\\d{4})\\b', 'i');
   var m = reYear.exec(ctx);
   if (m) {
     var monthName = m[2] ? m[2].toLowerCase() : null;
@@ -787,7 +792,7 @@ function extractDateNear(noteText, matchIndex, matchLength) {
   /* Month only, no year stated — e.g. "En enero no presentaba...", "En
      marzo se diagnostica...". It remains a weak month-only value unless an
      explicitly written year elsewhere in the note can anchor it. */
-  var reMonthOnly = new RegExp('\\b(desde|en|since|in)\\s+(' + monthNames + ')\\b', 'i');
+  var reMonthOnly = new RegExp('\\b(desde|en|since|in|inicio|onset)\\s+(' + monthNames + ')\\b', 'i');
   var m2 = reMonthOnly.exec(ctx);
   if (m2) {
     var monthName2 = m2[2].toLowerCase();
@@ -1719,7 +1724,41 @@ function suppressDuplicateSignals(signals) {
     winner.suppressed_duplicates = group.slice(1).map(function (s) { return s.cascade_id; });
     result.push(winner);
   });
-  return result;
+  /* A symptom bridge is a fallback, not a second clinical card, when its
+     dictionary entry explicitly names the active drug-drug rule and both
+     signals resolve to the same canonical medication pair.  Pair equality
+     alone is deliberately insufficient: separate rules can describe
+     different clinical problems for the same medicines. */
+  var retained = [];
+  result.forEach(function (sig) {
+    if (sig.signal_type !== 'symptom_bridge') { retained.push(sig); return; }
+    var linked = sig.linked_rule_ids || [];
+    var indexCanonical = normalizeDrugText((sig.drug_resolution && sig.drug_resolution.index &&
+      sig.drug_resolution.index.canonical) || sig.index_drug || '');
+    var cascadeCanonical = normalizeDrugText((sig.drug_resolution && sig.drug_resolution.cascade &&
+      sig.drug_resolution.cascade.canonical) || sig.cascade_drug || '');
+    var primary = result.find(function (candidate) {
+      if (candidate.signal_type !== 'drug_drug' || linked.indexOf(candidate.rule_id) === -1) return false;
+      var candidateIndex = normalizeDrugText((candidate.drug_resolution && candidate.drug_resolution.index &&
+        candidate.drug_resolution.index.canonical) || candidate.index_drug || '');
+      var candidateCascade = normalizeDrugText((candidate.drug_resolution && candidate.drug_resolution.cascade &&
+        candidate.drug_resolution.cascade.canonical) || candidate.cascade_drug || '');
+      return candidateIndex === indexCanonical && candidateCascade === cascadeCanonical;
+    });
+    if (!primary) { retained.push(sig); return; }
+    primary.evidence = primary.evidence || {};
+    primary.evidence.symptom_bridge_provenance = primary.evidence.symptom_bridge_provenance || [];
+    primary.evidence.symptom_bridge_provenance.push({
+      rule_id: sig.rule_id,
+      symptom: sig.ade_en || sig.ade_es || '',
+      evidence: sig.evidence || {},
+      classification: sig.classification
+    });
+    primary.provenance = primary.provenance || [];
+    primary.provenance.push({ source: 'symptom_bridge', rule_id: sig.rule_id });
+    primary.suppressed_duplicates = (primary.suppressed_duplicates || []).concat([sig.cascade_id]);
+  });
+  return retained;
 }
 
 /** Rank candidates without deleting any of them.  Patient-specific temporal
@@ -2321,8 +2360,14 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
     var timeSym = detectTimeCues(noteText, typeof ds.startIndex === 'number' ? ds.startIndex : 0);
     var timeCause = causePos ? detectTimeCues(noteText, causePos.index) : {};
     var timeTreat = treatPos ? detectTimeCues(noteText, treatPos.index) : {};
+    var symptomDate = typeof ds.startIndex === 'number' ? extractDateNear(noteText, ds.startIndex, (ds.matched_term || ds.term).length) : null;
+    var causeDate = causePos ? extractDateNear(noteText, causePos.index, causePos.length) : null;
+    var treatmentDate = treatPos ? extractDateNear(noteText, treatPos.index, treatPos.length) : null;
 
-    var supportive = (timeCause.drugStartHint || timeCause.treatmentAddedHint) && (timeSym.symptomNewHint || timeTreat.treatmentAddedHint);
+    var explicitDatesCompatible = !!(causeDate && symptomDate && treatmentDate &&
+      causeDate.value <= symptomDate.value && symptomDate.value <= treatmentDate.value);
+    var supportive = explicitDatesCompatible ||
+      ((timeCause.drugStartHint || timeCause.treatmentAddedHint) && (timeSym.symptomNewHint || timeTreat.treatmentAddedHint));
     var chronic = timeSym.chronicHint || timeTreat.chronicHint;
 
     var classification = supportive ? 'supported_possible_cascade'
@@ -2331,6 +2376,7 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
     var confidence = supportive ? 'high' : chronic ? 'low' : 'medium';
 
     var symLabel = ds.term.charAt(0).toUpperCase() + ds.term.slice(1);
+    var linkedRuleIds = (entry.cascade_relevance || '').match(/\b(?:CC|VIH)\d{3}\b/g) || [];
 
     signals.push({
       cascade_id: ds.id + ':' + foundCause + ':' + foundTreatment,
@@ -2338,6 +2384,7 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
          signals above — see the note on candidate_id there. */
       candidate_id: ds.id + ':' + foundCause + ':' + foundTreatment,
       rule_id: ds.id,
+      linked_rule_ids: linkedRuleIds,
       cascade_name: foundCause + ' → ' + symLabel + ' → ' + foundTreatment,
       index_drug: foundCause,
       cascade_drug: foundTreatment,
@@ -2364,8 +2411,14 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
       evidence: {
         index_drug: { present: true, mention: foundCause, source: 'explicit' },
         cascade_drug: { present: true, mention: foundTreatment, source: 'explicit' },
-        intermediate_problem: { checked: true, status: 'active', evidence_span: '', source: 'symptom_dictionary' },
-        temporal_order: { status: supportive ? 'supportive' : (chronic ? 'weak' : 'unknown') },
+        intermediate_problem: { checked: true, status: 'active', evidence_span: '', source: 'symptom_dictionary', onset_date: symptomDate },
+        temporal_order: {
+          status: supportive ? 'supportive' : (chronic ? 'weak' : 'unknown'),
+          reason_code: explicitDatesCompatible ? 'explicit_dates_compatible' : (supportive ? 'temporality_supportive' : 'temporality_unknown'),
+          index_date: causeDate,
+          problem_date: symptomDate,
+          cascade_date: treatmentDate
+        },
         alternative_indication: { found: false },
         measurement_discordance: { applicable: false, discordant: false }
       },

@@ -5,6 +5,7 @@
    silently recur as the KB grows.
    ============================================================================ */
 const { loadKB, CE, assert, reset, summary } = require('./helpers');
+const { validateKBStrict } = require('../kb/dev/kb_validator.js');
 
 function run() {
   reset();
@@ -31,8 +32,12 @@ function run() {
        kb/CHANGELOG.md — but never firing on their own either). */
     const cc061 = all.find((c) => c.id === 'CC061');
     const cc050 = all.find((c) => c.id === 'CC050');
+    const cc004 = all.find((c) => c.id === 'CC004');
+    const cc041 = all.find((c) => c.id === 'CC041');
     assert(`[${track}] CC061 is marked merged into CC001`, !!cc061 && cc061.status === 'merged' && cc061.merged_into === 'CC001');
     assert(`[${track}] CC050 is marked merged into CC033`, !!cc050 && cc050.status === 'merged' && cc050.merged_into === 'CC033');
+    assert(`[${track}] CC041 is traceably merged into canonical CC004`, !!cc041 && cc041.status === 'merged' &&
+      cc041.merged_into === 'CC004' && cc004.merged_from.includes('CC041'));
 
     const activeIds = CE.buildDrugResolver ? null : null; /* resolver doesn't expose active ids directly; check via allCascadeEntries indirectly */
     // Merged entries must not be usable as a live cascade: simulate a note containing
@@ -63,6 +68,20 @@ function run() {
       });
     });
   });
+
+  const overlapping = {
+    version: 'test', cascades: ['A', 'B'].map((id) => ({
+      id, name_es: id, name_en: id,
+      index_drug_classes: ['class'], index_drug_examples: ['drug-a', 'drug-b'],
+      ade_es: 'edema periférico', ade_en: 'peripheral oedema',
+      cascade_drug_examples: ['drug-c', 'drug-d'], confidence: 'high', age_sensitivity: 'low',
+      risk_focus: ['cardiovascular'], differential_hints: ['one', 'two', 'three'], appropriateness: 'context_dependent'
+    }))
+  };
+  const overlapReport = validateKBStrict(overlapping);
+  assert('KB validator warns without blocking or automatically merging overlapping active rules',
+    overlapReport.ok && overlapReport.warnings.some((warning) => /Possible overlapping active rules/.test(warning)) &&
+    overlapping.cascades.every((entry) => !entry.status && !entry.merged_into));
 
   /* drug_dictionary.json / drug_combinations.json: fixed-dose combination
      brands must never ALSO appear as a plain single-ingredient variant --

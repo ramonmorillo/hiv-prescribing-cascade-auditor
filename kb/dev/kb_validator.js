@@ -223,6 +223,48 @@
       validateEntry(entry, label, errors, warnings);
     });
 
+    /* Governance-only near-duplicate detection.  This intentionally warns
+       rather than merging: an editor must decide whether two rules describe
+       the same clinical problem. Merged entries are retained for traceability
+       and excluded from comparisons with live rules. */
+    var activeEntries = kbJson.cascades.filter(function (entry) {
+      return entry && entry.status !== 'merged';
+    });
+    function normalizedSet(values) {
+      var seen = {};
+      (values || []).forEach(function (value) {
+        var key = String(value).toLowerCase().trim();
+        if (key) seen[key] = true;
+      });
+      return Object.keys(seen);
+    }
+    function overlapRatio(left, right) {
+      var a = normalizedSet(left), b = normalizedSet(right);
+      if (!a.length || !b.length) return 0;
+      var common = a.filter(function (value) { return b.indexOf(value) !== -1; }).length;
+      return common / Math.min(a.length, b.length);
+    }
+    function problemOverlap(left, right) {
+      function tokens(value) {
+        return String(value || '').toLowerCase().replace(/[^a-záéíóúüñ]+/g, ' ').split(/\s+/)
+          .filter(function (token) { return token.length > 3; });
+      }
+      return Math.max(overlapRatio(tokens(left.ade_en), tokens(right.ade_en)),
+        overlapRatio(tokens(left.ade_es), tokens(right.ade_es)));
+    }
+    for (var ai = 0; ai < activeEntries.length; ai++) {
+      for (var bi = ai + 1; bi < activeEntries.length; bi++) {
+        var first = activeEntries[ai], second = activeEntries[bi];
+        var indexOverlap = overlapRatio(first.index_drug_examples || first.index_drugs_examples,
+          second.index_drug_examples || second.index_drugs_examples);
+        var cascadeOverlap = overlapRatio(first.cascade_drug_examples || first.cascade_drugs_examples,
+          second.cascade_drug_examples || second.cascade_drugs_examples);
+        if (indexOverlap >= 0.75 && cascadeOverlap >= 0.75 && problemOverlap(first, second) >= 0.5) {
+          warnings.push('[' + first.id + '/' + second.id + '] Possible overlapping active rules: review index drugs, cascade drugs, and intermediate problem; no automatic merge was performed.');
+        }
+      }
+    }
+
     return { ok: errors.length === 0, errors: errors, warnings: warnings };
   }
 
