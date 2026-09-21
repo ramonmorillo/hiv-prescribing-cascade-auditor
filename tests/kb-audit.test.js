@@ -4,8 +4,8 @@
    (near-duplicate rules, dead cross-references) automatically, so it cannot
    silently recur as the KB grows.
    ============================================================================ */
-const { loadKB, CE, assert, reset, summary } = require('./helpers');
-const { validateKBStrict } = require('../kb/dev/kb_validator.js');
+const { loadKB, CE, assert, assertEqual, reset, summary } = require('./helpers');
+const { validateKBStrict, validateKBOperational } = require('../kb/dev/kb_validator.js');
 
 function run() {
   reset();
@@ -82,6 +82,12 @@ function run() {
   assert('KB validator warns without blocking or automatically merging overlapping active rules',
     overlapReport.ok && overlapReport.warnings.some((warning) => /Possible overlapping active rules/.test(warning)) &&
     overlapping.cascades.every((entry) => !entry.status && !entry.merged_into));
+
+  const prodOverlapReport = validateKBOperational(loadKB('prod').coreCascades);
+  const prodOverlapWarnings = prodOverlapReport.warnings.filter((warning) =>
+    /Possible overlapping active rules/.test(warning));
+  assertEqual('operational KB validation continues detecting all nine overlapping active pairs',
+    prodOverlapWarnings.length, 9);
 
   /* drug_dictionary.json / drug_combinations.json: fixed-dose combination
      brands must never ALSO appear as a plain single-ingredient variant --
