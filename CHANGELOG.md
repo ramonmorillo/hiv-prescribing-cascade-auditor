@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — consolidación de la cascada BCC-edema-diurético
+
+- Se conserva CC004 como regla canónica y CC041 queda trazablemente fusionada en CC004, sin activarse de forma independiente.
+- Las señales `symptom_bridge` explícitamente vinculadas a una regla farmacológica y a la misma pareja canónica pasan a consolidarse como evidencia/procedencia de la tarjeta principal; las reglas clínicas distintas no se deduplican solo por compartir fármacos.
+- La extracción temporal reconoce abreviaturas habituales de meses en español e inglés, incluido el texto literal del caso demo, sin crear fechas ausentes.
+- El validador de la KB advierte, sin bloquear ni fusionar automáticamente, cuando dos reglas activas presentan un gran solapamiento clínico.
+
 ## Unreleased — unified clinical report contract (PR 9)
 
 - Added a DOM-free, versioned report contract shared by the on-screen report, clinical-record text, JSON and CSV.

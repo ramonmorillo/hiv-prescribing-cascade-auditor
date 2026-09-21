@@ -209,10 +209,13 @@
       "appropriateness": "often_inappropriate",
       "time_window_days_min": 14,
       "time_window_days_max": 120,
-      "recommended_first_action_en": "Consider reducing CCB dose, switching to less vasodilatory dihydropyridine, or adding ACEi/ARB.",
-      "recommended_first_action_es": "Considerar reducir dosis de BCC, cambiar a dihidropiridina menos vasodilatadora o añadir IECA/ARA-II.",
+      "recommended_first_action_en": "Review causality and alternative causes first. If a possible CCB-related cascade remains plausible, consider reducing the calcium channel blocker dose or substituting it. Consider an ACE inhibitor or ARB only when there is an independent indication and it is safe with appropriate monitoring. Then reassess whether furosemide is still needed.",
+      "recommended_first_action_es": "Revisar primero la causalidad y las causas alternativas. Si sigue siendo plausible una posible cascada relacionada con el BCC, considerar reducir la dosis del calcioantagonista o sustituirlo. Considerar un IECA o ARA-II solo si existe una indicación independiente, es seguro y se realiza la monitorización adecuada. Reevaluar después si la furosemida sigue siendo necesaria.",
       "references": [
         "Elliott WJ. J Clin Hypertens 2003"
+      ],
+      "merged_from": [
+        "CC041"
       ]
     },
     {
@@ -1966,7 +1969,9 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC004"
     },
     {
       "id": "CC042",

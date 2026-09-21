@@ -28,6 +28,21 @@ function run() {
   console.log('== temporal-events.test.js ==');
   const kb = loadKB('prod');
 
+  /* Common Spanish and English month abbreviations are literal dates; a
+     month without a stated/anchoring year must remain yearless. */
+  {
+    const es = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'sept', 'oct', 'nov', 'dic'];
+    es.forEach((month, index) => {
+      const text = `Amlodipine desde ${month} 2021`;
+      const date = CE.extractDateNear(text, 0, 10);
+      assert(`Spanish abbreviated month ${month} is extracted`, date && date.year === 2021 && date.month === (index > 8 ? index : index + 1));
+    });
+    const english = CE.extractDateNear('Amlodipine since Jan 2021', 0, 10);
+    assert('English abbreviated month Jan is extracted', english && english.value === 202101);
+    const yearless = CE.extractDateNear('Amlodipine desde jul', 0, 10);
+    assert('month-only text does not invent a year', yearless && yearless.year === null && yearless.value === 7);
+  }
+
   /* ---- Prueba F: metformin absent -> VIH003's ddi_warning must stay hidden,
      even when dolutegravir + a diabetes diagnosis are both present. ---- */
   {
