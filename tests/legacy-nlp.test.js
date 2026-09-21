@@ -16,7 +16,7 @@ function run() {
 
   /* ---- H. Drug resolver: alias / brand / abbreviation / combo / normalized ---- */
   const h1 = resolve('Paciente en Kaletra por TAR.').map((m) => m.canonical);
-  assert('H1: brand name Kaletra -> lopinavir/ritonavir', h1.includes('lopinavir/ritonavir'));
+  assert('H1: Kaletra expands to lopinavir and ritonavir', h1.includes('lopinavir') && h1.includes('ritonavir') && h1.length === 2);
 
   const h2 = resolve('Se inicia AZT por disponibilidad.');
   const h2m = h2.find((m) => m.canonical === 'zidovudine');

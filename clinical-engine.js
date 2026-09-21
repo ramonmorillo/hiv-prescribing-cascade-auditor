@@ -265,11 +265,7 @@ var MANUAL_ALIASES = {
   'azt': 'zidovudine',
   'tdf': 'tenofovir disoproxil fumarate',
   'dtg': 'dolutegravir',
-  'kaletra': 'lopinavir/ritonavir',
   'prezista': 'darunavir',
-  'rezolsta': 'darunavir/cobicistat',
-  'symtuza': 'darunavir/cobicistat',
-  'evotaz': 'atazanavir/cobicistat',
   'reyataz': 'atazanavir',
   'norvir': 'ritonavir',
   'isentress': 'raltegravir',
@@ -2150,15 +2146,30 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
     var indexExamples = getIndexExamples(cascade);
     var cascadeExamples = getCascadeExamples(cascade);
 
+    /* Cascade rules may name a boosted regimen as a slash-separated unit,
+       while CaseModel intentionally stores its pharmacologically distinct
+       ingredients. Match that existing rule only when every component is
+       present; do not reintroduce the compound as a medication. */
+    function mentionsForRuleDrug(drug) {
+      var exact = mentionByCanonical[normalizeDrugText(drug)] || [];
+      if (exact.length || drug.indexOf('/') === -1) return exact;
+      var components = drug.split('/').map(normalizeDrugText).filter(Boolean);
+      var componentMentions = components.map(function (component) {
+        return mentionByCanonical[component] || [];
+      });
+      if (!components.length || componentMentions.some(function (hits) { return !hits.length; })) return [];
+      return [componentMentions[0][0]];
+    }
+
     var foundIndexes = [];
     indexExamples.forEach(function (d) {
-      (mentionByCanonical[normalizeDrugText(d)] || []).forEach(function (hit) {
+      mentionsForRuleDrug(d).forEach(function (hit) {
         foundIndexes.push({ drug: d, mention: hit });
       });
     });
     var foundCascades = [];
     cascadeExamples.forEach(function (d) {
-      (mentionByCanonical[normalizeDrugText(d)] || []).forEach(function (hit) {
+      mentionsForRuleDrug(d).forEach(function (hit) {
         foundCascades.push({ drug: d, mention: hit });
       });
     });
@@ -2623,6 +2634,7 @@ function buildCaseModel(noteText, kb, options) {
     var indication = indicationByCanonical[normalizeDrugText(canonical)];
     return {
       original_text: m.mention,
+      original_mentions: uniqueStrings((mentionByCanonical[normalizeDrugText(canonical)] || []).map(function (mention) { return mention.mention; })),
       normalized_name: canonical,
       brand: m.brand || null,
       active_ingredients: m.brand_ingredients || [canonical],

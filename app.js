@@ -174,10 +174,10 @@ const UI_STRINGS = {
     drug_class_none:   'sin clasificar',
     col_drug:          'Medicamento',
     col_class:         'Grupo farmacol&oacute;gico',
-    class_summary:     function (drugs, mapped, unmapped) {
-      return '<strong>' + drugs + ' medicamento' + (drugs === 1 ? '' : 's') +
-        ' &rarr; ' + mapped + ' grupo' + (mapped === 1 ? '' : 's') + ' farmacol&oacute;gico' + (mapped === 1 ? '' : 's') +
-        ' identificado' + (mapped === 1 ? '' : 's') + (unmapped ? ', ' + unmapped + ' sin clasificar' : '') + '.</strong>';
+    class_summary:     function (drugs, mapped, groups, unmapped) {
+      return '<strong>' + drugs + ' medicamento' + (drugs === 1 ? '' : 's') + ' identificado' + (drugs === 1 ? '' : 's') +
+        ': ' + mapped + ' clasificado' + (mapped === 1 ? '' : 's') + ' en ' + groups + ' grupo' + (groups === 1 ? '' : 's') +
+        ' farmacol&oacute;gico' + (groups === 1 ? '' : 's') + ', ' + unmapped + ' sin clasificar.</strong>';
     },
     no_drugs_to_classify:        '&#10003; Sin medicamentos a clasificar.',
     no_drugs_to_classify_detail: 'No se detectaron medicamentos en la nota cl&iacute;nica (Paso 2).',
@@ -593,10 +593,10 @@ const UI_STRINGS = {
     drug_class_none:   'unclassified',
     col_drug:          'Medication',
     col_class:         'Pharmacological group',
-    class_summary:     function (drugs, mapped, unmapped) {
-      return '<strong>' + drugs + ' medication' + (drugs === 1 ? '' : 's') +
-        ' &rarr; ' + mapped + ' pharmacological group' + (mapped === 1 ? '' : 's') + ' identified' +
-        (unmapped ? ', ' + unmapped + ' unclassified' : '') + '.</strong>';
+    class_summary:     function (drugs, mapped, groups, unmapped) {
+      return '<strong>' + drugs + ' medication' + (drugs === 1 ? '' : 's') + ' identified: ' +
+        mapped + ' classified into ' + groups + ' pharmacological group' + (groups === 1 ? '' : 's') +
+        ', ' + unmapped + ' unclassified.</strong>';
     },
     no_drugs_to_classify:        '&#10003; No medications to classify.',
     no_drugs_to_classify_detail: 'No medications were detected in the clinical note (Step 2).',
@@ -1444,18 +1444,15 @@ function detectUrologicRenalProblem(noteText) {
 }
 
 /**
- * Map an array of drug names to their canonical drug classes using the KB.
- * Ported unchanged from the pre-audit implementation (two-pass priority:
- * index-drug roles first, then cascade-drug roles fill in the rest) — see
- * clinical-engine.js's getIndexExamples/getCascadeExamples for the field-
- * name-variant handling this relies on.
+ * Preserve CaseModel's dictionary-backed classification. Cascade-role classes
+ * are consulted only for legacy medicines absent from the dictionary.
  *
- * @param {string[]} drugs
+ * @param {Array<object|string>} medications
  * @returns {Array<{drug: string, class: string}>}
  */
-function normalizeDrugs(drugs) {
-  if (!drugs || !drugs.length) return [];
-  var drugToClass = {};
+function normalizeDrugs(medications) {
+  if (!medications || !medications.length) return [];
+  var fallbackClass = {};
   var allCascades = [].concat(
     (state.kb.coreCascades && state.kb.coreCascades.cascades) || [],
     (state.kb.vihModifiers && state.kb.vihModifiers.art_related_cascades) || []
@@ -1463,22 +1460,18 @@ function normalizeDrugs(drugs) {
 
   allCascades.forEach(function (cascade) {
     var idxArr = cascade.index_drug_classes || (cascade.index_drug_class ? [cascade.index_drug_class] : []);
-    var idxClass = idxArr.length ? idxArr[0] : '';
     CE.getIndexExamples(cascade).forEach(function (drug) {
-      var key = drug.toLowerCase();
-      if (!drugToClass[key] && idxClass) drugToClass[key] = idxClass;
+      if (!fallbackClass[drug.toLowerCase()] && idxArr[0]) fallbackClass[drug.toLowerCase()] = idxArr[0];
     });
-  });
-  allCascades.forEach(function (cascade) {
-    var casClass = cascade.cascade_drug_class || '';
     CE.getCascadeExamples(cascade).forEach(function (drug) {
-      var key = drug.toLowerCase();
-      if (!drugToClass[key] && casClass) drugToClass[key] = casClass;
+      if (!fallbackClass[drug.toLowerCase()] && cascade.cascade_drug_class) fallbackClass[drug.toLowerCase()] = cascade.cascade_drug_class;
     });
   });
 
-  return drugs.map(function (drug) {
-    return { drug: drug, class: drugToClass[drug.toLowerCase()] || '' };
+  return medications.map(function (medication) {
+    var drug = typeof medication === 'string' ? medication : medication.normalized_name;
+    var authoritativeClass = typeof medication === 'string' ? '' : (medication.drug_class || '');
+    return { drug: drug, class: authoritativeClass || fallbackClass[drug.toLowerCase()] || '' };
   });
 }
 
@@ -2062,10 +2055,10 @@ const STEP_CONTENT = {
         );
       }
 
-      var drugs      = extractDrugs(state.clinicalNote);
-      var normalized = normalizeDrugs(drugs);
+      var medications = getCaseModel(state.clinicalNote).medications;
+      var normalized = normalizeDrugs(medications);
 
-      if (drugs.length === 0) {
+      if (medications.length === 0) {
         return (
           '<div class="callout callout-success">' +
             '<strong>' + tUI('no_drugs_to_classify') + '</strong> ' +
@@ -2076,6 +2069,9 @@ const STEP_CONTENT = {
 
       var mappedCount   = normalized.filter(function (n) { return n.class; }).length;
       var unmappedCount = normalized.length - mappedCount;
+      var groupCount = normalized.map(function (n) { return n.class; }).filter(function (value, index, values) {
+        return value && values.indexOf(value) === index;
+      }).length;
 
       var rows = normalized.map(function (n) {
         var classCell = n.class
@@ -2097,7 +2093,7 @@ const STEP_CONTENT = {
 
       return (
         '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
-          tUI('class_summary', drugs.length, mappedCount, unmappedCount) +
+          tUI('class_summary', medications.length, mappedCount, groupCount, unmappedCount) +
         '</div>' +
         '<div style="overflow-x:auto;">' +
           '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
@@ -3663,9 +3659,8 @@ window.runNlpSelfTest = function () {
   assert('J6: Gibiter Easyhaler → formoterol present', j3.indexOf('formoterol') >= 0, true);
 
   /* Ingredient-level class comes from drug_dictionary.json (via the mention
-     metadata), NOT from normalizeDrugs() — that function only classifies
-     drugs that appear in a cascade KB entry, which budesonide/formoterol
-     correctly do not. */
+     metadata). Step 3 consumes the same CaseModel classification rather than
+     rebuilding a second taxonomy from cascade-rule roles. */
   var j5mentions   = resolveDrugMentions('GIBITER EASYHALER 1 inhalacion al dia.');
   var j5budesonide = j5mentions.find(function (m) { return m.canonical === 'budesonide'; });
   var j5formoterol = j5mentions.find(function (m) { return m.canonical === 'formoterol'; });
