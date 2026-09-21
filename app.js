@@ -1154,6 +1154,37 @@ function runKBValidation() {
    * A single validation pass covers both needs — no second validateKBStrict call. */
   var opResult = validateKBOperational(kbData);
 
+  /* Production keeps validation diagnostics out of the public DOM.  The
+   * validator still runs above on every KB load; its full output remains
+   * available to maintainers through the browser console. */
+  if (state.kbMode === 'PROD') {
+    (opResult.warnings || []).forEach(function (warning) {
+      console.warn('[KB validation warning]', warning);
+    });
+    (opResult.errors || []).forEach(function (error) {
+      console.error('[KB validation error]', error);
+    });
+
+    var prodBanner = document.getElementById('kb-validation-banner');
+    if (opResult.ok || !opResult.errors || opResult.errors.length === 0) {
+      if (prodBanner && prodBanner.parentNode) prodBanner.parentNode.removeChild(prodBanner);
+      return;
+    }
+
+    if (!prodBanner) {
+      prodBanner = document.createElement('div');
+      prodBanner.id = 'kb-validation-banner';
+      prodBanner.style.cssText = 'position:relative;z-index:100;font-size:.8rem;font-family:inherit;padding:0';
+      var prodMain = document.querySelector('main.app-main') || document.body;
+      prodMain.insertBefore(prodBanner, prodMain.firstChild);
+    }
+    prodBanner.innerHTML =
+      '<div style="background:#c0392b;color:#fff;padding:.6rem 1rem;">' +
+        '<strong>&#9888; ' + escHtml(tStatic('kb_validation_failed_generic')) + '</strong>' +
+      '</div>';
+    return;
+  }
+
   var byField    = opResult.fallbackByField    || {};
   var byFieldIds = opResult.fallbackByFieldIds || {};
   var hasFallback = opResult.fallbackCascadeCount > 0;
