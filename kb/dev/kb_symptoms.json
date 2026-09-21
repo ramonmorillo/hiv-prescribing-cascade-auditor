@@ -12,7 +12,7 @@
         "estreñimiento", "estreñido", "estreñida", "heces duras", "dificultad para defecar"
       ],
       "category": "gastrointestinal",
-      "cascade_relevance": "Opioid-induced, CCB-induced, anticholinergic burden — may trigger laxative prescribing",
+      "cascade_relevance": "Opioid-induced (cascade CC008), CCB-induced (cascade CC090), anticholinergic burden (cascade CC013) — may trigger laxative prescribing",
       "caused_by_drug_examples": [
         "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
         "morphine", "oxycodone", "codeine", "fentanyl", "tramadol", "buprenorphine",
@@ -34,7 +34,7 @@
         "boca seca", "sequedad bucal", "sequedad oral"
       ],
       "category": "anticholinergic",
-      "cascade_relevance": "Anticholinergic burden — may trigger prescribing of saliva substitutes or mouth-care agents",
+      "cascade_relevance": "Anticholinergic burden (cascade CC014) — may trigger prescribing of saliva substitutes or mouth-care agents",
       "caused_by_drug_examples": [
         "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
         "amitriptyline", "nortriptyline", "promethazine",
@@ -76,7 +76,7 @@
         "caidas", "caída", "caídas", "se cayó", "tropezó", "inestabilidad de la marcha", "problemas de equilibrio"
       ],
       "category": "safety",
-      "cascade_relevance": "Sedation, orthostatic hypotension, anticholinergic burden, muscle relaxants",
+      "cascade_relevance": "Sedation, orthostatic hypotension (cascade CC021), anticholinergic burden, muscle relaxants",
       "caused_by_drug_examples": [
         "zolpidem", "lorazepam", "diazepam", "alprazolam", "clonazepam",
         "morphine", "oxycodone", "codeine", "tramadol",
@@ -98,7 +98,7 @@
         "sedacion", "sedación", "somnolencia", "somnoliento", "somnoliente", "letargia", "letargico", "letárgico", "sopor"
       ],
       "category": "neurological",
-      "cascade_relevance": "CNS depressants, opioids, benzodiazepines, first-generation antihistamines",
+      "cascade_relevance": "CNS depressants, opioids (cascade CC016), benzodiazepines, first-generation antihistamines",
       "caused_by_drug_examples": [
         "zolpidem", "lorazepam", "diazepam", "alprazolam", "clonazepam",
         "morphine", "oxycodone", "fentanyl", "tramadol", "codeine",
@@ -119,7 +119,7 @@
         "retencion urinaria", "retención urinaria", "incapacidad para orinar", "dificultad para orinar", "hesitancia urinaria"
       ],
       "category": "urological",
-      "cascade_relevance": "Anticholinergic drugs, opioid-induced — may trigger prescribing of alpha-blockers or catheters",
+      "cascade_relevance": "Anticholinergic drugs (cascade CC022), opioid-induced — may trigger prescribing of alpha-blockers or catheters",
       "caused_by_drug_examples": [
         "oxybutynin", "tolterodine", "solifenacin", "fesoterodine", "darifenacin",
         "amitriptyline", "nortriptyline", "promethazine",
@@ -140,7 +140,7 @@
         "nauseas", "náuseas", "nausea", "náusea", "sensacion de nausea", "sensación de náusea", "nauseas y vomitos", "náuseas y vómitos"
       ],
       "category": "gastrointestinal",
-      "cascade_relevance": "NSAID-induced, opioid-induced, ARV-induced — may trigger antiemetic prescribing",
+      "cascade_relevance": "NSAID-induced, opioid-induced (cascade CC015), ARV-induced (cascade VIH005) — may trigger antiemetic prescribing",
       "caused_by_drug_examples": [
         "metformin", "morphine", "oxycodone", "codeine", "tramadol",
         "ibuprofen", "naproxen", "diclofenac",
@@ -161,7 +161,7 @@
         "edema", "edemas", "edema maleolar", "edema periferico", "edema periférico", "edema de tobillo", "edema de piernas", "tobillos hinchados"
       ],
       "category": "cardiovascular",
-      "cascade_relevance": "CCB-induced oedema — may trigger diuretic prescribing (cascade CC004)",
+      "cascade_relevance": "CCB-induced oedema — may trigger diuretic prescribing (cascades CC004, CC027)",
       "caused_by_drug_examples": [
         "amlodipine", "nifedipine", "felodipine", "lercanidipine",
         "gabapentin", "pregabalin",
@@ -180,7 +180,7 @@
         "confusion", "confusión", "desorientacion", "desorientación", "delirio", "deterioro cognitivo", "confuso", "confusa"
       ],
       "category": "neurological",
-      "cascade_relevance": "Anticholinergic burden, opioids, benzodiazepines — may trigger antipsychotic prescribing",
+      "cascade_relevance": "Anticholinergic burden (cascade CC037), opioids (cascade CC015), benzodiazepines, corticosteroids (cascades CC032, CC087) — may trigger antipsychotic prescribing",
       "caused_by_drug_examples": [
         "oxybutynin", "tolterodine", "solifenacin", "biperiden", "trihexyphenidyl",
         "amitriptyline", "nortriptyline", "promethazine",
@@ -202,7 +202,7 @@
         "insomnio", "dificultad para dormir", "no puede dormir", "trastorno del sueño", "alteracion del sueno", "alteración del sueño"
       ],
       "category": "neurological",
-      "cascade_relevance": "Efavirenz CNS effects (VIH004), stimulant drugs — may trigger hypnotic prescribing",
+      "cascade_relevance": "Efavirenz CNS effects (VIH004, CC074), SSRI/SNRI (cascades CC010, CC058, CC086), stimulant drugs — may trigger hypnotic prescribing",
       "caused_by_drug_examples": [
         "fluoxetine", "sertraline", "paroxetine", "citalopram", "escitalopram",
         "efavirenz", "methylphenidate", "modafinil",

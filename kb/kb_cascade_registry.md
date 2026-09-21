@@ -1,19 +1,35 @@
 # Registro de auditoría de reglas de cascada (Fase 8)
 
-Generado automáticamente a partir de `kb/prod/kb_core_cascades.json` y `kb/prod/kb_vih_modifiers.json` durante la auditoría del motor clínico (2026-09-14). No se han inventado fuentes: toda regla sin campo `references` no vacío se marca explícitamente como **pendiente de revisión clínica**. Este fichero es un registro de auditoría, no un componente cargado por la aplicación en tiempo de ejecución.
+Generado a partir de `kb/prod/kb_core_cascades.json` y `kb/prod/kb_vih_modifiers.json`, actualizado por última vez el 2026-09-21 tras la resolución de los pares casi-duplicados detectados automáticamente por `kb/dev/kb_validator.js` (auditoría técnica pre-rediseño web, `docs/audit/03-auditoria-kb.md`). No se han inventado fuentes: toda regla sin campo `references` no vacío se marca explícitamente como **pendiente de revisión clínica**. Este fichero es un registro de auditoría, no un componente cargado por la aplicación en tiempo de ejecución.
 
 ## Resumen
 
-- Reglas core activas: **88** (de 90 totales; 2 fusionadas/deprecadas, ver abajo)
+- Reglas core activas: **78** (de 90 totales; 12 fusionadas/deprecadas, ver abajo)
 - Reglas específicas VIH: **33**
-- Reglas activas **sin referencia bibliográfica** (pendientes de revisión clínica): **48**
+- Reglas activas **sin referencia bibliográfica** (pendientes de revisión clínica): **38** core + 0 VIH
 
 ## Reglas fusionadas/deprecadas (documentadas, no eliminadas silenciosamente)
 
 | ID | Fusionada en | Motivo |
 |---|---|---|
+| CC041 | CC004 | Fusionada por ser una regla casi-duplicada (consolidación de la cascada BCC→edema→diurético). Conservada para trazabilidad; excluida de la detección activa por el motor. |
 | CC050 | CC033 | Fusionada en CC033 el 2026-09-14 por ser una regla casi-duplicada. Conservada para trazabilidad; excluida de la detección activa por el motor. |
 | CC061 | CC001 | Fusionada en CC001 el 2026-09-14 por ser una regla casi-duplicada. Conservada para trazabilidad; excluida de la detección activa por el motor. |
+| CC042 | CC003 | Fusionada el 2026-09-21 (IECA→tos→antitusivo; solapamiento índice/cascada/problema detectado automáticamente por `kb_validator.js`). `index_drug_examples`/`cascade_drug_examples` de CC003 ampliados con las entradas propias de CC042. |
+| CC045 | CC007 | Fusionada el 2026-09-21 (tiazida→hiperuricemia/gota→alopurinol/AINE). CC007 pasa a `appropriateness: often_inappropriate` (valor más específico de las dos reglas). Ejemplos ampliados con los de CC045. |
+| CC070 | CC013 | Fusionada el 2026-09-21 (anticolinérgico→estreñimiento→laxante). Ejemplos ampliados con los de CC070. El puente de síntoma SYM001 (constipation) ahora enlaza explícitamente con CC013 para consolidarse como evidencia en vez de generar una tercera tarjeta. |
+| CC082 | CC019 | Fusionada el 2026-09-21 (ISRS/ISRN→disfunción sexual→inhibidor PDE5). CC019 pasa a `appropriateness: often_inappropriate`. Ejemplos ampliados con los de CC082. |
+| CC053 | CC023 | Fusionada el 2026-09-21 (antipsicótico→hiperprolactinemia→agonista dopaminérgico). Ejemplos ampliados con los de CC053. |
+| CC079 | CC025 | Fusionada el 2026-09-21 (diurético de asa→hipomagnesemia→suplemento de magnesio). Ejemplos ampliados con los de CC079. |
+| CC068 | CC026 | Fusionada el 2026-09-21 (IBP→hipomagnesemia→suplemento de magnesio). Ejemplos ampliados con los de CC068. |
+| CC067 | CC027 | Fusionada el 2026-09-21 (gabapentinoide→edema periférico→diurético). Ejemplos ampliados con los de CC067. El puente de síntoma SYM008 (oedema) ahora enlaza también con CC027 además de CC004. |
+| CC065 | CC028 | Fusionada el 2026-09-21 (bisfosfonato oral→irritación GI alta/esofagitis→IBP). Ejemplos ampliados con los de CC065. |
+
+Criterio de fusión aplicado (idéntico al usado en 2026-09-14 para CC050/CC061): se conserva la regla de menor numeración, originalmente curada y con referencia bibliográfica propia; se fusiona la regla de numeración alta importada en bloque desde `kb/dev/prescribing_cascades_CC041_CC090_FINAL.json` (sin referencia propia). La regla superviviente incorpora la unión de ambos listados de fármacos, sin perder capacidad de detección. Ningún par fue fusionado sin que el solapamiento (fármaco índice ≥0.75, fármaco de cascada ≥0.75, problema intermedio ≥0.5) estuviera confirmado por `kb/dev/kb_validator.js`.
+
+## Puentes de síntoma (kb_symptoms.json) enlazados a reglas formales el 2026-09-21
+
+Nueve entradas de `kb_symptoms.json` describían mecanismos que ya tenían una regla formal en `kb_core_cascades.json`/`kb_vih_modifiers.json` con el mismo fármaco índice y el mismo fármaco de cascada, pero su texto `cascade_relevance` no citaba el ID de esa regla — por lo que `ClinicalEngine.evaluateSymptomBridgeCascades()` nunca podía enlazarlas (`linked_rule_ids` se extrae por expresión regular del propio texto) y el mismo hallazgo clínico se presentaba dos veces: una vez como tarjeta de regla formal y otra como puente de síntoma independiente. Se añadió la referencia al ID de regla correspondiente en el propio texto descriptivo (sin eliminar contenido existente): SYM001→CC008/CC013/CC090, SYM002→CC014, SYM004→CC021, SYM005→CC016, SYM006→CC022, SYM007→CC015/VIH005, SYM008→ (además de CC004) CC027, SYM009→CC015/CC032/CC037/CC087, SYM010→ (además de VIH004) CC010/CC058/CC074/CC086.
 
 ## Cascadas genéricas (kb_core_cascades.json)
 

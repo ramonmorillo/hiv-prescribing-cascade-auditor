@@ -128,7 +128,8 @@
         "ramipril",
         "captopril",
         "perindopril",
-        "fosinopril"
+        "fosinopril",
+        "trandolapril"
       ],
       "ade_mechanism_en": "Bradykinin accumulation → respiratory tract irritation → dry cough",
       "ade_en": "Persistent dry cough",
@@ -137,7 +138,9 @@
         "dextromethorphan",
         "codeine",
         "benzonatate",
-        "guaifenesin"
+        "guaifenesin",
+        "levodropropizine",
+        "cloperastine"
       ],
       "confidence": "high",
       "age_sensitivity": "low",
@@ -158,6 +161,12 @@
       "recommended_first_action_en": "The correct solution is to switch ACE inhibitor to ARB, not add an antitussive.",
       "references": [
         "Dicpinigaitis PV. Chest 2006"
+      ],
+      "merged_from": [
+        {
+          "id": "CC042",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC042 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -306,7 +315,9 @@
       "index_drug_examples": [
         "hydrochlorothiazide",
         "chlorthalidone",
-        "indapamide"
+        "indapamide",
+        "bendroflumethiazide",
+        "metolazone"
       ],
       "ade_mechanism_en": "Reduced renal urate excretion → hyperuricemia → gout attack",
       "ade_en": "Hyperuricemia, gouty arthritis",
@@ -330,12 +341,18 @@
         "Renal impairment reducing urate excretion independently",
         "Other uricosuric-blocking medications (cyclosporine, low-dose aspirin)"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 30,
       "time_window_days_max": 365,
       "recommended_first_action_en": "If thiazide can be stopped, urate levels may normalize. Evaluate indication.",
       "references": [
         "Choi HK et al. BMJ 2012"
+      ],
+      "merged_from": [
+        {
+          "id": "CC045",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC045 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -578,7 +595,9 @@
         "trihexyphenidyl",
         "amitriptyline",
         "nortriptyline",
-        "promethazine"
+        "promethazine",
+        "trospium",
+        "clomipramine"
       ],
       "ade_mechanism_en": "Muscarinic blockade in enteric nervous system → reduced GI motility → constipation",
       "ade_en": "Anticholinergic-induced constipation",
@@ -588,7 +607,8 @@
         "macrogol",
         "bisacodyl",
         "senna",
-        "sodium docusate"
+        "sodium docusate",
+        "prucalopride"
       ],
       "confidence": "high",
       "age_sensitivity": "high",
@@ -609,6 +629,12 @@
       "references": [
         "Rochon PA, Gurwitz JH. Lancet 1995",
         "Brath H et al. Br J Clin Pharmacol 2019"
+      ],
+      "merged_from": [
+        {
+          "id": "CC070",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC070 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -873,7 +899,7 @@
         "Relationship or psychosocial factors contributing",
         "HIV neuropathy affecting sexual function"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 14,
       "time_window_days_max": 180,
       "ddi_warning_en": "CAUTION: PDE5 inhibitors + ritonavir-boosted regimens: significant increase in PDE5 inhibitor levels. Start sildenafil at 25 mg max; tadalafil 10 mg no more than q72h.",
@@ -881,6 +907,12 @@
       "references": [
         "Clayton AH et al. J Clin Psychiatry 2002",
         "DHHS Guidelines 2024"
+      ],
+      "merged_from": [
+        {
+          "id": "CC082",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC082 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1027,7 +1059,9 @@
         "risperidone",
         "chlorpromazine",
         "amisulpride",
-        "sulpiride"
+        "sulpiride",
+        "paliperidone",
+        "fluphenazine"
       ],
       "ade_mechanism_en": "D2 receptor blockade in tuberoinfundibular pathway → removal of dopamine inhibition → elevated prolactin",
       "ade_en": "Hyperprolactinaemia, galactorrhoea, amenorrhoea, sexual dysfunction",
@@ -1054,6 +1088,12 @@
       "recommended_first_action_en": "Switch to prolactin-sparing antipsychotic (quetiapine, aripiprazole, clozapine) rather than adding a dopamine agonist.",
       "references": [
         "Meaney AM, O'Keane V. Int J Neuropsychopharmacol 2002"
+      ],
+      "merged_from": [
+        {
+          "id": "CC053",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC053 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1118,7 +1158,8 @@
         "magnesium oxide",
         "magnesium glycinate",
         "magnesium sulfate",
-        "magnesium citrate"
+        "magnesium citrate",
+        "magnesium hydroxide"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1138,6 +1179,12 @@
       "recommended_first_action_en": "Magnesium supplementation is appropriate. Assess concurrent PPI use (double diuretic + PPI hypomagnesaemia risk). Consider dose reduction of loop diuretic if feasible.",
       "references": [
         "Ryan MP. Annu Rev Pharmacol Toxicol 1984"
+      ],
+      "merged_from": [
+        {
+          "id": "CC079",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC079 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1151,7 +1198,8 @@
         "pantoprazole",
         "lansoprazole",
         "esomeprazole",
-        "rabeprazole"
+        "rabeprazole",
+        "dexlansoprazole"
       ],
       "ade_mechanism_en": "Impaired TRPM6/7 channel-mediated magnesium absorption in intestine due to altered luminal pH → hypomagnesaemia",
       "ade_en": "Hypomagnesaemia (after ≥3 months of PPI therapy), tetany, arrhythmia",
@@ -1159,7 +1207,9 @@
       "cascade_drug_examples": [
         "magnesium oxide",
         "magnesium glycinate",
-        "magnesium citrate"
+        "magnesium citrate",
+        "magnesium hydroxide",
+        "magnesium sulfate"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1179,6 +1229,12 @@
       "recommended_first_action_en": "Consider whether PPI indication remains valid. H2 antagonist may be sufficient with lower hypomagnesaemia risk. If PPI required, monitor Mg and supplement as needed.",
       "references": [
         "Cundy T, Mackay J. Aliment Pharmacol Ther 2011"
+      ],
+      "merged_from": [
+        {
+          "id": "CC068",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC068 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1198,7 +1254,8 @@
         "furosemide",
         "hydrochlorothiazide",
         "spironolactone",
-        "indapamide"
+        "indapamide",
+        "torasemide"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1218,6 +1275,12 @@
       "recommended_first_action_en": "Reassess indication for gabapentinoid. Dose reduction or switch to alternative analgesic/neuropathic pain agent is preferable to adding a diuretic.",
       "references": [
         "Shneker BF, McAuley JW. Ann Pharmacother 2005"
+      ],
+      "merged_from": [
+        {
+          "id": "CC067",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC067 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1229,7 +1292,8 @@
       "index_drug_examples": [
         "alendronate",
         "risedronate",
-        "ibandronate"
+        "ibandronate",
+        "clodronate"
       ],
       "ade_mechanism_en": "Direct mucosal contact + altered epithelial tight junctions → oesophageal and gastric irritation",
       "ade_en": "Oesophageal irritation, dyspepsia, oesophagitis",
@@ -1238,7 +1302,8 @@
         "omeprazole",
         "pantoprazole",
         "lansoprazole",
-        "esomeprazole"
+        "esomeprazole",
+        "rabeprazole"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1257,6 +1322,12 @@
       "recommended_first_action_en": "Verify correct administration technique first (full glass water, remain upright 30 min). Switch to IV bisphosphonate or quarterly ibandronate if oral intolerance confirmed. PPI adds drug burden unnecessarily if technique corrected.",
       "references": [
         "Rosen CJ. N Engl J Med 2005"
+      ],
+      "merged_from": [
+        {
+          "id": "CC065",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC065 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1863,7 +1934,11 @@
         "persistent dry cough",
         "non-productive cough"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC003",
+      "merge_note_es": "Fusionada en CC003 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC003 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC043",
@@ -1977,7 +2052,11 @@
         "acute gout",
         "gouty arthritis"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC007",
+      "merge_note_es": "Fusionada en CC007 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC007 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC046",
@@ -2276,7 +2355,11 @@
         "galactorrhea",
         "amenorrhea"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC023",
+      "merge_note_es": "Fusionada en CC023 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC023 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC054",
@@ -2725,7 +2808,11 @@
         "dyspepsia",
         "esophageal irritation"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC028",
+      "merge_note_es": "Fusionada en CC028 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC028 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC066",
@@ -2798,7 +2885,11 @@
         "leg edema",
         "lower limb edema"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC027",
+      "merge_note_es": "Fusionada en CC027 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC027 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC068",
@@ -2837,7 +2928,11 @@
         "magnesium deficiency",
         "hypomagnesaemia"
       ],
-      "appropriateness": "context_dependent"
+      "appropriateness": "context_dependent",
+      "status": "merged",
+      "merged_into": "CC026",
+      "merge_note_es": "Fusionada en CC026 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC026 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC069",
@@ -2918,7 +3013,11 @@
         "bowel dysfunction",
         "slow transit constipation"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC013",
+      "merge_note_es": "Fusionada en CC013 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC013 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC071",
@@ -3239,7 +3338,11 @@
         "magnesium depletion",
         "renal magnesium wasting"
       ],
-      "appropriateness": "context_dependent"
+      "appropriateness": "context_dependent",
+      "status": "merged",
+      "merged_into": "CC025",
+      "merge_note_es": "Fusionada en CC025 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC025 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC080",
@@ -3351,7 +3454,11 @@
         "delayed ejaculation",
         "anorgasmia"
       ],
-      "appropriateness": "often_inappropriate"
+      "appropriateness": "often_inappropriate",
+      "status": "merged",
+      "merged_into": "CC019",
+      "merge_note_es": "Fusionada en CC019 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC019 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC083",

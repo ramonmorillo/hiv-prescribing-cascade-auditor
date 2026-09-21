@@ -80,6 +80,60 @@ function run() {
   assert('the same DDI warning is NOT leaked onto the unrelated atorvastatin candidate',
     !vih003candidates.find((c) => c.cascade_drug === 'atorvastatin').ddi_warning_es);
 
+  /* ---- A rule may list both a bare ingredient and a composite label that
+     contains it (e.g. VIH027's "cobicistat" and "darunavir/cobicistat") to
+     match a boosted regimen however the note phrases it. When a fixed-dose
+     combination expands to both components, the bare form AND the composite
+     form used to match independently, producing two cards for the exact
+     same physical drug (the same cobicistat) — the duplicate reported
+     against the demo case (Symtuza + inhaled fluticasone). Only the more
+     specific (smallest) match should remain. ---- */
+  const symtuzaFluticasone = CE.buildCaseModel(
+    'Toma darunavir/cobicistat/emtricitabina/tenofovir alafenamida (Symtuza) y fluticasona inhalada. Toma metformina para diabetes tipo 2.', kb, { lang: 'es' });
+  const vih027candidates = symtuzaFluticasone.possibleCascades.filter((c) => c.cascade_id === 'VIH027');
+  assertEqual('VIH027 fires once for cobicistat, not once per index example that matches it',
+    vih027candidates.length, 1);
+  assert('the surviving VIH027 candidate uses the specific ingredient, not the redundant FDC label',
+    vih027candidates[0] && vih027candidates[0].index_drug === 'cobicistat');
+
+  /* Same redundant-composite pattern on a different rule (CC072: "ritonavir"
+     bare + "lopinavir/ritonavir"/"darunavir/ritonavir"/"atazanavir/ritonavir"
+     composites), confirming the fix is generic and not a VIH027-only patch. */
+  const kaletraDyslipidemia = CE.buildCaseModel(
+    'Toma lopinavir/ritonavir. Presenta dislipemia. Se inicia atorvastatina.', kb, { lang: 'es' });
+  const cc072candidates = kaletraDyslipidemia.possibleCascades.filter((c) => c.cascade_id === 'CC072');
+  assertEqual('CC072 fires once for ritonavir, not once per index example that matches it',
+    cc072candidates.length, 1);
+  assert('the surviving CC072 candidate uses the specific ingredient, not the redundant FDC label',
+    cc072candidates[0] && cc072candidates[0].index_drug === 'ritonavir');
+
+  /* A composite that is the ONLY matching example (no bare alternative also
+     listed on the same rule) must keep firing exactly as before — this is
+     VIH001, which lists "darunavir/cobicistat" but never bare "cobicistat". */
+  const boostedRegimenOnly = CE.buildCaseModel(
+    'Toma darunavir/cobicistat. Toma atorvastatina para dislipemia.', kb, { lang: 'es' });
+  assert('a composite with no redundant bare alternative on the same rule still matches',
+    boostedRegimenOnly.possibleCascades.some((c) => c.cascade_id === 'VIH001' && c.index_drug === 'darunavir/cobicistat'));
+
+  /* ---- CC013/CC070 were a near-duplicate rule pair (merged 2026-09-21, see
+     kb/kb_cascade_registry.md), and SYM001 (constipation) structurally
+     overlapped both without naming either in its cascade_relevance text —
+     together these produced THREE cards (CC070, SYM001, CC013, with
+     contradictory classifications) for one clinical finding, reported
+     against a real note. Both root causes are now fixed: CC070 no longer
+     exists as an independent rule, and SYM001 is linked to CC013 so it
+     folds in as provenance instead of rendering separately. ---- */
+  const amitriptylineConstipation = CE.buildCaseModel(
+    'Toma amitriptilina 25 mg por la noche desde enero de 2020. En marzo de 2020 presenta estreñimiento. Se inicia macrogol.', kb, { lang: 'es' });
+  assertEqual('amitriptyline->constipation->macrogol renders exactly one card, not three',
+    amitriptylineConstipation.possibleCascades.length, 1);
+  const onlyCard = amitriptylineConstipation.possibleCascades[0];
+  assert('the surviving card is CC013 with SYM001 folded in as provenance',
+    onlyCard.rule_id === 'CC013' &&
+    onlyCard.evidence.symptom_bridge_provenance.some((item) => item.rule_id === 'SYM001'));
+  assert('CC070 no longer exists as an independent, firing rule',
+    !amitriptylineConstipation.possibleCascades.some((c) => c.rule_id === 'CC070'));
+
   const r = summary(); console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`); return r.fail === 0;
 }
 module.exports = { run };

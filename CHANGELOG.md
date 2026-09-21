@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — eliminación de tarjetas de cascada duplicadas/contradictorias
+
+- Corregido un fallo de detección que presentaba dos veces el mismo hallazgo clínico cuando una combinación a dosis fija (p. ej. Symtuza) coincidía a la vez con la forma "bare" y con la forma compuesta de un mismo fármaco índice listadas en una misma regla (ejemplo reportado: VIH027/cobicistat). Corregido de forma genérica en `clinical-engine.js`, no regla por regla; afectaba a 9 reglas más de la KB.
+- Cuando una regla evalúa legítimamente varios fármacos candidatos distintos para el mismo problema (p. ej. AINE→hipertensión con amlodipino y furosemida ya activos), cada tarjeta ahora indica si es la "Respuesta inicial" o una "Intensificación posterior", en vez de mostrarse como texto idéntico sin explicación.
+- Revisados y fusionados los 9 pares de reglas de cascada casi-duplicadas que el propio validador de la KB detectaba como activas sin resolver (ver `kb/CHANGELOG.md` y `kb/kb_cascade_registry.md`).
+- Enlazados a su regla formal correspondiente 9 de los 10 puentes de síntoma de `kb_symptoms.json` que se solapaban estructuralmente con una regla fármaco-fármaco sin citarla, lo que producía una segunda tarjeta independiente para el mismo hallazgo (ver `kb/CHANGELOG.md`).
+
 ## Unreleased — consolidación de la cascada BCC-edema-diurético
 
 - Se conserva CC004 como regla canónica y CC041 queda trazablemente fusionada en CC004, sin activarse de forma independiente.
