@@ -13,6 +13,7 @@ const suites = [
   './regression.test.js',
   './demo-case-regression.test.js',
   './legacy-nlp.test.js',
+  './fixed-dose-classification.test.js',
   './kb-audit.test.js',
   './kb-validation-presentation.test.js',
   './medication-status-interactions.test.js',

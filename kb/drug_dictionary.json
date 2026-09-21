@@ -1998,18 +1998,13 @@
       "drug_class": "Antiretroviral / PI",
       "variants": [
         "darunavir",
-        "prezista",
-        "rezolsta",
-        "symtuza"
+        "prezista"
       ]
     },
     {
-      "canonical": "lopinavir/ritonavir",
-      "drug_class": "Antiretroviral / Boosted PI",
+      "canonical": "lopinavir",
+      "drug_class": "Antiretroviral / PI",
       "variants": [
-        "lopinavir ritonavir",
-        "lopinavir/ritonavir",
-        "kaletra",
         "lopinavir"
       ]
     },
@@ -2019,7 +2014,6 @@
       "variants": [
         "atazanavir",
         "reyataz",
-        "evotaz",
         "atazanavir sulfato"
       ]
     },

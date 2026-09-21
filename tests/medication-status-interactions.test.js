@@ -31,7 +31,7 @@ function run() {
   const bic=CE.buildCaseModel('Paciente en tratamiento con Biktarvy y metformina.',kb);
   assert('BIC does not activate DTG-specific DDI', !bic.currentInteractions.some(x=>x.id==='DDI003') && bic.possibleCascades.every(x=>!/Dolutegravir aumenta/i.test(x.ddi_warning_es||'')));
   ['bictegravir','dolutegravir','raltegravir'].forEach(n => { const x=CE.buildCaseModel('Toma '+n+'.',kb); assert(n+' unboosted taxonomy', x.medications[0].drug_class==='Antiretroviral / Unboosted INSTI'); });
-  const pi=CE.buildCaseModel('Toma lopinavir/ritonavir.',kb); assert('boosted PI taxonomy', pi.medications.some(x=>x.drug_class==='Antiretroviral / Boosted PI'));
+  const pi=CE.buildCaseModel('Toma lopinavir/ritonavir.',kb); assert('boosted PI ingredients keep individual taxonomy', pi.medications.some(x=>x.normalized_name==='lopinavir' && x.drug_class==='Antiretroviral / PI') && pi.medications.some(x=>x.normalized_name==='ritonavir'));
 
   ['possible_but_incomplete','pharmacological_match_only','not_evaluable','discarded'].forEach(c => assert(c+' suppresses direct therapy', !CE.getRecommendationPresentation(c,{clinical_note_es:'Suspender tratamiento'}).applicable));
   assert('supported permits specific action', CE.getRecommendationPresentation('supported_possible_cascade',{clinical_note_es:'Revisar'}).applicable);
