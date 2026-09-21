@@ -41,6 +41,24 @@ function run() {
         item.evidence.intermediate_problem.onset_date.value === 202209 &&
         item.evidence.temporal_order.reason_code === 'explicit_dates_compatible') &&
       card.provenance.some((item) => item.source === 'symptom_bridge' && item.rule_id === 'SYM008'));
+
+    /* VIH027 (cobicistat, from Symtuza) must fire exactly once, not once for
+       "cobicistat" and once more for the redundant "darunavir/cobicistat"
+       label — the duplicate reported against this exact demo case. */
+    const vih027 = model.possibleCascades.filter((signal) => signal.rule_id === 'VIH027');
+    assertEqual(`[${track}] VIH027 fires once for cobicistat, never once per matching index example`,
+      vih027.length, 1);
+
+    /* CC001 legitimately fires once per active antihypertensive already
+       compatible with the rule (amlodipine, furosemide) — two genuinely
+       distinct candidates, not a duplicate — so each must carry a distinct
+       candidate_role identifying which is the initial response and which is
+       the later intensification, for the UI to explain the difference. */
+    const cc001 = model.possibleCascades.filter((signal) => signal.rule_id === 'CC001');
+    assertEqual(`[${track}] CC001 evaluates both active antihypertensives independently`, cc001.length, 2);
+    assert(`[${track}] CC001 candidates are labelled initial response vs. subsequent intensification`,
+      cc001.some((c) => c.cascade_drug === 'amlodipine' && c.candidate_role === 'initial_response') &&
+      cc001.some((c) => c.cascade_drug === 'furosemide' && c.candidate_role === 'subsequent_intensification'));
   });
 
   const r = summary(); console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`); return r.fail === 0;

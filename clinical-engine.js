@@ -2129,6 +2129,44 @@ function checkMeasurementDiscordance(problemCheck, measurements) {
  *   indication (Fase 3: "una inferencia genérica nunca debe desplazar una
  *   indicación explícita incompatible").
  */
+function ruleDrugCanonicalSet(drug) {
+  return drug.indexOf('/') === -1 ? [normalizeDrugText(drug)] : drug.split('/').map(normalizeDrugText).filter(Boolean);
+}
+
+function collectRuleDrugMatches(examples, mentionsForRuleDrug) {
+  var found = [];
+  (examples || []).forEach(function (d) {
+    mentionsForRuleDrug(d).forEach(function (hit) {
+      found.push({ drug: d, mention: hit });
+    });
+  });
+  return found;
+}
+
+/** A rule may list both a bare ingredient and a composite label containing
+ * it as separate examples (e.g. "cobicistat" and "darunavir/cobicistat") to
+ * cover a boosted regimen however the note phrases it. When BOTH match the
+ * same patient, they describe the exact same pharmacological event — the
+ * same cobicistat — so keeping both produces two candidate cards for one
+ * drug (see kb_vih_modifiers.json VIH027 and the equivalent pattern in
+ * VIH006/VIH009/VIH016/VIH021/VIH023/VIH025/VIH028 and kb_core_cascades.json
+ * CC060/CC069/CC072/CC075). Keep only the most specific (smallest) matching
+ * example per rule; a composite is dropped only when every one of its
+ * components is already covered by a smaller match that fired independently
+ * — two composites naming different boosting agents (e.g.
+ * "atazanavir/ritonavir" vs "atazanavir/cobicistat") are never mutually
+ * redundant and both remain if both genuinely match. */
+function dropRedundantCompositeMatches(found) {
+  return found.filter(function (entry, i) {
+    var setA = ruleDrugCanonicalSet(entry.drug);
+    return !found.some(function (other, j) {
+      if (i === j) return false;
+      var setB = ruleDrugCanonicalSet(other.drug);
+      return setB.length < setA.length && setB.every(function (c) { return setA.indexOf(c) !== -1; });
+    });
+  });
+}
+
 function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measurements, indicationByCanonical) {
   var mentionByCanonical = {};
   mentions.forEach(function (m) {
@@ -2161,18 +2199,8 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       return [componentMentions[0][0]];
     }
 
-    var foundIndexes = [];
-    indexExamples.forEach(function (d) {
-      mentionsForRuleDrug(d).forEach(function (hit) {
-        foundIndexes.push({ drug: d, mention: hit });
-      });
-    });
-    var foundCascades = [];
-    cascadeExamples.forEach(function (d) {
-      mentionsForRuleDrug(d).forEach(function (hit) {
-        foundCascades.push({ drug: d, mention: hit });
-      });
-    });
+    var foundIndexes = dropRedundantCompositeMatches(collectRuleDrugMatches(indexExamples, mentionsForRuleDrug));
+    var foundCascades = dropRedundantCompositeMatches(collectRuleDrugMatches(cascadeExamples, mentionsForRuleDrug));
 
     if (!foundIndexes.length) return;
 

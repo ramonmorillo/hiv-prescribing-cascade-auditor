@@ -194,6 +194,10 @@ const UI_STRINGS = {
     appr_often_appropriate:   'frecuentemente apropiado',
     appr_context_dependent:   'dependiente del contexto',
     via_symptom:          'v&iacute;a s&iacute;ntoma',
+    candidate_role_initial_response:         'Respuesta inicial',
+    candidate_role_initial_response_title:   'Primer f&aacute;rmaco de esta clase iniciado, por orden cronol&oacute;gico, entre los candidatos evaluados para esta regla.',
+    candidate_role_subsequent_intensification:       'Intensificaci&oacute;n posterior',
+    candidate_role_subsequent_intensification_title: 'F&aacute;rmaco de la misma clase a&ntilde;adido m&aacute;s tarde junto al de "Respuesta inicial", para el mismo problema. No es un hallazgo repetido: son dos f&aacute;rmacos distintos evaluados de forma independiente.',
     risk_label:           'Riesgo:',
     ddi_alert:            '&#9888; Alerta de interacci&oacute;n:',
     clinical_action:      '&#128203; Acci&oacute;n cl&iacute;nica:',
@@ -613,6 +617,10 @@ const UI_STRINGS = {
     appr_often_appropriate:   'often appropriate',
     appr_context_dependent:   'context-dependent',
     via_symptom:          'via symptom',
+    candidate_role_initial_response:         'Initial response',
+    candidate_role_initial_response_title:   'First drug of this class started, in chronological order, among the candidates evaluated for this rule.',
+    candidate_role_subsequent_intensification:       'Later intensification',
+    candidate_role_subsequent_intensification_title: 'A drug of the same class added later alongside the "Initial response" one, for the same problem. This is not a repeated finding: they are two distinct drugs evaluated independently.',
     risk_label:           'Risk:',
     ddi_alert:            '&#9888; Interaction alert:',
     clinical_action:      '&#128203; Clinical action:',
@@ -2179,7 +2187,7 @@ const STEP_CONTENT = {
       var groupsHtml = groups.map(function (g) {
         return (
           classificationGroupHeaderHtml(g.level, g.items.length) +
-          g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
+          g.items.map(function (c) { return renderCascadeCardHtml(c, { siblings: detected }); }).join('')
         );
       }).join('');
 
@@ -2446,7 +2454,7 @@ const STEP_CONTENT = {
         cascadeContent = renderDimensionLegendHtml() + groups.map(function (g) {
           return (
             classificationGroupHeaderHtml(g.level, g.items.length) +
-            g.items.map(function (c) { return renderCascadeCardHtml(c); }).join('')
+            g.items.map(function (c) { return renderCascadeCardHtml(c, { siblings: r.cascades }); }).join('')
           );
         }).join('');
       }
@@ -2872,9 +2880,22 @@ function buildEvidenceListHtml(c) {
  * @param {boolean} [opts.showClassifyButtons=false]  Step 4 preview omits
  *   the clinician verdict buttons (that is Step 5's job); Step 6's report
  *   shows the clinician's already-recorded verdict as a badge, read-only.
+ * @param {object[]} [opts.siblings]  The full list of cascade signals
+ *   currently on screen (possibleCascades or the report's cascades). Used
+ *   only to detect whether `c` is one of several independent candidates the
+ *   engine produced for the same rule + index drug (ClinicalEngine.
+ *   prioritizeCascadeCandidates already labels each such candidate's
+ *   `candidate_role`) — two different drugs genuinely evaluated in
+ *   sequence, not a duplicate finding. When there is no sibling, the role
+ *   label is omitted: a single "Respuesta inicial" badge on its own would
+ *   be noise, not information.
  */
 function renderCascadeCardHtml(c, opts) {
   opts = opts || {};
+  var siblingCount = (opts.siblings || []).filter(function (x) {
+    return x.rule_id === c.rule_id && normalizeDrugText(x.index_drug || '') === normalizeDrugText(c.index_drug || '');
+  }).length;
+  var roleKey = siblingCount > 1 && c.candidate_role ? 'candidate_role_' + c.candidate_role : null;
   var lang = currentLanguage;
   var displayName = (lang === 'es' && c.cascade_name_es) ? c.cascade_name_es : c.cascade_name;
   var adeDisplay = (lang === 'es' && c.ade_es) ? c.ade_es : (c.ade_en || '');
@@ -2944,6 +2965,13 @@ function renderCascadeCardHtml(c, opts) {
             ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;border:1px solid #a569bd;' +
                 'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
                 tUI('via_symptom') + '</span>'
+            : '') +
+          (roleKey
+            ? '<span title="' + escHtml(tUI(roleKey + '_title')) + '" style="font-size:.65rem;font-weight:600;' +
+                'color:' + (c.candidate_role === 'initial_response' ? '#0b6473' : '#8a5a00') + ';' +
+                'border:1px solid ' + (c.candidate_role === 'initial_response' ? '#8fc1c9' : '#e0b463') + ';' +
+                'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
+                tUI(roleKey) + '</span>'
             : '') +
         '</span>' +
         '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' + escHtml(c.cascade_id) + '</code>' +
