@@ -1,5 +1,25 @@
 # Knowledge Base Changelog
 
+## Unreleased — 2026-09-21: resolved near-duplicate rule pairs and unlinked symptom bridges
+
+**Fixes duplicate/contradictory cascade cards for the same clinical finding**, reported against the production demo case and confirmed systematically against the full active catalogue (prod + dev). Full audit trail in `docs/audit/02-registro-hallazgos.md` (HAL-02) and `docs/audit/03-auditoria-kb.md`.
+
+### Changed — near-duplicate rule pairs merged (`kb/{prod,dev}/kb_core_cascades.json`)
+
+- Nine pairs of active rules that `kb/dev/kb_validator.js`'s own near-duplicate detector flags (index-drug overlap ≥0.75, cascade-drug overlap ≥0.75, intermediate-problem-text overlap ≥0.5) were reviewed and merged, using the same `status: "merged"` / `merged_into` / `merged_from` mechanism already used for CC050→CC033 and CC061→CC001: **CC042→CC003, CC045→CC007, CC070→CC013, CC082→CC019, CC053→CC023, CC079→CC025, CC068→CC026, CC067→CC027, CC065→CC028**. In every pair the surviving rule is the lower-numbered, originally-referenced entry; the merged rule is the higher-numbered entry bulk-imported from `kb/dev/prescribing_cascades_CC041_CC090_FINAL.json` (no bibliographic reference of its own). The surviving rule's `index_drug_examples`/`cascade_drug_examples` were expanded with the union of both rules' examples, so no detection capability is lost. CC007 and CC019 also had their `appropriateness` elevated to `often_inappropriate` (the more specific of the two source values, matching the 2026-09-14 precedent). Full rationale per pair in `kb/kb_cascade_registry.md`.
+- The operational near-duplicate detector now reports zero unreviewed overlapping pairs against the production catalogue (previously nine).
+
+### Changed — symptom-bridge entries linked to the formal rules they overlap with (`kb/{prod,dev}/kb_symptoms.json`)
+
+- `ClinicalEngine.evaluateSymptomBridgeCascades()` derives each symptom entry's `linked_rule_ids` by scanning its own `cascade_relevance` free text for `CC###`/`VIH###` tokens (the mechanism that already consolidates SYM008 into CC004). Nine of the ten symptom-bridge entries structurally overlapped with a formal drug_drug rule (same index-drug class AND same cascade-drug class) without ever naming it, so the same clinical finding could render as two independent cards — e.g. amitriptyline→constipation→macrogol produced both a CC013 card and an unlinked SYM001 card. Added the missing rule references to `cascade_relevance` (existing wording preserved, nothing removed) for SYM001 (→CC008, CC013, CC090), SYM002 (→CC014), SYM004 (→CC021), SYM005 (→CC016), SYM006 (→CC022), SYM007 (→CC015, VIH005), SYM008 (additionally →CC027, alongside the existing CC004), SYM009 (→CC015, CC032, CC037, CC087), SYM010 (additionally →CC010, CC058, CC074, CC086, alongside the existing VIH004).
+- Each addition was verified against the symptom's own `caused_by_drug_examples`/`treated_by_drug_examples` lists before being added — no rule reference was added without a genuine, mechanism-consistent drug-class overlap.
+
+### Tests
+
+- `tests/kb-audit.test.js`: updated to assert zero remaining unreviewed overlapping pairs (was nine).
+- `tests/regression.test.js`: the oxybutynin/oxibutinina→constipation/estreñimiento→lactulose cases now assert consolidation into CC013 (with SYM001 as provenance), mirroring the existing CC004/SYM008 assertion, instead of asserting a standalone symptom-bridge card.
+- `tests/multi-candidate-cascades.test.js`, `tests/demo-case-regression.test.js`: added regression coverage for the redundant composite/bare index-drug match fix in `clinical-engine.js` (VIH027/cobicistat, CC072/ritonavir) and for the `candidate_role` labelling of genuine multi-candidate cascades (CC001).
+
 ## Version 2.3.0 — 2026-09-14 (second round)
 
 **Clinical-engine audit, second round: negation/temporality with historical vs. current scope, event-sequence model, medication↔indication linking, VIH003 logic fix, scoped DDI display, real anticholinergic burden scale, four-dimension label system, non-hardcoded priority filtering.**

@@ -115,6 +115,25 @@ function run() {
   assert('a composite with no redundant bare alternative on the same rule still matches',
     boostedRegimenOnly.possibleCascades.some((c) => c.cascade_id === 'VIH001' && c.index_drug === 'darunavir/cobicistat'));
 
+  /* ---- CC013/CC070 were a near-duplicate rule pair (merged 2026-09-21, see
+     kb/kb_cascade_registry.md), and SYM001 (constipation) structurally
+     overlapped both without naming either in its cascade_relevance text —
+     together these produced THREE cards (CC070, SYM001, CC013, with
+     contradictory classifications) for one clinical finding, reported
+     against a real note. Both root causes are now fixed: CC070 no longer
+     exists as an independent rule, and SYM001 is linked to CC013 so it
+     folds in as provenance instead of rendering separately. ---- */
+  const amitriptylineConstipation = CE.buildCaseModel(
+    'Toma amitriptilina 25 mg por la noche desde enero de 2020. En marzo de 2020 presenta estreñimiento. Se inicia macrogol.', kb, { lang: 'es' });
+  assertEqual('amitriptyline->constipation->macrogol renders exactly one card, not three',
+    amitriptylineConstipation.possibleCascades.length, 1);
+  const onlyCard = amitriptylineConstipation.possibleCascades[0];
+  assert('the surviving card is CC013 with SYM001 folded in as provenance',
+    onlyCard.rule_id === 'CC013' &&
+    onlyCard.evidence.symptom_bridge_provenance.some((item) => item.rule_id === 'SYM001'));
+  assert('CC070 no longer exists as an independent, firing rule',
+    !amitriptylineConstipation.possibleCascades.some((c) => c.rule_id === 'CC070'));
+
   const r = summary(); console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`); return r.fail === 0;
 }
 module.exports = { run };

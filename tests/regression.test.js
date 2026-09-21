@@ -48,15 +48,27 @@ function run() {
     return { syms: symptoms, sigs: model.possibleCascades.filter((s) => s.signal_type === 'symptom_bridge') };
   }
 
+  /* SYM001 (constipation) is now linked to CC013 (its cascade_relevance
+     names the rule), so — like the oedema/CC004 case below — the bridge is
+     folded into the formal CC013 card as provenance rather than rendered as
+     its own second card (see kb/CHANGELOG.md and clinical-engine-fix-audit
+     for the near-duplicate fix). */
   let r1 = probeCascades('After starting oxybutynin patient developed constipation. Lactulose was added.');
   let s1 = r1.sigs.find((s) => s.ade_en === 'constipation');
-  assert('EN: oxybutynin -> constipation -> lactulose fires', !!s1);
-  assert('EN: confidence is high (supportive temporality)', s1 && s1.confidence === 'high');
+  const consolidated1 = CE.buildCaseModel('After starting oxybutynin patient developed constipation. Lactulose was added.', kb)
+    .possibleCascades.find((s) => s.rule_id === 'CC013');
+  assert('EN: oxybutynin -> constipation -> lactulose is consolidated into CC013, not a second card', !s1 &&
+    consolidated1 && consolidated1.evidence.symptom_bridge_provenance.some((item) => item.rule_id === 'SYM001'));
+  assert('EN: consolidated evidence keeps the supportive temporality that drove the merge',
+    consolidated1.evidence.symptom_bridge_provenance[0].evidence.temporal_order.status === 'supportive' ||
+    consolidated1.evidence.symptom_bridge_provenance[0].classification === 'supported_possible_cascade');
 
   let r2 = probeCascades('Chronic constipation on long-term lactulose. Started oxybutynin for incontinence.');
   let s2 = r2.sigs.find((s) => s.ade_en === 'constipation');
+  const consolidated2 = CE.buildCaseModel('Chronic constipation on long-term lactulose. Started oxybutynin for incontinence.', kb)
+    .possibleCascades.find((s) => s.rule_id === 'CC013');
   assert('EN: chronic constipation+lactulose -> not a supported cascade',
-    !s2 || s2.classification !== 'supported_possible_cascade');
+    !s2 && (!consolidated2 || consolidated2.classification !== 'supported_possible_cascade'));
 
   let rA = probeCascades('New onset oedema noted after amlodipine was started. Furosemide prescribed.');
   let sA = rA.sigs.find((s) => s.ade_en === 'oedema' || s.ade_en === 'peripheral oedema');
@@ -83,7 +95,10 @@ function run() {
   /* ---- Spanish cascade with temporality ---- */
   let es5 = probeCascades('Tras iniciar oxibutinina el paciente presenta estreñimiento. Se pauta lactulosa.');
   let es5s = es5.sigs.find((s) => s.ade_en === 'constipation');
-  assert('ES: oxibutinina -> estreñimiento -> lactulosa fires', !!es5s);
+  const es5consolidated = CE.buildCaseModel('Tras iniciar oxibutinina el paciente presenta estreñimiento. Se pauta lactulosa.', kb)
+    .possibleCascades.find((s) => s.rule_id === 'CC013');
+  assert('ES: oxibutinina -> estreñimiento -> lactulosa is consolidated into CC013, not a second card', !es5s &&
+    es5consolidated && es5consolidated.evidence.symptom_bridge_provenance.some((item) => item.rule_id === 'SYM001'));
 
   const r = summary();
   console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`);

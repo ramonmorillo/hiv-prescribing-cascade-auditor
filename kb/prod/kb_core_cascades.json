@@ -133,7 +133,8 @@
         "ramipril",
         "captopril",
         "perindopril",
-        "fosinopril"
+        "fosinopril",
+        "trandolapril"
       ],
       "ade_mechanism_en": "Bradykinin accumulation → respiratory tract irritation → dry cough",
       "ade_mechanism_es": "Acumulación de bradicinina → irritación del tracto respiratorio → tos seca",
@@ -144,7 +145,9 @@
         "dextromethorphan",
         "codeine",
         "benzonatate",
-        "guaifenesin"
+        "guaifenesin",
+        "levodropropizine",
+        "cloperastine"
       ],
       "confidence": "high",
       "age_sensitivity": "low",
@@ -166,6 +169,12 @@
       "recommended_first_action_es": "La solución correcta es cambiar IECA por ARA-II, no añadir un antitusivo.",
       "references": [
         "Dicpinigaitis PV. Chest 2006"
+      ],
+      "merged_from": [
+        {
+          "id": "CC042",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC042 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -322,7 +331,9 @@
       "index_drug_examples": [
         "hydrochlorothiazide",
         "chlorthalidone",
-        "indapamide"
+        "indapamide",
+        "bendroflumethiazide",
+        "metolazone"
       ],
       "ade_mechanism_en": "Reduced renal urate excretion → hyperuricemia → gout attack",
       "ade_mechanism_es": "Disminución de la excreción renal de urato → hiperuricemia → ataque de gota",
@@ -348,13 +359,19 @@
         "Renal impairment reducing urate excretion independently",
         "Other uricosuric-blocking medications (cyclosporine, low-dose aspirin)"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 30,
       "time_window_days_max": 365,
       "recommended_first_action_en": "If thiazide can be stopped, urate levels may normalize. Evaluate indication.",
       "recommended_first_action_es": "Si puede suspenderse la tiazida, los niveles de urato pueden normalizarse. Evaluar indicación.",
       "references": [
         "Choi HK et al. BMJ 2012"
+      ],
+      "merged_from": [
+        {
+          "id": "CC045",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC045 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -613,7 +630,9 @@
         "trihexyphenidyl",
         "amitriptyline",
         "nortriptyline",
-        "promethazine"
+        "promethazine",
+        "trospium",
+        "clomipramine"
       ],
       "ade_mechanism_en": "Muscarinic blockade in enteric nervous system → reduced GI motility → constipation",
       "ade_mechanism_es": "Bloqueo muscarínico en sistema nervioso entérico → reducción de motilidad GI → estreñimiento",
@@ -625,7 +644,8 @@
         "macrogol",
         "bisacodyl",
         "senna",
-        "sodium docusate"
+        "sodium docusate",
+        "prucalopride"
       ],
       "confidence": "high",
       "age_sensitivity": "high",
@@ -647,6 +667,12 @@
       "references": [
         "Rochon PA, Gurwitz JH. Lancet 1995",
         "Brath H et al. Br J Clin Pharmacol 2019"
+      ],
+      "merged_from": [
+        {
+          "id": "CC070",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC070 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -934,7 +960,7 @@
         "Relationship or psychosocial factors contributing",
         "HIV neuropathy affecting sexual function"
       ],
-      "appropriateness": "context_dependent",
+      "appropriateness": "often_inappropriate",
       "time_window_days_min": 14,
       "time_window_days_max": 180,
       "recommended_first_action_en": "Discuss dose reduction or switch to antidepressant with lower sexual side-effect burden (bupropion, mirtazapine) before adding PDE5 inhibitor. Check testosterone level.",
@@ -943,7 +969,13 @@
         "Clayton AH et al. J Clin Psychiatry 2002",
         "DHHS Guidelines 2024"
       ],
-      "ddi_warning_en": "CAUTION: PDE5 inhibitors + ritonavir-boosted regimens: significant increase in PDE5 inhibitor levels. Start sildenafil at 25 mg max; tadalafil 10 mg no more than q72h."
+      "ddi_warning_en": "CAUTION: PDE5 inhibitors + ritonavir-boosted regimens: significant increase in PDE5 inhibitor levels. Start sildenafil at 25 mg max; tadalafil 10 mg no more than q72h.",
+      "merged_from": [
+        {
+          "id": "CC082",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC082 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
+      ]
     },
     {
       "id": "CC020",
@@ -1102,7 +1134,9 @@
         "risperidone",
         "chlorpromazine",
         "amisulpride",
-        "sulpiride"
+        "sulpiride",
+        "paliperidone",
+        "fluphenazine"
       ],
       "ade_mechanism_en": "D2 receptor blockade in tuberoinfundibular pathway → removal of dopamine inhibition → elevated prolactin",
       "ade_mechanism_es": "Bloqueo de receptores D2 en vía tuberoinfundibular → retirada de la inhibición dopaminérgica → prolactina elevada",
@@ -1132,6 +1166,12 @@
       "recommended_first_action_es": "Cambiar a antipsicótico ahorrador de prolactina (quetiapina, aripiprazol, clozapina) en lugar de añadir agonista dopaminérgico.",
       "references": [
         "Meaney AM, O'Keane V. Int J Neuropsychopharmacol 2002"
+      ],
+      "merged_from": [
+        {
+          "id": "CC053",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC053 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1203,7 +1243,8 @@
         "magnesium oxide",
         "magnesium glycinate",
         "magnesium sulfate",
-        "magnesium citrate"
+        "magnesium citrate",
+        "magnesium hydroxide"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1224,6 +1265,12 @@
       "recommended_first_action_es": "La suplementación de magnesio es apropiada. Evaluar uso concomitante de IBP (riesgo doble de hipomagnesemia: diurético + IBP). Considerar reducción de dosis de diurético de asa si es posible.",
       "references": [
         "Ryan MP. Annu Rev Pharmacol Toxicol 1984"
+      ],
+      "merged_from": [
+        {
+          "id": "CC079",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC079 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1238,7 +1285,8 @@
         "pantoprazole",
         "lansoprazole",
         "esomeprazole",
-        "rabeprazole"
+        "rabeprazole",
+        "dexlansoprazole"
       ],
       "ade_mechanism_en": "Impaired TRPM6/7 channel-mediated magnesium absorption in intestine due to altered luminal pH → hypomagnesaemia",
       "ade_mechanism_es": "Absorción intestinal de magnesio mediada por canales TRPM6/7 alterada por cambios de pH luminal → hipomagnesemia",
@@ -1248,7 +1296,9 @@
       "cascade_drug_examples": [
         "magnesium oxide",
         "magnesium glycinate",
-        "magnesium citrate"
+        "magnesium citrate",
+        "magnesium hydroxide",
+        "magnesium sulfate"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1269,6 +1319,12 @@
       "recommended_first_action_es": "Considerar si la indicación de IBP sigue vigente. Un antagonista H2 puede ser suficiente con menor riesgo de hipomagnesemia. Si IBP es necesario, monitorizar Mg y suplementar según necesidad.",
       "references": [
         "Cundy T, Mackay J. Aliment Pharmacol Ther 2011"
+      ],
+      "merged_from": [
+        {
+          "id": "CC068",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC068 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1291,7 +1347,8 @@
         "furosemide",
         "hydrochlorothiazide",
         "spironolactone",
-        "indapamide"
+        "indapamide",
+        "torasemide"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1312,6 +1369,12 @@
       "recommended_first_action_es": "Reevaluar indicación de gabapentinoide. La reducción de dosis o cambio a analgésico/neuromodulador alternativo es preferible a añadir diurético.",
       "references": [
         "Shneker BF, McAuley JW. Ann Pharmacother 2005"
+      ],
+      "merged_from": [
+        {
+          "id": "CC067",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC067 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -1324,7 +1387,8 @@
       "index_drug_examples": [
         "alendronate",
         "risedronate",
-        "ibandronate"
+        "ibandronate",
+        "clodronate"
       ],
       "ade_mechanism_en": "Direct mucosal contact + altered epithelial tight junctions → oesophageal and gastric irritation",
       "ade_mechanism_es": "Contacto mucoso directo + alteración de uniones epiteliales estrechas → irritación esofágica y gástrica",
@@ -1335,7 +1399,8 @@
         "omeprazole",
         "pantoprazole",
         "lansoprazole",
-        "esomeprazole"
+        "esomeprazole",
+        "rabeprazole"
       ],
       "confidence": "medium",
       "age_sensitivity": "medium",
@@ -1355,6 +1420,12 @@
       "recommended_first_action_es": "Verificar primero técnica correcta de administración (vaso lleno de agua, permanecer erguido 30 min). Cambiar a bifosfonato IV o ibandronato trimestral si se confirma intolerancia oral. El IBP añade carga farmacológica innecesaria si se corrige la técnica.",
       "references": [
         "Rosen CJ. N Engl J Med 2005"
+      ],
+      "merged_from": [
+        {
+          "id": "CC065",
+          "reason": "Regla casi-duplicada (mismo patrón clínico; solapamiento de fármacos índice/cascada y de problema intermedio detectado automáticamente por kb/dev/kb_validator.js: overlap indice/cascada >=0.75, problema >=0.5). Fusionada el 2026-09-21. index_drug_examples/cascade_drug_examples ampliados con las entradas propias de CC065 que no estaban ya cubiertas. Ver kb/CHANGELOG.md."
+        }
       ]
     },
     {
@@ -2013,7 +2084,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC003",
+      "merge_note_es": "Fusionada en CC003 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC003 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC043",
@@ -2133,7 +2208,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC007",
+      "merge_note_es": "Fusionada en CC007 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC007 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC046",
@@ -2448,7 +2527,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC023",
+      "merge_note_es": "Fusionada en CC023 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC023 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC054",
@@ -2921,7 +3004,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC028",
+      "merge_note_es": "Fusionada en CC028 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC028 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC066",
@@ -2998,7 +3085,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC027",
+      "merge_note_es": "Fusionada en CC027 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC027 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC068",
@@ -3039,7 +3130,11 @@
       ],
       "appropriateness": "context_dependent",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC026",
+      "merge_note_es": "Fusionada en CC026 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC026 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC069",
@@ -3124,7 +3219,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC013",
+      "merge_note_es": "Fusionada en CC013 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC013 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC071",
@@ -3463,7 +3562,11 @@
       ],
       "appropriateness": "context_dependent",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC025",
+      "merge_note_es": "Fusionada en CC025 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC025 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC080",
@@ -3581,7 +3684,11 @@
       ],
       "appropriateness": "often_inappropriate",
       "recommended_first_action_en": null,
-      "recommended_first_action_es": null
+      "recommended_first_action_es": null,
+      "status": "merged",
+      "merged_into": "CC019",
+      "merge_note_es": "Fusionada en CC019 el 2026-09-21 por ser una regla casi-duplicada (detectada automáticamente por kb/dev/kb_validator.js). Conservada para trazabilidad; excluida de la detección activa por el motor.",
+      "merge_note_en": "Merged into CC019 on 2026-09-21 as a near-duplicate rule (detected automatically by kb/dev/kb_validator.js). Kept for traceability; excluded from active detection by the engine."
     },
     {
       "id": "CC083",

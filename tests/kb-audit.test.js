@@ -83,11 +83,18 @@ function run() {
     overlapReport.ok && overlapReport.warnings.some((warning) => /Possible overlapping active rules/.test(warning)) &&
     overlapping.cascades.every((entry) => !entry.status && !entry.merged_into));
 
+  /* The nine near-duplicate active pairs this validator used to flag
+     (CC003/CC042, CC007/CC045, CC013/CC070, CC019/CC082, CC023/CC053,
+     CC025/CC079, CC026/CC068, CC027/CC067, CC028/CC065) were reviewed and
+     merged into their lower-numbered, originally-referenced counterpart —
+     see kb/kb_cascade_registry.md and kb/CHANGELOG.md. The detector itself
+     must keep working (proven above with synthetic entries); production
+     content should no longer trip it. */
   const prodOverlapReport = validateKBOperational(loadKB('prod').coreCascades);
   const prodOverlapWarnings = prodOverlapReport.warnings.filter((warning) =>
     /Possible overlapping active rules/.test(warning));
-  assertEqual('operational KB validation continues detecting all nine overlapping active pairs',
-    prodOverlapWarnings.length, 9);
+  assertEqual('operational KB validation finds no remaining unreviewed overlapping active pairs',
+    prodOverlapWarnings.length, 0);
 
   /* drug_dictionary.json / drug_combinations.json: fixed-dose combination
      brands must never ALSO appear as a plain single-ingredient variant --
@@ -109,6 +116,34 @@ function run() {
       combos.combinations.some((c) => c.brand === 'Dovato' &&
         c.activeIngredients.includes('dolutegravir') && c.activeIngredients.includes('lamivudine')));
   }
+
+  /* ---- No active rule may ever produce two candidates for the exact same
+     (index drug, cascade drug) pair. Feeding every one of a rule's own
+     listed examples into a single note exercises the redundant
+     composite/bare match case (a rule listing both "cobicistat" and
+     "darunavir/cobicistat") across the WHOLE active catalogue, not just the
+     one case reported against the demo — this must keep holding as the KB
+     grows, not just today. ---- */
+  ['prod', 'dev'].forEach((track) => {
+    const kb = loadKB(track);
+    const allRules = [].concat(kb.coreCascades.cascades, kb.vihModifiers.art_related_cascades || [])
+      .filter((r) => r.status !== 'merged');
+    allRules.forEach((rule) => {
+      const idxExamples = rule.index_drug_examples || rule.index_drugs_examples || [];
+      const cascExamples = rule.cascade_drug_examples || rule.cascade_drugs_examples || [];
+      const note = idxExamples.concat(cascExamples).map((t) => t.replace(/\//g, ' ')).join(', ') +
+        '. Presenta un problema clinico. Se inicia tratamiento.';
+      const model = CE.buildCaseModel(note, kb, { lang: 'es' });
+      const pairs = {};
+      model.possibleCascades.filter((s) => s.rule_id === rule.id).forEach((s) => {
+        const key = CE.normalizeDrugText(s.index_drug) + '|' + CE.normalizeDrugText(s.cascade_drug);
+        pairs[key] = (pairs[key] || 0) + 1;
+      });
+      Object.entries(pairs).forEach(([key, count]) => {
+        assert(`[${track}] ${rule.id} fires once for ${key}, not ${count} times (redundant composite/bare match)`, count === 1);
+      });
+    });
+  });
 
   const r = summary();
   console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`);
