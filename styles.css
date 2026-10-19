@@ -1037,6 +1037,45 @@ td.badge-cell { white-space: nowrap; }
   font-size: 0.75rem;
   line-height: 1.4;
 }
+.problem-review-trace {
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee6da;
+  color: #675f54;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.problem-review-trace .problem-review-evidence {
+  margin-top: 0.3rem;
+  padding-top: 0;
+  border-top: 0;
+}
+.problem-review-trace > div + div { margin-top: 0.25rem; }
+.problem-evidence-type {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: #eef4f4;
+  color: #1f5e63;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+.problem-evidence-type.is-contextual_inference,
+.problem-evidence-type.is-pharmacological_inference {
+  background: #fdf3e1;
+  color: #8a5a12;
+}
+.problem-evidence-type.is-manual_entry { background: #efeaf6; color: #5b3f86; }
+.problem-review-certainty { color: #83786a; }
+.problem-review-contradiction { color: #922b21; font-weight: 600; }
+.problem-review-note,
+.problem-review-code,
+.problem-review-dates { color: #83786a; }
+.problem-review-consequence {
+  margin: 0 0 0.6rem;
+  color: #675f54;
+  font-size: 0.76rem;
+}
 .problem-review-actions {
   display: flex;
   flex-wrap: wrap;

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — extracción unificada de problemas clínicos y motor de cascadas coherente
+
+- Una única lista de problemas (`CaseModel.activeProblems`) alimenta la revisión del paso 2, el motor de cascadas, el puente de síntomas, las alertas y todos los informes. Desaparecen las etiquetas de síntomas no editables.
+- Nueva terminología central `kb/clinical_terminology.json` (sinónimos, abreviaturas, términos coloquiales, relaciones *broader* y *related_not_equivalent*, códigos CIE-10 orientativos); `kb_symptoms` y `ade_treatment_map` se resuelven a través de ella.
+- Las indicaciones documentadas («X … por Y», «consulta por Y y recibe X») se extraen de forma robusta y se convierten en problemas trazables; un fármaco sin indicación nunca genera un diagnóstico (se informa como indicación no documentada).
+- Corregidos: offsets de medicamentos desplazados (fechas de otra línea), fechas de otros eventos atribuidas al fármaco, fecha de inicio de tratamiento mostrada como inicio del problema, ventanas de negación que cruzaban frases, CM007 con un solo agente, falsos «mismatch» de indicación, reescaneo del texto bruto por el motor de cascadas.
+- VIH001 distingue IP potenciados de INSTI (mecanismo indirecto); propiedad farmacológica «sedante» independiente de la clase terapéutica; categorías de hallazgo separadas.
+- Detalle completo, resultados del caso de regresión y limitaciones en `docs/audit/06-extraccion-problemas-y-cascadas.md`.
+
 ## Unreleased — eliminación de tarjetas de cascada duplicadas/contradictorias
 
 - Corregido un fallo de detección que presentaba dos veces el mismo hallazgo clínico cuando una combinación a dosis fija (p. ej. Symtuza) coincidía a la vez con la forma "bare" y con la forma compuesta de un mismo fármaco índice listadas en una misma regla (ejemplo reportado: VIH027/cobicistat). Corregido de forma genérica en `clinical-engine.js`, no regla por regla; afectaba a 9 reglas más de la KB.
