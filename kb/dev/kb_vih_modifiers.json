@@ -48,7 +48,23 @@
           "simvastatin",
           "lovastatin"
         ]
-      ]
+      ],
+      "index_drug_evidence": {
+        "dolutegravir": {
+          "mechanism": "indirect",
+          "plausibility": "low",
+          "note_es": "El propio mecanismo de esta regla atribuye la dislipemia de los INSTI a una vía indirecta (ganancia de peso → dislipemia secundaria), a diferencia del efecto lipídico directo de los IP potenciados (activación de SREBP). Por ello, para este principio activo la regla no puede respaldar una cascada sólo por coincidencia temporal; requiere revisión farmacéutica de la evidencia específica.",
+          "note_en": "This rule's own mechanism attributes INSTI dyslipidaemia to an indirect pathway (weight gain → secondary dyslipidaemia), unlike the direct lipid effect of boosted PIs (SREBP activation). For this ingredient the rule therefore cannot support a cascade on temporal coincidence alone; specific evidence requires pharmacist review.",
+          "source": "Derivado del campo ade_mechanism de esta misma regla (auditoría 2026-10-19); pendiente de revisión farmacéutica de la KB."
+        },
+        "bictegravir": {
+          "mechanism": "indirect",
+          "plausibility": "low",
+          "note_es": "El propio mecanismo de esta regla atribuye la dislipemia de los INSTI a una vía indirecta (ganancia de peso → dislipemia secundaria), a diferencia del efecto lipídico directo de los IP potenciados (activación de SREBP). Por ello, para este principio activo la regla no puede respaldar una cascada sólo por coincidencia temporal; requiere revisión farmacéutica de la evidencia específica.",
+          "note_en": "This rule's own mechanism attributes INSTI dyslipidaemia to an indirect pathway (weight gain → secondary dyslipidaemia), unlike the direct lipid effect of boosted PIs (SREBP activation). For this ingredient the rule therefore cannot support a cascade on temporal coincidence alone; specific evidence requires pharmacist review.",
+          "source": "Derivado del campo ade_mechanism de esta misma regla (auditoría 2026-10-19); pendiente de revisión farmacéutica de la KB."
+        }
+      }
     },
     {
       "id": "VIH002",

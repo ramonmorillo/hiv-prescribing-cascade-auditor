@@ -37,11 +37,65 @@
     return cleanText(problem.problem || problem.concept_es || problem.concept_en);
   }
 
+  /* Only an explicitly documented onset fills the editable onset field. A
+     treatment start date (problem.first_active_date with semantics
+     'treatment_start') is shown as context, never relabelled as onset. */
   function problemOnset(problem) {
+    if (Object.prototype.hasOwnProperty.call(problem, 'documented_onset')) {
+      return problem.documented_onset && typeof problem.documented_onset.raw === 'string'
+        ? cleanText(problem.documented_onset.raw, 80) : cleanText(problem.onset_date, 80);
+    }
     if (problem.first_active_date && typeof problem.first_active_date.raw === 'string') {
       return cleanText(problem.first_active_date.raw, 80);
     }
     return cleanText(problem.onset_date, 80);
+  }
+
+  var EVIDENCE_TYPES = ['explicit_mention', 'documented_indication', 'contextual_inference', 'pharmacological_inference', 'manual_entry'];
+  var CERTAINTY = ['high', 'medium', 'low'];
+
+  /* Read-only traceability carried from the extraction into the review, so
+     the professional sees WHY each problem appeared before validating it. */
+  function traceability(problem) {
+    var meds = Array.isArray(problem.related_medications) ? problem.related_medications : [];
+    var events = Array.isArray(problem.events) ? problem.events : [];
+    var firstDate = problem.first_active_date && typeof problem.first_active_date.raw === 'string' ? problem.first_active_date : null;
+    var norm = problem.normalization || {};
+    return {
+      concept_id: cleanText(problem.concept_id, 100),
+      evidence_types: (problem.evidence_types || []).filter(function (t) { return EVIDENCE_TYPES.indexOf(t) !== -1; }),
+      certainty_level: CERTAINTY.indexOf(problem.certainty_level) !== -1 ? problem.certainty_level : '',
+      related_medications: meds.slice(0, 20).map(function (m) {
+        return { drug: cleanText(m.drug, 120), relation: EVIDENCE_TYPES.indexOf(m.relation) !== -1 ? m.relation : '',
+          start_date: cleanText(m.start_date, 80) };
+      }),
+      evidence_spans: events.slice(0, 20).map(function (e) {
+        return { type: EVIDENCE_TYPES.indexOf(e.type) !== -1 ? e.type : '', text: cleanText(e.evidenceSpan, 400),
+          status: safeStatus(e.status), date: cleanText(e.date, 80), date_semantics: cleanText(e.date_semantics, 40) };
+      }).filter(function (e) { return e.text; }),
+      first_documented_date: firstDate ? cleanText(firstDate.raw, 80) : '',
+      first_documented_semantics: firstDate ? cleanText(firstDate.semantics, 40) : '',
+      code: problem.code && problem.code.code ? cleanText(problem.code.system + ' ' + problem.code.code, 60) : '',
+      normalization_notes: [].concat(norm.relation_notes_es || [], norm.concept_note_es ? [norm.concept_note_es] : [])
+        .slice(0, 5).map(function (n) { return cleanText(n, 400); }),
+      match_types: (norm.match_types || []).slice(0, 8).map(function (t) { return cleanText(t, 40); }),
+      contradiction: problem.contradiction === true
+    };
+  }
+
+  function sanitizeTraceability(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    return traceability({
+      concept_id: value.concept_id, evidence_types: value.evidence_types, certainty_level: value.certainty_level,
+      related_medications: value.related_medications,
+      events: (value.evidence_spans || []).map(function (e) {
+        return e && typeof e === 'object' ? { type: e.type, evidenceSpan: e.text, status: e.status, date: e.date, date_semantics: e.date_semantics } : {};
+      }),
+      first_active_date: value.first_documented_date ? { raw: value.first_documented_date, semantics: value.first_documented_semantics } : null,
+      code: null,
+      normalization: { relation_notes_es: value.normalization_notes || [], match_types: value.match_types || [] },
+      contradiction: value.contradiction
+    });
   }
 
   function sourceSignature(problems) {
@@ -94,6 +148,7 @@
           temporality: temporality,
           onset_date: onset,
           evidence_span: cleanText(problem.evidence_span || (problem.evidence || []).join(' / '), 1000),
+          traceability: traceability(problem),
           included: true
         };
       })
@@ -125,6 +180,11 @@
         temporality: safeTemporality(item.temporality),
         onset_date: cleanText(item.onset_date, 80),
         evidence_span: source === 'extracted' ? cleanText(item.evidence_span, 1000) : '',
+        traceability: source === 'extracted' ? (function () {
+          var t = sanitizeTraceability(item.traceability);
+          if (t && item.traceability && typeof item.traceability.code === 'string') t.code = cleanText(item.traceability.code, 60);
+          return t;
+        }()) : null,
         included: item.included !== false
       });
     });
