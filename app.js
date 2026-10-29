@@ -44,11 +44,57 @@ function getLocalizedField(obj, baseField, lang) {
    ============================================================ */
 const UI_STRINGS = {
   es: {
+    /* Redesign (presentation only) */
+    chain_index_lbl:   'F&aacute;rmaco &iacute;ndice',
+    chain_ade_lbl:     'Problema intermedio',
+    chain_cascade_lbl: 'F&aacute;rmaco posterior',
+    rule_id_lbl:       'Regla',
+    report_export_lbl: 'Exportar o compartir',
+    saved_locally:     function (t) { return 'Guardado en este navegador · ' + t; },
+    wf_pending:        'Pendiente',
+    wf_waiting_kb:     'Esperando la KB',
+    wf_note_chars:     function (n) { return n.toLocaleString('es-ES') + ' caracteres'; },
+    wf_review_confirmed: 'Revisi&oacute;n confirmada',
+    wf_review_draft:   'Revisi&oacute;n en borrador',
+    wf_classified:     function (n, m) { return n + ' de ' + m + ' con clase'; },
+    wf_signals:        function (n) { return n === 0 ? 'Sin se&ntilde;ales' : n + (n === 1 ? ' se&ntilde;al' : ' se&ntilde;ales'); },
+    wf_reviewed:       function (n, m) { return n + ' de ' + m + ' verificadas'; },
+    wf_report_ready:   'Disponible',
+    kb_inv_title:      'Ficheros cargados',
+    kb_inv_coreCascades:      'Cascadas generales',
+    kb_inv_vihModifiers:      'Cascadas espec&iacute;ficas de VIH',
+    kb_inv_ddiWatchlist:      'Interacciones vigiladas',
+    kb_inv_symptomDictionary: 'Diccionario de s&iacute;ntomas',
+    kb_inv_clinicalProblems:  'Problemas cl&iacute;nicos',
+    kb_inv_clinicalModifiers: 'Modificadores cl&iacute;nicos',
+    kb_inv_drugDictionary:    'Diccionario de f&aacute;rmacos',
+    kb_inv_drugCombinations:  'Combinaciones a dosis fija',
+    kb_inv_active_rules: 'reglas activas',
+    kb_inv_entries:    'entradas',
+    kb_inv_not_loaded: 'No cargado',
+    kb_track_lbl:      function (m) { return 'Entorno ' + m; },
+    kb_search_label:   'Buscar regla, f&aacute;rmaco o problema',
+    kb_search_placeholder: 'p. ej., amlodipino, edema, CC004',
+    kb_filter_source:  'Origen',
+    kb_filter_status:  'Validaci&oacute;n del conocimiento',
+    kb_filter_all:     'Todas',
+    kb_source_core:    'Cascadas generales',
+    kb_source_hiv:     'Espec&iacute;ficas de VIH',
+    kb_results:        function (n, t) { return n + ' de ' + t + ' reglas'; },
+    kb_no_results:     'Ninguna regla coincide con la b&uacute;squeda.',
+    kb_mechanism:      'Mecanismo',
+    kb_index_examples: 'Ejemplos de f&aacute;rmaco &iacute;ndice',
+    kb_cascade_examples: 'Ejemplos de f&aacute;rmaco posterior',
+    kb_action:         'Orientaci&oacute;n registrada en la KB',
+    kb_references:     'Referencias',
+    kb_no_references:  'Sin referencia bibliogr&aacute;fica registrada.',
+    kb_unavailable:    'La base de conocimiento no est&aacute; cargada.',
+    kb_catalog_note:   'Solo se muestran las reglas activas: las fusionadas durante la auditor&iacute;a de la KB no se ejecutan. Los f&aacute;rmacos figuran como DCI en ingl&eacute;s, tal como constan en la KB; la b&uacute;squeda admite tambi&eacute;n nombres en espa&ntilde;ol y marcas del diccionario.',
     /* Navigation */
     step_counter:     function (n) { return 'Paso ' + n + ' de 6'; },
-    btn_prev:         '&#8592; Anterior',
-    btn_next:         'Siguiente &#8594;',
-    btn_finish:       '&#10003; Finalizar',
+    btn_prev:         'Anterior',
+    btn_next:         'Siguiente',
+    btn_finish:       'Finalizar',
 
     /* Step nav labels */
     nav_step1: 'Datos',
@@ -59,12 +105,12 @@ const UI_STRINGS = {
     nav_step6: 'Informe',
 
     /* Step titles */
-    step1_title: '&#128203; Paso 1 &mdash; Datos del caso',
-    step2_title: '&#128138; Paso 2 &mdash; Medicaci&oacute;n y problemas activos',
-    step3_title: '&#128230; Paso 3 &mdash; Clasificaci&oacute;n farmacol&oacute;gica',
-    step4_title: '&#128269; Paso 4 &mdash; Posibles cascadas terap&eacute;uticas',
-    step5_title: '&#128221; Paso 5 &mdash; Verificaci&oacute;n cl&iacute;nica',
-    step6_title: '&#128196; Paso 6 &mdash; Plan farmacoterap&eacute;utico e informe',
+    step1_title: 'Datos del caso',
+    step2_title: 'Medicaci&oacute;n y problemas activos',
+    step3_title: 'Clasificaci&oacute;n farmacol&oacute;gica',
+    step4_title: 'Posibles cascadas terap&eacute;uticas',
+    step5_title: 'Verificaci&oacute;n cl&iacute;nica',
+    step6_title: 'Plan farmacoterap&eacute;utico e informe',
 
     /* Onboarding */
     onboarding_title:       'C&oacute;mo funciona el auditor &mdash; en 3 pasos',
@@ -74,8 +120,8 @@ const UI_STRINGS = {
     onboarding_step2_body:  'Cruza los f&aacute;rmacos con la base de conocimiento: identifica si alg&uacute;n medicamento puede ser consecuencia de un efecto adverso de otro.',
     onboarding_step3_title: 'Obtenga un plan farmacoterap&eacute;utico',
     onboarding_step3_body:  'Clasifique cada hallazgo, a&ntilde;ada sus notas cl&iacute;nicas y exporte un informe estructurado para el equipo asistencial.',
-    onboarding_hint:        '&#8594; Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.',
-    onboarding_demo_btn:    '&#9654; Probar demo',
+    onboarding_hint:        'Pruebe con el caso demo &mdash; un paciente VIH en TAR con antihipertensivo que genera edema tratado con diur&eacute;tico.',
+    onboarding_demo_btn:    'Probar demo',
 
     /* Step 1 form */
     note_label:       'Nota cl&iacute;nica del caso',
@@ -83,16 +129,16 @@ const UI_STRINGS = {
     note_hint:        'Sin identificadores reales de paciente. Los datos permanecen &uacute;nicamente en este navegador.',
 
     /* Common warnings */
-    kb_unavailable_title:  '&#9888; Base de conocimiento no disponible.',
+    kb_unavailable_title:  'Base de conocimiento no disponible.',
     kb_unavailable_detail: 'Compruebe el estado KB en el pie de p&aacute;gina y recargue si es necesario.',
-    note_empty_title:          '&#9888; Nota cl&iacute;nica vac&iacute;a.',
+    note_empty_title:          'Nota cl&iacute;nica vac&iacute;a.',
     note_empty_detail:         'Introduzca la nota cl&iacute;nica en el Paso 1 antes de continuar.',
     note_empty_detail_report:  'Introduzca la nota cl&iacute;nica en el Paso 1 para generar el informe.',
 
     /* Step 2 */
     drugs_section_label:           'Medicamentos detectados',
     inactive_drugs_label:          'Medicamentos mencionados pero no activos',
-    no_drugs_title:                '&#10003; Sin medicamentos identificados.',
+    no_drugs_title:                'Sin medicamentos identificados.',
     no_drugs_detail:               'La nota puede usar nombres comerciales, abreviaturas o f&aacute;rmacos no incluidos en la KB actual.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medicamento' + (n === 1 ? '' : 's') + ' detectado' + (n === 1 ? '' : 's') + '</strong> en la nota cl&iacute;nica.'; },
     med_review_title:              'Revisi&oacute;n farmac&eacute;utica de la medicaci&oacute;n',
@@ -150,14 +196,14 @@ const UI_STRINGS = {
     problem_review_temporality_historical:   'Previo / cr&oacute;nico',
     problem_review_temporality_undetermined: 'No determinada',
     symptoms_dict_missing:         'Problemas detectados &mdash; <em style="color:#e67e22;font-style:normal;">diccionario no cargado</em>',
-    symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Diccionario de s&iacute;ntomas no disponible.</strong>',
+    symptoms_dict_unavailable_title:  '<strong>Diccionario de s&iacute;ntomas no disponible.</strong>',
     symptoms_dict_unavailable_detail: 'Recargue la p&aacute;gina o compruebe el estado KB.',
     symptoms_zero_label:           'Problemas activos detectados (0)',
-    no_symptoms:                   '&#10003;&nbsp;No se han detectado problemas cl&iacute;nicos en la nota.',
+    no_symptoms:                   'No se han detectado problemas cl&iacute;nicos en la nota.',
     symptoms_count:                function (a, i) { return 'Problemas detectados (' + a + ' activo' + (a === 1 ? '' : 's') + (i ? ', ' + i + ' no activo' + (i === 1 ? '' : 's') : '') + ')'; },
     inactive_mentions:             'Menciones no activas (negadas o hist&oacute;ricas):',
     none:                          'Ninguno',
-    detection_warning:             '&#9888;&nbsp;La detecci&oacute;n combina palabras clave, sin&oacute;nimos, marcas comerciales y reglas cl&iacute;nicas simples. Los problemas inferidos se muestran como sospecha/en estudio y requieren validaci&oacute;n profesional.',
+    detection_warning:             'La detecci&oacute;n combina palabras clave, sin&oacute;nimos, marcas comerciales y reglas cl&iacute;nicas simples. Los problemas inferidos se muestran como sospecha/en estudio y requieren validaci&oacute;n profesional.',
 
     /* Step 2 — rule-based clinical problems (e.g. urologic/renal) */
     problem_category_lbl:          'Categor&iacute;a:',
@@ -179,13 +225,13 @@ const UI_STRINGS = {
         ': ' + mapped + ' clasificado' + (mapped === 1 ? '' : 's') + ' en ' + groups + ' grupo' + (groups === 1 ? '' : 's') +
         ' farmacol&oacute;gico' + (groups === 1 ? '' : 's') + ', ' + unmapped + ' sin clasificar.</strong>';
     },
-    no_drugs_to_classify:        '&#10003; Sin medicamentos a clasificar.',
+    no_drugs_to_classify:        'Sin medicamentos a clasificar.',
     no_drugs_to_classify_detail: 'No se detectaron medicamentos en la nota cl&iacute;nica (Paso 2).',
 
     /* Step 4 */
     kb_ready:             '<strong>Base de conocimiento lista.</strong>',
     kb_ready_detail:      function (c, v, d) { return c + ' patrones de cascada &middot; ' + v + ' modificadores VIH &middot; ' + d + ' interacciones DDI.'; },
-    no_cascades_title:    '&#10003; Sin se&ntilde;ales de cascada detectadas.',
+    no_cascades_title:    'Sin se&ntilde;ales de cascada detectadas.',
     no_cascades_detail:   'No se han identificado patrones de cascada terap&eacute;utica en la nota cl&iacute;nica.',
     conf_high:            'alto',
     conf_medium:          'medio',
@@ -199,11 +245,11 @@ const UI_STRINGS = {
     candidate_role_subsequent_intensification:       'Intensificaci&oacute;n posterior',
     candidate_role_subsequent_intensification_title: 'F&aacute;rmaco de la misma clase a&ntilde;adido m&aacute;s tarde junto al de "Respuesta inicial", para el mismo problema. No es un hallazgo repetido: son dos f&aacute;rmacos distintos evaluados de forma independiente.',
     risk_label:           'Riesgo:',
-    ddi_alert:            '&#9888; Alerta de interacci&oacute;n:',
-    clinical_action:      '&#128203; Acci&oacute;n cl&iacute;nica:',
+    ddi_alert:            'Alerta de interacci&oacute;n:',
+    clinical_action:      'Acci&oacute;n cl&iacute;nica:',
     detection_reason:     '&#128269; Motivo de detecci&oacute;n:',
-    cascade_count:        function (n) { return '&#128204;&nbsp;' + n + (n === 1 ? ' posible cascada terap&eacute;utica detectada' : ' posibles cascadas terap&eacute;uticas detectadas'); },
-    pharmacist_only_warning: '&#9888;&nbsp;Solo para revisi&oacute;n farmac&eacute;utica y cl&iacute;nica. No sustituye el juicio cl&iacute;nico profesional.',
+    cascade_count:        function (n) { return n + (n === 1 ? ' posible cascada terap&eacute;utica detectada' : ' posibles cascadas terap&eacute;uticas detectadas'); },
+    pharmacist_only_warning: 'Solo para revisi&oacute;n farmac&eacute;utica y cl&iacute;nica. No sustituye el juicio cl&iacute;nico profesional.',
 
     /* Step 5 */
     clinical_review_label: 'Revisi&oacute;n cl&iacute;nica:',
@@ -211,19 +257,19 @@ const UI_STRINGS = {
     tally_possible:        function (n) { return n + ' posible' + (n === 1 ? '' : 's'); },
     tally_discarded:       function (n) { return n + ' descartada' + (n === 1 ? '' : 's'); },
     tally_unreviewed:      function (n) { return n + ' sin revisar'; },
-    all_reviewed:          '&#10003; Todas revisadas',
-    recommended_action:    '&#128203; Acci&oacute;n recomendada:',
-    consider_also:         '&#128270; Considerar tambi&eacute;n:',
+    all_reviewed:          'Todas revisadas',
+    recommended_action:    'Acci&oacute;n recomendada:',
+    consider_also:         'Considerar tambi&eacute;n:',
     classify_label:        'Clasificar:',
-    btn_confirmed:         '&#10003;&nbsp;Cascada confirmada',
-    btn_possible:          '&#63;&nbsp;Cascada posible',
-    btn_discard:           '&#10005;&nbsp;Descartar',
-    review_warning:        '&#9888;&nbsp;Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.',
-    no_cascades_step5:        '&#10003; Sin se&ntilde;ales de cascada.',
+    btn_confirmed:         'Cascada confirmada',
+    btn_possible:          'Cascada posible',
+    btn_discard:           'Descartar',
+    review_warning:        'Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.',
+    no_cascades_step5:        'Sin se&ntilde;ales de cascada.',
     no_cascades_step5_detail: 'No se identificaron patrones de cascada terap&eacute;utica &mdash; no se requiere plan de actuaci&oacute;n.',
 
     /* Step 6 — report display */
-    report_title:           '&#128196;&nbsp;Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas',
+    report_title:           'Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas',
     section_case_data:      'Datos del caso y auditor&iacute;a',
     label_patient_id:       'ID de paciente',
     label_generated:        'Generado',
@@ -255,7 +301,7 @@ const UI_STRINGS = {
     main_interventions:     'Principales intervenciones sugeridas:',
     no_dominant_interventions: 'No hay intervenciones dominantes con los datos actuales.',
     section_findings:       function (n) { return 'Hallazgos farmacoterap&eacute;uticos (' + n + ')'; },
-    no_cascades_report:     '&#10003;&nbsp;Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.',
+    no_cascades_report:     'Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.',
 
     /* Verification status badges */
     ver_confirmed:   'Confirmada',
@@ -351,11 +397,11 @@ const UI_STRINGS = {
     missing_information_lbl: 'Información ausente que limita la valoración:',
 
     /* Export buttons */
-    btn_copy_record:  '&#128203;&nbsp;Copiar para historia cl&iacute;nica',
-    btn_save_pdf:     '&#128438;&nbsp;Guardar como PDF',
-    btn_export_json:  '&#8681;&nbsp;Exportar JSON',
-    btn_export_csv:   '&#8681;&nbsp;Exportar CSV',
-    decision_support_warning: '&#9888;&nbsp;Solo apoyo a la decisi&oacute;n cl&iacute;nica. Su cualificaci&oacute;n y clasificaci&oacute;n regulatoria est&aacute;n pendientes de evaluaci&oacute;n formal; no dispone de marcado CE. No utilizar identificadores reales de pacientes.',
+    btn_copy_record:  'Copiar para historia cl&iacute;nica',
+    btn_save_pdf:     'Guardar como PDF',
+    btn_export_json:  'Exportar JSON',
+    btn_export_csv:   'Exportar CSV',
+    decision_support_warning: 'Solo apoyo a la decisi&oacute;n cl&iacute;nica. Su cualificaci&oacute;n y clasificaci&oacute;n regulatoria est&aacute;n pendientes de evaluaci&oacute;n formal; no dispone de marcado CE. No utilizar identificadores reales de pacientes.',
 
     /* Toast messages */
     toast_storage_full:        'Almacenamiento lleno &mdash; el autoguardado ha fallado. Exporte el caso ahora para no perder datos.',
@@ -467,11 +513,57 @@ const UI_STRINGS = {
   },
 
   en: {
+    /* Redesign (presentation only) */
+    chain_index_lbl:   'Index drug',
+    chain_ade_lbl:     'Intermediate problem',
+    chain_cascade_lbl: 'Subsequent drug',
+    rule_id_lbl:       'Rule',
+    report_export_lbl: 'Export or share',
+    saved_locally:     function (t) { return 'Saved in this browser · ' + t; },
+    wf_pending:        'Pending',
+    wf_waiting_kb:     'Waiting for KB',
+    wf_note_chars:     function (n) { return n.toLocaleString('en-GB') + ' characters'; },
+    wf_review_confirmed: 'Review confirmed',
+    wf_review_draft:   'Review in draft',
+    wf_classified:     function (n, m) { return n + ' of ' + m + ' classified'; },
+    wf_signals:        function (n) { return n === 0 ? 'No signals' : n + (n === 1 ? ' signal' : ' signals'); },
+    wf_reviewed:       function (n, m) { return n + ' of ' + m + ' verified'; },
+    wf_report_ready:   'Available',
+    kb_inv_title:      'Loaded files',
+    kb_inv_coreCascades:      'General cascades',
+    kb_inv_vihModifiers:      'HIV-specific cascades',
+    kb_inv_ddiWatchlist:      'Monitored interactions',
+    kb_inv_symptomDictionary: 'Symptom dictionary',
+    kb_inv_clinicalProblems:  'Clinical problems',
+    kb_inv_clinicalModifiers: 'Clinical modifiers',
+    kb_inv_drugDictionary:    'Drug dictionary',
+    kb_inv_drugCombinations:  'Fixed-dose combinations',
+    kb_inv_active_rules: 'active rules',
+    kb_inv_entries:    'entries',
+    kb_inv_not_loaded: 'Not loaded',
+    kb_track_lbl:      function (m) { return m + ' environment'; },
+    kb_search_label:   'Search rule, drug or problem',
+    kb_search_placeholder: 'e.g. amlodipine, oedema, CC004',
+    kb_filter_source:  'Source',
+    kb_filter_status:  'Knowledge validation',
+    kb_filter_all:     'All',
+    kb_source_core:    'General cascades',
+    kb_source_hiv:     'HIV-specific',
+    kb_results:        function (n, t) { return n + ' of ' + t + ' rules'; },
+    kb_no_results:     'No rule matches the search.',
+    kb_mechanism:      'Mechanism',
+    kb_index_examples: 'Index drug examples',
+    kb_cascade_examples: 'Subsequent drug examples',
+    kb_action:         'Guidance recorded in the KB',
+    kb_references:     'References',
+    kb_no_references:  'No bibliographic reference recorded.',
+    kb_unavailable:    'The knowledge base is not loaded.',
+    kb_catalog_note:   'Only active rules are shown: rules merged during the KB audit are not executed. Drugs are listed by English INN, as recorded in the KB; search also accepts Spanish names and brands from the dictionary.',
     /* Navigation */
     step_counter:     function (n) { return 'Step ' + n + ' of 6'; },
-    btn_prev:         '&#8592; Previous',
-    btn_next:         'Next &#8594;',
-    btn_finish:       '&#10003; Finish',
+    btn_prev:         'Previous',
+    btn_next:         'Next',
+    btn_finish:       'Finish',
 
     /* Step nav labels */
     nav_step1: 'Data',
@@ -482,12 +574,12 @@ const UI_STRINGS = {
     nav_step6: 'Report',
 
     /* Step titles */
-    step1_title: '&#128203; Step 1 &mdash; Case Data',
-    step2_title: '&#128138; Step 2 &mdash; Medications &amp; Active Problems',
-    step3_title: '&#128230; Step 3 &mdash; Pharmacological Classification',
-    step4_title: '&#128269; Step 4 &mdash; Possible Therapeutic Cascades',
-    step5_title: '&#128221; Step 5 &mdash; Clinical Verification',
-    step6_title: '&#128196; Step 6 &mdash; Pharmacotherapy Plan &amp; Report',
+    step1_title: 'Case data',
+    step2_title: 'Medications &amp; active problems',
+    step3_title: 'Pharmacological classification',
+    step4_title: 'Possible therapeutic cascades',
+    step5_title: 'Clinical verification',
+    step6_title: 'Pharmacotherapy plan &amp; report',
 
     /* Onboarding */
     onboarding_title:       'How the auditor works &mdash; in 3 steps',
@@ -497,8 +589,8 @@ const UI_STRINGS = {
     onboarding_step2_body:  'It cross-references drugs against the knowledge base: identifies whether any medication may be a consequence of an adverse effect of another.',
     onboarding_step3_title: 'Get a pharmacotherapy plan',
     onboarding_step3_body:  'Classify each finding, add your clinical notes, and export a structured report for the care team.',
-    onboarding_hint:        '&#8594; Try the demo case &mdash; an HIV patient on ART with an antihypertensive causing oedema treated with a diuretic.',
-    onboarding_demo_btn:    '&#9654; Try demo',
+    onboarding_hint:        'Try the demo case &mdash; an HIV patient on ART with an antihypertensive causing oedema treated with a diuretic.',
+    onboarding_demo_btn:    'Try demo',
 
     /* Step 1 form */
     note_label:       'Clinical note',
@@ -506,16 +598,16 @@ const UI_STRINGS = {
     note_hint:        'No real patient identifiers. Data is stored only in this browser.',
 
     /* Common warnings */
-    kb_unavailable_title:  '&#9888; Knowledge base unavailable.',
+    kb_unavailable_title:  'Knowledge base unavailable.',
     kb_unavailable_detail: 'Check KB status in the footer and reload if necessary.',
-    note_empty_title:          '&#9888; Clinical note is empty.',
+    note_empty_title:          'Clinical note is empty.',
     note_empty_detail:         'Enter the clinical note in Step 1 before continuing.',
     note_empty_detail_report:  'Enter the clinical note in Step 1 to generate the report.',
 
     /* Step 2 */
     drugs_section_label:           'Detected medications',
     inactive_drugs_label:          'Medications mentioned but not active',
-    no_drugs_title:                '&#10003; No medications identified.',
+    no_drugs_title:                'No medications identified.',
     no_drugs_detail:               'The note may use brand names, abbreviations or drugs not included in the current KB.',
     drugs_detected:                function (n) { return '<strong>' + n + ' medication' + (n === 1 ? '' : 's') + ' detected</strong> in the clinical note.'; },
     med_review_title:              'Pharmacist medication review',
@@ -573,14 +665,14 @@ const UI_STRINGS = {
     problem_review_temporality_historical:   'Previous / chronic',
     problem_review_temporality_undetermined: 'Undetermined',
     symptoms_dict_missing:         'Active problems &mdash; <em style="color:#e67e22;font-style:normal;">dictionary not loaded</em>',
-    symptoms_dict_unavailable_title:  '&#9888;&nbsp;<strong>Symptom dictionary unavailable.</strong>',
+    symptoms_dict_unavailable_title:  '<strong>Symptom dictionary unavailable.</strong>',
     symptoms_dict_unavailable_detail: 'Reload the page or check KB status.',
     symptoms_zero_label:           'Active problems detected (0)',
-    no_symptoms:                   '&#10003;&nbsp;No clinical problems detected in the note.',
+    no_symptoms:                   'No clinical problems detected in the note.',
     symptoms_count:                function (a, i) { return 'Problems detected (' + a + ' active' + (i ? ', ' + i + ' inactive' : '') + ')'; },
     inactive_mentions:             'Inactive mentions (negated or historical):',
     none:                          'None',
-    detection_warning:             '&#9888;&nbsp;Detection combines keywords, synonyms, brand names, and simple clinical rules. Inferred problems are shown as suspected/under study and require professional validation.',
+    detection_warning:             'Detection combines keywords, synonyms, brand names, and simple clinical rules. Inferred problems are shown as suspected/under study and require professional validation.',
 
     /* Step 2 — rule-based clinical problems (e.g. urologic/renal) */
     problem_category_lbl:          'Category:',
@@ -602,13 +694,13 @@ const UI_STRINGS = {
         mapped + ' classified into ' + groups + ' pharmacological group' + (groups === 1 ? '' : 's') +
         ', ' + unmapped + ' unclassified.</strong>';
     },
-    no_drugs_to_classify:        '&#10003; No medications to classify.',
+    no_drugs_to_classify:        'No medications to classify.',
     no_drugs_to_classify_detail: 'No medications were detected in the clinical note (Step 2).',
 
     /* Step 4 */
     kb_ready:             '<strong>Knowledge base ready.</strong>',
     kb_ready_detail:      function (c, v, d) { return c + ' cascade patterns &middot; ' + v + ' HIV modifiers &middot; ' + d + ' DDI interactions.'; },
-    no_cascades_title:    '&#10003; No cascade signals detected.',
+    no_cascades_title:    'No cascade signals detected.',
     no_cascades_detail:   'No therapeutic cascade patterns identified in the clinical note.',
     conf_high:            'high',
     conf_medium:          'medium',
@@ -622,11 +714,11 @@ const UI_STRINGS = {
     candidate_role_subsequent_intensification:       'Later intensification',
     candidate_role_subsequent_intensification_title: 'A drug of the same class added later alongside the "Initial response" one, for the same problem. This is not a repeated finding: they are two distinct drugs evaluated independently.',
     risk_label:           'Risk:',
-    ddi_alert:            '&#9888; Interaction alert:',
-    clinical_action:      '&#128203; Clinical action:',
+    ddi_alert:            'Interaction alert:',
+    clinical_action:      'Clinical action:',
     detection_reason:     '&#128269; Detection reason:',
-    cascade_count:        function (n) { return '&#128204;&nbsp;' + n + ' possible therapeutic cascade' + (n === 1 ? '' : 's') + ' detected'; },
-    pharmacist_only_warning: '&#9888;&nbsp;For pharmaceutical and clinical review only. Does not replace professional clinical judgement.',
+    cascade_count:        function (n) { return n + ' possible therapeutic cascade' + (n === 1 ? '' : 's') + ' detected'; },
+    pharmacist_only_warning: 'For pharmaceutical and clinical review only. Does not replace professional clinical judgement.',
 
     /* Step 5 */
     clinical_review_label: 'Clinical review:',
@@ -634,19 +726,19 @@ const UI_STRINGS = {
     tally_possible:        function (n) { return n + ' possible'; },
     tally_discarded:       function (n) { return n + ' discarded'; },
     tally_unreviewed:      function (n) { return n + ' unreviewed'; },
-    all_reviewed:          '&#10003; All reviewed',
-    recommended_action:    '&#128203; Recommended action:',
-    consider_also:         '&#128270; Also consider:',
+    all_reviewed:          'All reviewed',
+    recommended_action:    'Recommended action:',
+    consider_also:         'Also consider:',
     classify_label:        'Classify:',
-    btn_confirmed:         '&#10003;&nbsp;Confirmed cascade',
-    btn_possible:          '&#63;&nbsp;Possible cascade',
-    btn_discard:           '&#10005;&nbsp;Discard',
-    review_warning:        '&#9888;&nbsp;Review and classify each signal. For pharmaceutical and clinical use only.',
-    no_cascades_step5:        '&#10003; No cascade signals.',
+    btn_confirmed:         'Confirmed cascade',
+    btn_possible:          'Possible cascade',
+    btn_discard:           'Discard',
+    review_warning:        'Review and classify each signal. For pharmaceutical and clinical use only.',
+    no_cascades_step5:        'No cascade signals.',
     no_cascades_step5_detail: 'No therapeutic cascade patterns identified &mdash; no action plan required.',
 
     /* Step 6 — report display */
-    report_title:           '&#128196;&nbsp;Therapeutic Cascade Audit Report',
+    report_title:           'Therapeutic Cascade Audit Report',
     section_case_data:      'Case data &amp; audit',
     label_patient_id:       'Patient ID',
     label_generated:        'Generated',
@@ -678,7 +770,7 @@ const UI_STRINGS = {
     main_interventions:     'Main suggested interventions:',
     no_dominant_interventions: 'No dominant interventions with current data.',
     section_findings:       function (n) { return 'Pharmacotherapy findings (' + n + ')'; },
-    no_cascades_report:     '&#10003;&nbsp;No therapeutic cascade signals detected.',
+    no_cascades_report:     'No therapeutic cascade signals detected.',
 
     /* Verification status badges */
     ver_confirmed:   'Confirmed',
@@ -766,11 +858,11 @@ const UI_STRINGS = {
     missing_information_lbl: 'Missing information that limits assessment:',
 
     /* Export buttons */
-    btn_copy_record:  '&#128203;&nbsp;Copy to medical record',
-    btn_save_pdf:     '&#128438;&nbsp;Save as PDF',
-    btn_export_json:  '&#8681;&nbsp;Export JSON',
-    btn_export_csv:   '&#8681;&nbsp;Export CSV',
-    decision_support_warning: '&#9888;&nbsp;Decision support only. Regulatory qualification and classification remain subject to formal assessment; the tool does not bear CE marking. Do not use real patient identifiers.',
+    btn_copy_record:  'Copy to medical record',
+    btn_save_pdf:     'Save as PDF',
+    btn_export_json:  'Export JSON',
+    btn_export_csv:   'Export CSV',
+    decision_support_warning: 'Decision support only. Regulatory qualification and classification remain subject to formal assessment; the tool does not bear CE marking. Do not use real patient identifiers.',
 
     /* Toast messages */
     toast_storage_full:        'Storage full &mdash; auto-save failed. Export your case now to avoid data loss.',
@@ -962,6 +1054,7 @@ function saveState() {
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
     localStorage.setItem(LS_LANG_KEY, currentLanguage);
+    markSaved();
   } catch (err) {
     console.error('[Storage] Could not save state:', err);
     /* QuotaExceededError means browser storage is full — surface this to the user
@@ -972,11 +1065,25 @@ function saveState() {
   }
 }
 
+/* Visible confirmation that the case was persisted locally (HAL-12): the
+ * indicator previously existed in the DOM but was never updated. */
+function markSaved() {
+  if (typeof document === 'undefined') return;
+  var el = document.getElementById('save-indicator');
+  if (!el) return;
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2, '0');
+  var mm = String(now.getMinutes()).padStart(2, '0');
+  el.innerHTML = tUI('saved_locally', hh + ':' + mm);
+  el.classList.add('is-visible');
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
+    /* No saved case: fall through so the language preference below is still
+       restored (an early return here used to skip it). */
+    const saved = raw ? JSON.parse(raw) : {};
     if (typeof saved.patientId === 'string')    state.patientId    = saved.patientId;
     if (typeof saved.clinicalNote === 'string') state.clinicalNote = saved.clinicalNote;
     if (window.MedicationReview) state.medicationReview = window.MedicationReview.sanitize(saved.medicationReview);
@@ -1728,7 +1835,7 @@ const STEP_CONTENT = {
         onboarding = (
           '<div class="onboarding-panel" id="onboarding-panel">' +
             '<div class="onboarding-header">' +
-              '<span class="onboarding-icon">&#128301;</span>' +
+              '<span class="onboarding-icon" aria-hidden="true">' + ICONS.compass + '</span>' +
               '<strong>' + tUI('onboarding_title') + '</strong>' +
             '</div>' +
             '<div class="onboarding-steps">' +
@@ -1765,11 +1872,14 @@ const STEP_CONTENT = {
         onboarding +
         '<div class="form-group">' +
           '<label class="form-label" for="note-input">' + tUI('note_label') + '</label>' +
-          '<textarea id="note-input" class="textarea-clinical" ' +
+          '<textarea id="note-input" class="textarea-clinical" spellcheck="false" aria-describedby="note-hint note-meta" ' +
             'placeholder="' + tUI('note_placeholder') + '">' +
             escHtml(state.clinicalNote) +
           '</textarea>' +
-          '<div class="form-hint">' + tUI('note_hint') + '</div>' +
+          '<div class="form-foot">' +
+            '<div class="form-hint" id="note-hint">' + tUI('note_hint') + '</div>' +
+            '<div class="form-meta" id="note-meta" aria-live="off">' + tUI('wf_note_chars', (state.clinicalNote || '').length) + '</div>' +
+          '</div>' +
         '</div>'
       );
     },
@@ -1783,6 +1893,9 @@ const STEP_CONTENT = {
           invalidateDetectedCascades();
           invalidateDrugResolver();
           saveState();
+          var meta = el.querySelector('#note-meta');
+          if (meta) meta.innerHTML = tUI('wf_note_chars', ta.value.length);
+          updateWorkflowStatus({ lightweight: true });
         });
       }
     }
@@ -1835,7 +1948,7 @@ const STEP_CONTENT = {
         );
       } else {
         drugSection = (
-          '<div class="callout callout-info" style="margin-bottom:.7rem;">' +
+          '<div class="callout callout-info">' +
             tUI('drugs_detected', drugs.length) +
           '</div>'
         );
@@ -1845,7 +1958,7 @@ const STEP_CONTENT = {
 
       var inactiveRows = medicationModel.inactiveOrNegatedMedications || [];
       if (inactiveRows.length) {
-        drugSection += '<details style="margin:.25rem 0 .7rem"><summary style="cursor:pointer;color:#5d6d7e;font-weight:600;">' +
+        drugSection += '<details class="disclosure"><summary>' +
           escHtml(tUI('inactive_drugs_label')) + ' (' + inactiveRows.length + ')</summary><ul>' +
           inactiveRows.map(function (m) { return '<li><strong>' + escHtml(m.normalized_name) + '</strong> — ' +
             escHtml(m.status) + (m.condition ? ' (' + escHtml(m.condition) + ')' : '') +
@@ -1870,17 +1983,13 @@ const STEP_CONTENT = {
           var info = comboBrands[brand];
           var clsSuffix = info.cls ? ' &mdash; ' + escHtml(info.cls) : '';
           return (
-            '<div style="font-size:.82rem;color:#333;padding:.15rem 0;">' +
+            '<li>' +
               '<strong>' + escHtml(brand) + '</strong> &rarr; ' +
               escHtml(info.ingredients.join(' + ')) + clsSuffix +
-            '</div>'
+            '</li>'
           );
         }).join('');
-        drugSection += (
-          '<div style="margin-top:.3rem;padding:.4rem .6rem;background:#f6f8fa;border-radius:4px;border:1px solid #d0d7de;">' +
-            comboRows +
-          '</div>'
-        );
+        drugSection += '<ul class="combo-list">' + comboRows + '</ul>';
       }
 
       /* ── Symptom extraction — uses extractSymptoms() which also caches in state ── */
@@ -1903,7 +2012,7 @@ const STEP_CONTENT = {
       if (!state.kb.symptomDictionary) {
         symCountLabel = tUI('symptoms_dict_missing');
         symptomSection = (
-          '<div class="callout callout-warning" style="font-size:.84rem;">' +
+          '<div class="callout callout-warning">' +
             tUI('symptoms_dict_unavailable_title') + ' ' +
             tUI('symptoms_dict_unavailable_detail') +
           '</div>' + clinicalProblemsHtml
@@ -1924,39 +2033,25 @@ const STEP_CONTENT = {
         var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
         symCountLabel = tUI('symptoms_count', activeSyms.length + clinicalProblems.length, inactiveSyms.length);
 
-        /* Category → colour mapping */
-        var catColor = {
-          gastrointestinal: '#7d6608',
-          anticholinergic:  '#6c3483',
-          neurological:     '#154360',
-          safety:           '#922b21',
-          cardiovascular:   '#1a5276',
-          urological:       '#145a32'
-        };
-
+        /* Category is shown as text inside each tag; the tint only
+           reinforces it (never colour alone). Inactive mentions are
+           rendered separately and visibly muted. */
         var renderSymTag = function (s, inactive) {
-          var bg    = inactive ? '#bdc3c7' : (catColor[s.category] || '#555');
-          var color = inactive ? '#555'    : '#fff';
+          var category = String(s.category || '').toLowerCase().replace(/[^a-z_-]/g, '');
           var label = escHtml(s.term);
           if (s.matched_term && s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
-            label += ' <span style="font-size:.72rem;opacity:.8;">(' + escHtml(s.matched_term) + ')</span>';
+            label += ' <span class="sym-tag__matched">(' + escHtml(s.matched_term) + ')</span>';
           }
           var catLabel = s.category
-            ? '<span style="display:block;font-size:.67rem;opacity:.82;margin-top:.1rem;font-weight:400;">' +
-                escHtml(s.category) + '</span>'
+            ? '<span class="sym-tag__meta">' + escHtml(s.category) + '</span>'
             : '';
           var negBadge = inactive
-            ? '<span style="display:block;font-size:.63rem;font-weight:400;margin-top:.08rem;' +
-                'color:#777;font-style:italic;">' +
-                escHtml(s.reason || 'non-active') + '</span>'
+            ? '<span class="sym-tag__meta sym-tag__meta--reason">' + escHtml(s.reason || 'non-active') + '</span>'
             : '';
           return (
-            '<span style="display:inline-block;background:' + bg + ';color:' + color + ';' +
-              'border-radius:4px;padding:.28rem .65rem;margin:.25rem .18rem;font-size:.84rem;' +
-              'font-weight:600;vertical-align:top;line-height:1.3;' +
-              (inactive ? 'opacity:.7;' : '') +
-              '" title="' + escHtml(s.cascade_relevance || '') + '">' +
-              label + catLabel + negBadge +
+            '<span class="sym-tag' + (inactive ? ' is-inactive' : ' sym-tag--' + category) + '"' +
+              ' title="' + escHtml(s.cascade_relevance || '') + '">' +
+              '<span class="sym-tag__term">' + label + '</span>' + catLabel + negBadge +
             '</span>'
           );
         };
@@ -1965,32 +2060,31 @@ const STEP_CONTENT = {
         var symTagsInactive = inactiveSyms.map(function (s) { return renderSymTag(s, true); }).join('');
 
         var inactiveRow = inactiveSyms.length
-          ? '<div style="margin-top:.45rem;">' +
-              '<span style="font-size:.72rem;color:#aaa;font-style:italic;">' + tUI('inactive_mentions') + '</span>' +
+          ? '<div class="sym-tags sym-tags--inactive">' +
+              '<span class="sym-tags__label">' + tUI('inactive_mentions') + '</span>' +
               symTagsInactive +
             '</div>'
           : '';
 
         symptomSection = (
           clinicalProblemsHtml +
-          '<div style="padding:.2rem 0 .65rem;">' +
-            (activeSyms.length ? symTagsActive : '<span style="font-size:.83rem;color:#888;">' + tUI('none') + '</span>') +
-            inactiveRow +
-          '</div>'
+          '<div class="sym-tags">' +
+            (activeSyms.length ? symTagsActive : '<span class="text-muted">' + tUI('none') + '</span>') +
+          '</div>' +
+          inactiveRow
         );
       }
 
-      var divider = '<hr style="border:none;border-top:1px solid #eee;margin:.9rem 0;">';
-
       return (
-        '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
-          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + tUI('drugs_section_label') + '</div>' +
-        drugSection +
-        divider +
-        '<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;' +
-          'letter-spacing:.06em;color:#888;margin-bottom:.5rem;">' + symCountLabel + '</div>' +
-        symptomSection +
-        '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.83rem;">' +
+        '<section class="content-block">' +
+          '<h3 class="section-label">' + tUI('drugs_section_label') + '</h3>' +
+          drugSection +
+        '</section>' +
+        '<section class="content-block">' +
+          '<h3 class="section-label">' + symCountLabel + '</h3>' +
+          symptomSection +
+        '</section>' +
+        '<div class="callout callout-warning">' +
           tUI('detection_warning') +
         '</div>'
       );
@@ -2083,36 +2177,26 @@ const STEP_CONTENT = {
 
       var rows = normalized.map(function (n) {
         var classCell = n.class
-          ? '<span style="display:inline-block;background:#1e8449;color:#fff;border-radius:3px;' +
-              'padding:.18rem .55rem;font-size:.82rem;font-weight:600;">' + escHtml(n.class) + '</span>'
-          : '<span style="color:#999;font-size:.82rem;font-style:italic;">' + tUI('drug_class_none') + '</span>';
+          ? '<span class="class-pill">' + escHtml(n.class) + '</span>'
+          : '<span class="text-muted"><em>' + tUI('drug_class_none') + '</em></span>';
         return (
-          '<tr style="border-bottom:1px solid #eef1f4;">' +
-            '<td style="padding:.45rem .6rem;font-size:.88rem;font-weight:600;white-space:nowrap;">' +
-              escHtml(n.drug) +
-            '</td>' +
-            '<td style="padding:.45rem .4rem;color:#666;font-size:.82rem;text-align:center;">' +
-              '&rarr;' +
-            '</td>' +
-            '<td style="padding:.45rem .6rem;">' + classCell + '</td>' +
+          '<tr>' +
+            '<th scope="row" class="data-table__drug">' + escHtml(n.drug) + '</th>' +
+            '<td>' + classCell + '</td>' +
           '</tr>'
         );
       }).join('');
 
       return (
-        '<div class="callout callout-info" style="margin-bottom:.85rem;">' +
+        '<div class="callout callout-info">' +
           tUI('class_summary', medications.length, mappedCount, groupCount, unmappedCount) +
         '</div>' +
-        '<div style="overflow-x:auto;">' +
-          '<table style="width:100%;border-collapse:collapse;font-size:.88rem;' +
-            'border:1px solid #d0d7de;border-radius:5px;background:#fff;">' +
+        '<div class="table-scroll">' +
+          '<table class="data-table">' +
             '<thead>' +
-              '<tr style="background:#f6f8fa;border-bottom:2px solid #d0d7de;">' +
-                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">' + tUI('col_drug') + '</th>' +
-                '<th style="padding:.45rem .4rem;width:2rem;"></th>' +
-                '<th style="padding:.45rem .6rem;text-align:left;font-size:.8rem;' +
-                  'color:#57606a;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">' + tUI('col_class') + '</th>' +
+              '<tr>' +
+                '<th scope="col">' + tUI('col_drug') + '</th>' +
+                '<th scope="col">' + tUI('col_class') + '</th>' +
               '</tr>' +
             '</thead>' +
             '<tbody>' + rows + '</tbody>' +
@@ -2143,8 +2227,13 @@ const STEP_CONTENT = {
         );
       }
 
-      var cCount = (state.kb.coreCascades.cascades || []).length;
-      var vCount = (state.kb.vihModifiers.art_related_cascades || []).length;
+      /* Count only rules the engine actually executes: entries merged
+         during the KB audit stay in the file for traceability but never
+         fire (ClinicalEngine.isActiveCascadeEntry), so they are not shown
+         as available patterns. Display-only; detection is unaffected. */
+      var isActiveRule = function (entry) { return entry && entry.status !== 'merged'; };
+      var cCount = (state.kb.coreCascades.cascades || []).filter(isActiveRule).length;
+      var vCount = (state.kb.vihModifiers.art_related_cascades || []).filter(isActiveRule).length;
       var dCount = (state.kb.ddiWatchlist.interactions || []).length;
 
       var kbInfo = (
@@ -2160,17 +2249,17 @@ const STEP_CONTENT = {
          Always shown, even with zero cascades — these are independent of
          cascade detection (e.g. anticholinergic burden, NSAID duplicity). */
       var globalAlertsHtml = (
-        '<div style="margin-top:1rem;">' +
-          '<h3 style="margin:0 0 .5rem;font-size:.93rem;color:#2c3e50;">' + tUI('section_global_alerts') + '</h3>' +
+        '<section class="content-block">' +
+          '<h3 class="section-title">' + tUI('section_global_alerts') + '</h3>' +
           renderGlobalAlertsSection(model.globalMedicationAlerts) +
-        '</div>'
+        '</section>'
       );
       var missingInfoHtml = renderMissingInformationSection(model.missingInformation);
 
       if (detected.length === 0) {
         return (
           kbInfo +
-          '<div class="callout callout-success" style="margin-top:.75rem;">' +
+          '<div class="callout callout-success">' +
             '<strong>' + tUI('no_cascades_title') + '</strong> ' +
             tUI('no_cascades_detail') +
           '</div>' +
@@ -2193,14 +2282,15 @@ const STEP_CONTENT = {
 
       return (
         kbInfo +
-        '<div style="margin-top:1rem;">' +
-          '<h3 style="margin:0 0 .7rem;font-size:.97rem;color:#2c3e50;">' +
-            tUI('cascade_count', detected.length) +
-          '</h3>' +
+        '<section class="content-block">' +
+          '<div class="results-head">' +
+            '<h3 class="section-title">' + tUI('cascade_count', detected.length) + '</h3>' +
+            renderClassificationSummaryHtml(detected) +
+          '</div>' +
           renderDimensionLegendHtml() +
           groupsHtml +
-        '</div>' +
-        '<div class="callout callout-warning" style="margin-top:.75rem;font-size:.84rem;">' +
+        '</section>' +
+        '<div class="callout callout-warning">' +
           tUI('pharmacist_only_warning') +
         '</div>' +
         globalAlertsHtml + missingInfoHtml
@@ -2239,35 +2329,34 @@ const STEP_CONTENT = {
         );
       }
 
-      /* ── Classification tally banner ── */
+      /* ── Classification tally ── */
       var cls = state.cascadeClassifications;
       var nConfirmed  = detected.filter(function (c) { return cls[c.candidate_id] === 'confirmed';   }).length;
       var nPossible   = detected.filter(function (c) { return cls[c.candidate_id] === 'possible';    }).length;
       var nNot        = detected.filter(function (c) { return cls[c.candidate_id] === 'not_cascade'; }).length;
       var nUnreviewed = detected.length - nConfirmed - nPossible - nNot;
+      var reviewedPct = detected.length ? Math.round(100 * (detected.length - nUnreviewed) / detected.length) : 0;
 
       var tallyHtml = (
-        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;' +
-          'padding:.65rem .9rem;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;' +
-          'font-size:.83rem;align-items:center;">' +
-          '<span style="color:#555;font-weight:600;margin-right:.2rem;">' + tUI('clinical_review_label') + '</span>' +
-          '<span style="background:#1e8449;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            tUI('tally_confirmed', nConfirmed) + '</span>' +
-          '<span style="background:#e67e22;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            tUI('tally_possible', nPossible) + '</span>' +
-          '<span style="background:#7f8c8d;color:#fff;border-radius:4px;padding:.1rem .45rem;font-weight:700;">' +
-            tUI('tally_discarded', nNot) + '</span>' +
-          (nUnreviewed > 0
-            ? '<span style="color:#888;margin-left:.15rem;">' + tUI('tally_unreviewed', nUnreviewed) + '</span>'
-            : '<span style="color:#1e8449;margin-left:.15rem;">' + tUI('all_reviewed') + '</span>') +
+        '<div class="tally" role="group" aria-label="' + escHtml(tUI('clinical_review_label')) + '">' +
+          '<div class="tally__head">' +
+            '<span class="tally__title">' + tUI('clinical_review_label') + '</span>' +
+            (nUnreviewed > 0
+              ? '<span class="tally__state">' + tUI('tally_unreviewed', nUnreviewed) + '</span>'
+              : '<span class="tally__state is-done">' + tUI('all_reviewed') + '</span>') +
+          '</div>' +
+          '<div class="progress" aria-hidden="true"><span class="progress__bar" style="width:' + reviewedPct + '%"></span></div>' +
+          '<div class="tally__counts">' +
+            '<span class="verdict-count verdict-count--confirmed">' + tUI('tally_confirmed', nConfirmed) + '</span>' +
+            '<span class="verdict-count verdict-count--possible">' + tUI('tally_possible', nPossible) + '</span>' +
+            '<span class="verdict-count verdict-count--discarded">' + tUI('tally_discarded', nNot) + '</span>' +
+          '</div>' +
         '</div>'
       );
 
       /* ── Per-cascade detail cards ── */
       var rows = detected.map(function (c) {
         var entry       = findCascadeEntry(c.cascade_id);
-        var recAction   = entry ? getLocalizedField(entry, 'recommended_first_action', currentLanguage) : '';
-        var clinNote    = entry ? getLocalizedField(entry, 'clinical_note', currentLanguage) : '';
         var ddiWarning  = currentLanguage === 'es' ? c.ddi_warning_es : c.ddi_warning;
         var diffHints   = (entry && Array.isArray(entry.differential_hints) && entry.differential_hints.length)
                           ? entry.differential_hints : [];
@@ -2276,61 +2365,21 @@ const STEP_CONTENT = {
         var presentation = CE.getRecommendationPresentation(c.classification, entry || {}, cls[c.candidate_id]);
         var actionText = currentLanguage === 'es' ? presentation.action_es : presentation.action_en;
 
-        /* Confidence badge */
-        var confColor   = c.confidence === 'high' ? '#27ae60' : c.confidence === 'medium' ? '#e67e22' : '#7f8c8d';
-        var confBadge   = (
-          '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + confColor + ';' +
-            'padding:.1rem .4rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;' +
-            'text-transform:uppercase;">' + escHtml(tUI('conf_' + c.confidence) || c.confidence) + '</span>'
-        );
-
         /* Resolve localized display name and ADE for Step 5 */
         var step5DisplayName = (currentLanguage === 'es' && c.cascade_name_es)
           ? c.cascade_name_es : c.cascade_name;
         var step5AdeDisplay = (currentLanguage === 'es' && c.ade_es)
           ? c.ade_es : (c.ade_en || '');
 
-        /* Cascade chain pill row */
-        var chain = (
-          '<div style="margin:.6rem 0;display:flex;align-items:center;flex-wrap:wrap;gap:.25rem;">' +
-            '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
-              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
-              escHtml(c.index_drug) + '</span>' +
-            '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>' +
-            (step5AdeDisplay
-              ? '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
-                  'padding:.2rem .6rem;font-size:.82rem;color:#7d6608;">' +
-                  escHtml(step5AdeDisplay) + '</span>' +
-                '<span style="color:#aaa;font-size:.8rem;">&rarr;</span>'
-              : '') +
-            '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
-              'padding:.2rem .6rem;font-weight:700;font-size:.85rem;">' +
-              escHtml(c.cascade_drug) + '</span>' +
-          '</div>'
-        );
-
-        /* DDI warning */
         var ddiHtml = ddiWarning
-          ? '<div style="background:#fdedec;border-left:3px solid #e74c3c;padding:.4rem .7rem;' +
-              'margin-top:.45rem;font-size:.82rem;color:#922b21;border-radius:0 3px 3px 0;">' +
-              '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiWarning) +
-            '</div>'
+          ? '<div class="note note--danger"><strong>' + tUI('ddi_alert') + '</strong> ' + escHtml(ddiWarning) + '</div>'
           : '';
-
-        /* Recommended action */
         var actionHtml = actionText
-          ? '<div style="background:#eaf4fb;border-left:3px solid #2980b9;padding:.4rem .7rem;' +
-              'margin-top:.45rem;font-size:.82rem;color:#1a5276;border-radius:0 3px 3px 0;">' +
-              '<strong>' + tUI('recommended_action') + '</strong>&nbsp;' + escHtml(actionText) +
-            '</div>'
+          ? '<div class="note note--action"><strong>' + tUI('recommended_action') + '</strong> ' + escHtml(actionText) + '</div>'
           : '';
-
-        /* Differential hints */
         var diffHtml = diffHints.length
-          ? '<div style="margin-top:.45rem;font-size:.81rem;color:#555;">' +
-              '<strong>' + tUI('consider_also') + '</strong>&nbsp;' +
-              escHtml(diffHints.join(' \u2022 ')) +
-            '</div>'
+          ? '<div class="note note--neutral"><strong>' + tUI('consider_also') + '</strong> ' +
+              escHtml(diffHints.join(' • ')) + '</div>'
           : '';
 
         /* Classification buttons — keyed by candidate_id, not cascade_id: a
@@ -2341,57 +2390,47 @@ const STEP_CONTENT = {
            overwrite every other candidate from the same rule. */
         var current = cls[c.candidate_id] || '';
         var id      = escHtml(c.candidate_id);   /* safe for HTML attr; IDs are alphanumeric/colon */
+        var groupLabelId = 'verdict-lbl-' + id.replace(/[^A-Za-z0-9_-]/g, '-');
 
-        function classBtn(value, label, activeColor, activeText) {
+        function classBtn(value, label) {
           var isActive = current === value;
           return (
-            '<button type="button" data-action="classify-cascade" data-cascade-id="' + id + '" data-classification="' + value + '" ' +
-              'style="font-size:.78rem;padding:.28rem .75rem;border-radius:4px;cursor:pointer;' +
-                'font-weight:' + (isActive ? '700' : '500') + ';' +
-                'background:' + (isActive ? activeColor : '#f0f0f0') + ';' +
-                'color:'      + (isActive ? activeText  : '#444')    + ';' +
-                'border:1px solid ' + (isActive ? activeColor : '#ccc') + ';' +
-                'transition:background .15s;">' +
-              label +
+            '<button type="button" class="verdict-btn verdict-btn--' + value + (isActive ? ' is-active' : '') + '" ' +
+              'data-action="classify-cascade" data-cascade-id="' + id + '" data-classification="' + value + '" ' +
+              'aria-pressed="' + (isActive ? 'true' : 'false') + '">' +
+              '<span class="verdict-btn__mark" aria-hidden="true"></span>' + label +
             '</button>'
           );
         }
 
         var classButtons = (
-          '<div style="display:flex;gap:.45rem;margin-top:.7rem;flex-wrap:wrap;align-items:center;">' +
-            '<span style="font-size:.78rem;color:#888;margin-right:.1rem;">' + tUI('classify_label') + '</span>' +
-            classBtn('confirmed',   tUI('btn_confirmed'), '#1e8449', '#fff') +
-            classBtn('possible',    tUI('btn_possible'),  '#e67e22', '#fff') +
-            classBtn('not_cascade', tUI('btn_discard'),   '#7f8c8d', '#fff') +
+          '<div class="verdict" role="group" aria-labelledby="' + groupLabelId + '">' +
+            '<span class="verdict__label" id="' + groupLabelId + '">' + tUI('classify_label') + '</span>' +
+            '<div class="verdict__options">' +
+              classBtn('confirmed',   tUI('btn_confirmed')) +
+              classBtn('possible',    tUI('btn_possible')) +
+              classBtn('not_cascade', tUI('btn_discard')) +
+            '</div>' +
           '</div>'
         );
 
-        /* Card border colour based on classification */
-        var borderColor = current === 'confirmed'  ? '#1e8449'
-                        : current === 'possible'   ? '#e67e22'
-                        : current === 'not_cascade'? '#bdc3c7'
-                        : '#d0d7de';
-
         return (
-          '<div style="border:2px solid ' + borderColor + ';border-radius:6px;padding:.9rem 1rem;' +
-            'margin-bottom:.85rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
-
-            /* Header */
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
-              'flex-wrap:wrap;gap:.35rem;">' +
-              '<span style="font-size:.93rem;font-weight:700;">' +
-                escHtml(step5DisplayName) + confBadge +
-              '</span>' +
-              '<code style="font-size:.75rem;color:#aaa;">' + escHtml(c.cascade_id) + '</code>' +
-            '</div>' +
-
-            chain + ddiHtml + actionHtml + diffHtml + classButtons +
-          '</div>'
+          '<article class="finding finding--review' + (current ? ' is-' + current : '') + '">' +
+            '<header class="finding__head">' +
+              '<h4 class="finding__title">' + escHtml(step5DisplayName) + '</h4>' +
+              '<div class="finding__meta">' +
+                confidenceBadgeHtml(c.confidence) +
+                '<code class="rule-id" title="' + escHtml(tUI('rule_id_lbl')) + '">' + escHtml(c.cascade_id) + '</code>' +
+              '</div>' +
+            '</header>' +
+            chainHtml(c.index_drug, step5AdeDisplay, c.cascade_drug) +
+            ddiHtml + actionHtml + diffHtml + classButtons +
+          '</article>'
         );
       });
 
       return (
-        '<div class="callout callout-warning" style="margin-bottom:.85rem;font-size:.84rem;">' +
+        '<div class="callout callout-warning">' +
           tUI('review_warning') +
         '</div>' +
         tallyHtml +
@@ -2424,14 +2463,12 @@ const STEP_CONTENT = {
       var now = r.generated_at.replace('T', ' ').split('.')[0] + ' UTC';
 
       /* ── Section helper ── */
-      function section(title, content) {
+      function section(title, content, modifier) {
         return (
-          '<div style="margin-bottom:1.1rem;">' +
-            '<div style="font-size:.78rem;font-weight:700;text-transform:uppercase;' +
-              'letter-spacing:.06em;color:#888;border-bottom:1px solid #eee;' +
-              'padding-bottom:.3rem;margin-bottom:.55rem;">' + title + '</div>' +
+          '<section class="report__section' + (modifier ? ' report__section--' + modifier : '') + '">' +
+            '<h4 class="report__section-title">' + title + '</h4>' +
             content +
-          '</div>'
+          '</section>'
         );
       }
 
@@ -2444,7 +2481,7 @@ const STEP_CONTENT = {
       var cascadeContent;
       if (r.cascades.length === 0) {
         cascadeContent = (
-          '<p style="color:#1e8449;font-size:.88rem;margin:.2rem 0;">' + tUI('no_cascades_report') + '</p>'
+          '<p class="report__empty">' + tUI('no_cascades_report') + '</p>'
         );
       } else {
         var groups = CLASSIFICATION_ORDER.map(function (level) {
@@ -2460,10 +2497,10 @@ const STEP_CONTENT = {
       }
 
       var summaryInterventions = (summary.top_interventions || []).length
-        ? '<ul style="margin:.35rem 0 0 1rem;">' +
+        ? '<ul class="report__list">' +
             summary.top_interventions.map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('') +
           '</ul>'
-        : '<p style="margin:.35rem 0 0;color:#6b7280;font-size:.82rem;">' + tUI('no_dominant_interventions') + '</p>';
+        : '<p class="text-muted">' + tUI('no_dominant_interventions') + '</p>';
 
       var provenance = r.input_provenance || {};
       var medReviewState = provenance.medication_review || {};
@@ -2474,106 +2511,87 @@ const STEP_CONTENT = {
       var problemChangeCount = professionalChanges.problems && professionalChanges.problems.counts
         ? professionalChanges.problems.counts.total : 0;
       var inputReviewHtml = (
-        '<div style="font-size:.84rem;line-height:1.55;">' +
-          '<div><strong>' + tUI('label_source_meds') + ':</strong> ' +
-            escHtml((provenance.source_medications || []).join(', ') || tUI('none_detected')) + '</div>' +
-          '<div><strong>' + tUI('label_effective_meds') + ':</strong> ' +
-            escHtml((provenance.effective_medications || []).join(', ') || tUI('none_detected')) + '</div>' +
-          '<div><strong>' + tUI('label_med_review') + ':</strong> ' +
-            (medReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</div>' +
-          '<div><strong>' + tUI('label_problem_review') + ':</strong> ' +
-            (problemReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</div>' +
-        '</div>'
+        '<dl class="report__dl">' +
+          '<dt>' + tUI('label_source_meds') + '</dt><dd>' +
+            escHtml((provenance.source_medications || []).join(', ') || tUI('none_detected')) + '</dd>' +
+          '<dt>' + tUI('label_effective_meds') + '</dt><dd>' +
+            escHtml((provenance.effective_medications || []).join(', ') || tUI('none_detected')) + '</dd>' +
+          '<dt>' + tUI('label_med_review') + '</dt><dd>' +
+            (medReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</dd>' +
+          '<dt>' + tUI('label_problem_review') + '</dt><dd>' +
+            (problemReviewState.applied ? tUI('review_applied_yes') : tUI('review_applied_no')) + '</dd>' +
+        '</dl>'
       );
       var professionalChangesHtml = (
-        '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' +
+        '<ul class="report__list">' +
           '<li>' + tUI('med_changes_count', medChangeCount) + '</li>' +
           '<li>' + tUI('problem_changes_count', problemChangeCount) + '</li>' +
           '<li>' + tUI('discarded_count', (r.discarded_findings || []).length) + '</li>' +
         '</ul>'
       );
       var limitationsHtml = (r.limitations || []).length
-        ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' +
+        ? '<ul class="report__list">' +
             r.limitations.map(function (item) {
               var message = currentLanguage === 'en' ? item.message_en : item.message_es;
               return '<li>' + escHtml(message || item.message_es || '') + '</li>';
             }).join('') + '</ul>'
-        : '<p style="font-size:.84rem;color:#68777e;">' + tUI('no_report_limitations') + '</p>';
+        : '<p class="text-muted">' + tUI('no_report_limitations') + '</p>';
 
-      /* ── Export buttons ── */
+      /* ── Export actions ── */
       var exportRow = (
-        '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;">' +
-          '<button type="button" data-action="copy-report" ' +
-            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
-              'background:#34495e;color:#fff;border:none;font-weight:600;">' +
-            tUI('btn_copy_record') +
-          '</button>' +
-          '<button type="button" data-action="print-report" ' +
-            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
-              'background:#8e44ad;color:#fff;border:none;font-weight:600;">' +
-            tUI('btn_save_pdf') +
-          '</button>' +
-          '<button type="button" data-action="export-report" data-format="json" ' +
-            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
-              'background:#2c3e50;color:#fff;border:none;font-weight:600;">' +
-            tUI('btn_export_json') +
-          '</button>' +
-          '<button type="button" data-action="export-report" data-format="csv" ' +
-            'style="font-size:.82rem;padding:.35rem .85rem;border-radius:4px;cursor:pointer;' +
-              'background:#1a7a4a;color:#fff;border:none;font-weight:600;">' +
-            tUI('btn_export_csv') +
-          '</button>' +
+        '<div class="report-actions" role="group" aria-label="' + escHtml(tUI('report_export_lbl')) + '">' +
+          '<span class="report-actions__label">' + tUI('report_export_lbl') + '</span>' +
+          '<div class="report-actions__buttons">' +
+            '<button type="button" class="btn btn-primary btn-sm" data-action="copy-report">' + ICONS.copy + tUI('btn_copy_record') + '</button>' +
+            '<button type="button" class="btn btn-secondary btn-sm" data-action="print-report">' + ICONS.print + tUI('btn_save_pdf') + '</button>' +
+            '<button type="button" class="btn btn-secondary btn-sm" data-action="export-report" data-format="json">' + ICONS.download + tUI('btn_export_json') + '</button>' +
+            '<button type="button" class="btn btn-secondary btn-sm" data-action="export-report" data-format="csv">' + ICONS.download + tUI('btn_export_csv') + '</button>' +
+          '</div>' +
         '</div>'
       );
 
+      var listOrEmpty = function (items, emptyKey) {
+        return items.length
+          ? '<ul class="report__list report__list--cols">' + items.map(function (d) { return '<li>' + escHtml(d) + '</li>'; }).join('') + '</ul>'
+          : '<p class="text-muted"><em>' + tUI(emptyKey) + '</em></p>';
+      };
+
       return (
-        '<div style="background:#fff;border:1px solid #d0d7de;border-radius:6px;' +
-          'padding:1.15rem 1.3rem;">' +
+        exportRow +
+        '<article class="report" aria-labelledby="report-title">' +
+          '<header class="report__header">' +
+            '<div class="report__brand" aria-hidden="true">' + ICONS.mark + '</div>' +
+            '<div>' +
+              '<p class="report__eyebrow">HIV Prescribing Cascade Auditor</p>' +
+              '<h3 class="report__title" id="report-title">' + tUI('report_title') + '</h3>' +
+            '</div>' +
+          '</header>' +
 
-          '<h3 style="margin:0 0 1rem;font-size:1rem;color:#2c3e50;">' +
-            tUI('report_title') +
-          '</h3>' +
+          '<dl class="report__meta">' +
+            '<div><dt>' + tUI('label_patient_id') + '</dt><dd>' +
+              (r.patient_id ? escHtml(r.patient_id) : '<em class="text-muted">' + tUI('not_set') + '</em>') + '</dd></div>' +
+            '<div><dt>' + tUI('label_generated') + '</dt><dd>' + escHtml(now) + '</dd></div>' +
+            '<div><dt>' + tUI('label_kb_version') + '</dt><dd>' + escHtml(r.kb_version) +
+              ' <span class="text-muted">(' + escHtml(r.kb_mode) + ')</span></dd></div>' +
+            '<div><dt>' + tUI('label_report_schema') + '</dt><dd>v' + escHtml(r.report_schema_version) + ' · ' + escHtml(r.language) + '</dd></div>' +
+          '</dl>' +
 
-          section(tUI('section_case_data'),
-            '<table style="font-size:.87rem;border-collapse:collapse;width:auto;">' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_patient_id') + '</td>' +
-                  '<td style="padding:.28rem 0;font-weight:700;">' +
-                    (r.patient_id ? escHtml(r.patient_id) : '<em style="color:#bbb;">' + tUI('not_set') + '</em>') +
-                  '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_generated') + '</td>' +
-                  '<td style="padding:.28rem 0;">' + escHtml(now) + '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_kb_version') + '</td>' +
-                  '<td style="padding:.28rem 0;">' +
-                    escHtml(r.kb_version) + '&nbsp;<span style="color:#bbb;font-size:.8rem;">(' + escHtml(r.kb_mode) + ')</span>' +
-                  '</td></tr>' +
-              '<tr><td style="padding:.28rem .5rem .28rem 0;color:#666;padding-right:1.5rem;">' + tUI('label_report_schema') + '</td>' +
-                  '<td style="padding:.28rem 0;">v' + escHtml(r.report_schema_version) + ' · ' + escHtml(r.language) + '</td></tr>' +
-            '</table>'
+          section(tUI('section_summary'),
+            '<div class="report-summary">' +
+              '<div class="stat"><span class="stat__value">' + summary.total_cascades + '</span><span class="stat__label">' + tUI('total_findings') + '</span></div>' +
+              '<div class="stat"><span class="stat__value">' + (summary.supported_cascades || 0) + '</span><span class="stat__label">' + tUI('label_plausible') + '</span></div>' +
+              '<div class="report-summary__interventions"><strong>' + tUI('main_interventions') + '</strong>' + summaryInterventions + '</div>' +
+            '</div>' +
+            '<div class="callout callout-warning">' + escHtml(summary.validation_warning) + '</div>',
+            'summary'
           ) +
 
           section(tUI('section_input_review'), inputReviewHtml) +
 
-          section(tUI('section_drugs', r.drugs_detected.length),
-            (r.drugs_detected.length
-              ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + r.drugs_detected.map(function (d) { return '<li>' + escHtml(d) + '</li>'; }).join('') + '</ul>'
-              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>')
-          ) +
-
-          section(tUI('section_classes', r.drug_classes.length),
-            (r.drug_classes.length
-              ? '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + r.drug_classes.map(function (g) { return '<li>' + escHtml(g) + '</li>'; }).join('') + '</ul>'
-              : '<em style="color:#aaa;font-size:.85rem;">' + tUI('not_classified') + '</em>')
-          ) +
-
-          section(tUI('section_summary'),
-            '<div style="font-size:.84rem;line-height:1.45;">' +
-              '<div><strong>' + tUI('total_findings') + '</strong> ' + summary.total_cascades + '</div>' +
-              '<div><strong>' + tUI('label_plausible') + '</strong> ' + (summary.supported_cascades || 0) + '</div>' +
-              '<div style="margin-top:.4rem;"><strong>' + tUI('main_interventions') + '</strong></div>' +
-              summaryInterventions +
-              '<div class="callout callout-warning" style="margin-top:.5rem;font-size:.8rem;">&#9888;&nbsp;' + escHtml(summary.validation_warning) + '</div>' +
-            '</div>'
-          ) +
+          '<div class="report__two-col">' +
+            section(tUI('section_drugs', r.drugs_detected.length), listOrEmpty(r.drugs_detected, 'none_detected')) +
+            section(tUI('section_classes', r.drug_classes.length), listOrEmpty(r.drug_classes, 'not_classified')) +
+          '</div>' +
 
           section(tUI('section_findings', r.cascade_count), cascadeContent) +
 
@@ -2583,12 +2601,10 @@ const STEP_CONTENT = {
 
           section(tUI('section_limitations_report'), limitationsHtml) +
 
-          '<div class="callout callout-warning" style="margin-top:.85rem;font-size:.82rem;">' +
-            tUI('decision_support_warning') +
-          '</div>' +
-
-          exportRow +
-        '</div>'
+          '<footer class="report__footer">' +
+            '<div class="callout callout-warning">' + tUI('decision_support_warning') + '</div>' +
+          '</footer>' +
+        '</article>'
       );
     }
   }
@@ -2599,11 +2615,19 @@ const STEP_CONTENT = {
    ============================================================ */
 function goTo(step) {
   if (step < 1 || step > 6) return;
+  var changed = state.step !== step;
   state.step = step;
   saveState();
+  showView('analysis');
   renderStepContent(step);
   updateStepNav(step);
   updateNavButtons(step);
+  if (changed && appReady) {
+    var heading = document.querySelector('#step-content .step-header h2');
+    if (heading) heading.focus({ preventScroll: true });
+    var main = document.getElementById('main-content');
+    if (main && main.getBoundingClientRect().top < 0) main.scrollIntoView({ block: 'start' });
+  }
 }
 
 function renderStepContent(step) {
@@ -2627,12 +2651,216 @@ function renderStepContent(step) {
       ' problem-review-downstream-warning">' + tUI(state.problemReview.status === 'confirmed' ? 'problem_review_applied' : 'problem_review_not_applied') + '</div>';
   }
   container.innerHTML =
-    '<div class="step-header"><h2>' + titleText + '</h2></div>' +
+    '<div class="step-header">' +
+      '<p class="step-eyebrow">' + tUI('step_counter', step) + '</p>' +
+      '<h2 tabindex="-1">' + titleText + '</h2>' +
+    '</div>' +
     '<div class="step-section">' + reviewBoundary + cfg.body() + '</div>';
 
   if (typeof cfg.onMount === 'function') {
     cfg.onMount(container);
   }
+  updateWorkflowStatus();
+}
+
+/* ============================================================
+   Workflow status (sidebar) — read-only summary of where the case
+   stands. Derives everything from state and the cached CaseModel
+   (the same getCaseModel() call Steps 2–6 use); never mutates
+   clinical state beyond what those steps already do.
+   ============================================================ */
+function setStepStatus(step, html, tone) {
+  var el = document.querySelector('[data-step-status="' + step + '"]');
+  if (!el) return;
+  el.innerHTML = html || '';
+  el.className = 'step-status' + (tone ? ' is-' + tone : '');
+}
+
+function updateWorkflowStatus(opts) {
+  if (typeof document === 'undefined') return;
+  opts = opts || {};
+  var hasNote = !!(state.clinicalNote && state.clinicalNote.trim());
+  var kbReady = !!(state.kb.coreCascades && state.kb.vihModifiers && state.kb.ddiWatchlist);
+  setStepStatus(1, hasNote ? tUI('wf_note_chars', state.clinicalNote.length) : tUI('wf_pending'), hasNote ? 'done' : '');
+  if (!hasNote || !kbReady || opts.lightweight) {
+    var waiting = hasNote && !kbReady ? tUI('wf_waiting_kb') : '';
+    [2, 3, 4, 5, 6].forEach(function (n) { setStepStatus(n, opts.lightweight && hasNote ? '' : waiting, ''); });
+    return;
+  }
+  try {
+    var model = getCaseModel(state.clinicalNote);
+    var medConfirmed = state.medicationReview && state.medicationReview.status === 'confirmed';
+    var probConfirmed = state.problemReview && state.problemReview.status === 'confirmed';
+    var reviewStarted = state.medicationReview || state.problemReview;
+    setStepStatus(2, reviewStarted
+      ? (medConfirmed && probConfirmed ? tUI('wf_review_confirmed') : tUI('wf_review_draft'))
+      : tUI('wf_pending'), medConfirmed && probConfirmed ? 'done' : '');
+    var meds = model.medications || [];
+    var classified = meds.filter(function (m) { return m.drug_class; }).length;
+    setStepStatus(3, meds.length ? tUI('wf_classified', classified, meds.length) : '', meds.length ? 'done' : '');
+    var signals = model.possibleCascades || [];
+    setStepStatus(4, tUI('wf_signals', signals.length), signals.length ? 'attention' : 'done');
+    var reviewed = signals.filter(function (c) { return !!state.cascadeClassifications[c.candidate_id]; }).length;
+    setStepStatus(5, signals.length ? tUI('wf_reviewed', reviewed, signals.length) : '',
+      signals.length && reviewed === signals.length ? 'done' : (signals.length ? 'attention' : ''));
+    setStepStatus(6, tUI('wf_report_ready'), '');
+  } catch (err) {
+    console.error('[Workflow] status could not be computed:', err);
+  }
+}
+
+/* ============================================================
+   Views — analysis / knowledge / about. Hash routes carry only a
+   view name (never clinical data), work on any static host and
+   survive reloads and direct links.
+   ============================================================ */
+var VIEWS = ['analysis', 'knowledge', 'about'];
+var appReady = false;
+var currentView = 'analysis';
+
+function showView(view) {
+  if (VIEWS.indexOf(view) === -1) view = 'analysis';
+  currentView = view;
+  if (typeof document === 'undefined') return;
+  VIEWS.forEach(function (v) {
+    var el = document.getElementById('view-' + v);
+    if (el) el.hidden = v !== view;
+  });
+  document.querySelectorAll('[data-view-link]').forEach(function (link) {
+    if (link.getAttribute('data-view-link') === view) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  document.body.setAttribute('data-active-view', view);
+  if (view === 'knowledge') renderKnowledgeView();
+  var wantedHash = '#' + view;
+  if (appReady && location.hash !== wantedHash && !(view === 'analysis' && !location.hash)) {
+    history.replaceState(null, '', wantedHash);
+  }
+}
+
+function routeFromHash() {
+  var view = (location.hash || '').replace('#', '');
+  if (view === 'main-content') return;
+  showView(VIEWS.indexOf(view) !== -1 ? view : 'analysis');
+}
+
+/* ============================================================
+   Knowledge-base view — read-only catalogue (kb-catalog.js)
+   ============================================================ */
+var kbViewState = { query: '', source: 'all', status: 'all' };
+
+function renderKnowledgeView() {
+  var body = document.getElementById('kb-view-body');
+  if (!body) return;
+  var Catalog = typeof window !== 'undefined' ? window.KBCatalog : null;
+  if (!Catalog || !state.kb.coreCascades) {
+    body.innerHTML = '<div class="callout callout-warning">' + tUI('kb_unavailable') + '</div>';
+    return;
+  }
+  var inventory = Catalog.inventory(state.kb).map(function (f) {
+    var unit = (f.key === 'coreCascades' || f.key === 'vihModifiers') ? tUI('kb_inv_active_rules') : tUI('kb_inv_entries');
+    return (
+      '<li class="inv-card' + (f.loaded ? '' : ' is-missing') + '">' +
+        '<span class="inv-card__label">' + tUI('kb_inv_' + f.key) + '</span>' +
+        (f.loaded
+          ? '<span class="inv-card__value">' + (f.count === null ? '—' : f.count) + ' <small>' + unit + '</small></span>' +
+            (f.version ? '<span class="inv-card__version">v' + escHtml(f.version) + '</span>' : '')
+          : '<span class="inv-card__value">' + tUI('kb_inv_not_loaded') + '</span>') +
+      '</li>'
+    );
+  }).join('');
+
+  var option = function (value, current, label) {
+    return '<option value="' + value + '"' + (value === current ? ' selected' : '') + '>' + label + '</option>';
+  };
+
+  body.innerHTML = (
+    '<section class="content-block">' +
+      '<div class="results-head">' +
+        '<h3 class="section-title">' + tUI('kb_inv_title') + '</h3>' +
+        '<span class="chip">' + escHtml(tUI('kb_track_lbl', state.kbMode)) + '</span>' +
+      '</div>' +
+      '<ul class="inv-grid">' + inventory + '</ul>' +
+    '</section>' +
+    '<section class="content-block">' +
+      '<div class="catalog-tools">' +
+        '<div class="field field--grow">' +
+          '<label class="field-label" for="kb-search">' + tUI('kb_search_label') + '</label>' +
+          '<input id="kb-search" class="input" type="search" autocomplete="off" spellcheck="false" ' +
+            'placeholder="' + tUI('kb_search_placeholder') + '" value="' + escHtml(kbViewState.query) + '">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label class="field-label" for="kb-filter-source">' + tUI('kb_filter_source') + '</label>' +
+          '<select id="kb-filter-source" class="input">' +
+            option('all', kbViewState.source, tUI('kb_filter_all')) +
+            option('core', kbViewState.source, tUI('kb_source_core')) +
+            option('hiv', kbViewState.source, tUI('kb_source_hiv')) +
+          '</select>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label class="field-label" for="kb-filter-status">' + tUI('kb_filter_status') + '</label>' +
+          '<select id="kb-filter-status" class="input">' +
+            option('all', kbViewState.status, tUI('kb_filter_all')) +
+            option('reviewed_source', kbViewState.status, tUI('knowledge_reviewed_source')) +
+            option('pending_review', kbViewState.status, tUI('knowledge_pending_review')) +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<p class="catalog-count" id="kb-results-count" role="status" aria-live="polite"></p>' +
+      '<div id="kb-results" class="catalog-list"></div>' +
+      '<p class="field-hint">' + tUI('kb_catalog_note') + '</p>' +
+    '</section>'
+  );
+
+  var rows = Catalog.buildRows(state.kb, currentLanguage);
+  var draw = function () {
+    var filtered = Catalog.filterRows(rows, kbViewState.query, { source: kbViewState.source, status: kbViewState.status });
+    var count = document.getElementById('kb-results-count');
+    if (count) count.innerHTML = tUI('kb_results', filtered.length, rows.length);
+    var list = document.getElementById('kb-results');
+    if (!list) return;
+    list.innerHTML = filtered.length ? filtered.map(renderCatalogRowHtml).join('')
+      : '<p class="empty-state">' + tUI('kb_no_results') + '</p>';
+  };
+  draw();
+
+  var search = document.getElementById('kb-search');
+  if (search) search.addEventListener('input', function () { kbViewState.query = search.value; draw(); });
+  var src = document.getElementById('kb-filter-source');
+  if (src) src.addEventListener('change', function () { kbViewState.source = src.value; draw(); });
+  var st = document.getElementById('kb-filter-status');
+  if (st) st.addEventListener('change', function () { kbViewState.status = st.value; draw(); });
+}
+
+function renderCatalogRowHtml(row) {
+  var examples = function (items) {
+    return items.length ? '<ul class="token-list">' + items.map(function (d) { return '<li>' + escHtml(d) + '</li>'; }).join('') + '</ul>' : '—';
+  };
+  return (
+    '<details class="catalog-item">' +
+      '<summary>' +
+        '<span class="catalog-item__id">' + escHtml(row.id) + '</span>' +
+        '<span class="catalog-item__name">' + escHtml(row.name) + '</span>' +
+        '<span class="catalog-item__tags">' +
+          '<span class="chip">' + tUI(row.source === 'hiv' ? 'kb_source_hiv' : 'kb_source_core') + '</span>' +
+          knowledgeValidationBadgeHtml(row.knowledge_validation_status) +
+        '</span>' +
+      '</summary>' +
+      '<div class="catalog-item__body">' +
+        chainHtml(row.index_class, row.ade, row.cascade_class) +
+        '<dl class="catalog-item__dl">' +
+          (row.mechanism ? '<dt>' + tUI('kb_mechanism') + '</dt><dd>' + escHtml(row.mechanism) + '</dd>' : '') +
+          '<dt>' + tUI('kb_index_examples') + '</dt><dd>' + examples(row.index_examples) + '</dd>' +
+          '<dt>' + tUI('kb_cascade_examples') + '</dt><dd>' + examples(row.cascade_examples) + '</dd>' +
+          (row.action ? '<dt>' + tUI('kb_action') + '</dt><dd>' + escHtml(row.action) + '</dd>' : '') +
+          (row.ddi_warning ? '<dt>' + tUI('ddi_alert') + '</dt><dd>' + escHtml(row.ddi_warning) + '</dd>' : '') +
+          '<dt>' + tUI('kb_references') + '</dt><dd>' + (row.references.length
+            ? '<ul class="report__list">' + row.references.map(function (r) { return '<li>' + escHtml(r) + '</li>'; }).join('') + '</ul>'
+            : '<span class="text-muted">' + tUI('kb_no_references') + '</span>') + '</dd>' +
+        '</dl>' +
+      '</div>' +
+    '</details>'
+  );
 }
 
 function updateStepNav(active) {
@@ -2641,6 +2869,8 @@ function updateStepNav(active) {
     btn.classList.remove('active', 'completed');
     if (s === active)   btn.classList.add('active');
     else if (s < active) btn.classList.add('completed');
+    if (s === active) btn.setAttribute('aria-current', 'step');
+    else btn.removeAttribute('aria-current');
   });
 }
 
@@ -2650,9 +2880,14 @@ function updateNavButtons(step) {
   var counter = document.getElementById('step-counter');
   if (prev) {
     prev.disabled  = step === 1;
-    prev.innerHTML = tUI('btn_prev');
+    prev.innerHTML = '<span aria-hidden="true">&larr;</span> ' + tUI('btn_prev');
   }
-  if (next)    next.innerHTML = step === 6 ? tUI('btn_finish') : tUI('btn_next');
+  if (next) {
+    /* Step 6 is the end of the workflow; "Finalizar" previously called
+       goTo(7), which is a no-op — hide it instead of offering a dead end. */
+    next.hidden = step === 6;
+    next.innerHTML = tUI('btn_next') + ' <span aria-hidden="true">&rarr;</span>';
+  }
   if (counter) counter.textContent = tUI('step_counter', step);
 }
 
@@ -2709,12 +2944,26 @@ function priorityRank(priority) { return CE.priorityRank(priority); }
    rendered separately via renderGlobalAlertsSection().
    ============================================================ */
 
+/* Presentation token per classification level. The visible label always
+   carries the meaning (WCAG 1.4.1); tone and marker shape only reinforce
+   it. Levels are exactly the engine's own five — none is added here. */
 var CLASSIFICATION_STYLE = {
-  supported_possible_cascade: { bg: '#1e8449', fg: '#fff' },
-  possible_but_incomplete:    { bg: '#e67e22', fg: '#fff' },
-  pharmacological_match_only: { bg: '#7f8c8d', fg: '#fff' },
-  not_evaluable:               { bg: '#95a5a6', fg: '#fff' },
-  discarded:                   { bg: '#bdc3c7', fg: '#555' }
+  supported_possible_cascade: { tone: 'supported' },
+  possible_but_incomplete:    { tone: 'incomplete' },
+  pharmacological_match_only: { tone: 'match' },
+  not_evaluable:              { tone: 'noteval' },
+  discarded:                  { tone: 'discarded' }
+};
+
+/* Inline SVG icons (decorative; aria-hidden). Kept in code so no external
+   asset request is needed and CSP stays 'self'. */
+var ICONS = {
+  compass: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m15.5 8.5-2 5-5 2 2-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  copy: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  print: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6 8V3h8v5M6 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 12h8v5H6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  download: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  arrow: '<svg viewBox="0 0 24 12" aria-hidden="true" focusable="false"><path d="M1 6h20m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  mark: '<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><rect width="40" height="40" rx="10" fill="#102A43"/><path d="M10 11.5h9.5v9h9.5v9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><circle cx="10" cy="11.5" r="3" fill="#fff"/><circle cx="19.5" cy="20.5" r="4.6" fill="#102A43" stroke="#5EEAD4" stroke-width="2.2"/><circle cx="19.5" cy="20.5" r="1.3" fill="#5EEAD4"/><circle cx="29" cy="29.5" r="3" fill="#5EEAD4"/></svg>'
 };
 
 /** Prudent, non-diagnostic Spanish/English label for each classification
@@ -2726,10 +2975,14 @@ function classificationLabel(classification) {
   return tUI('classification_' + classification) || classification;
 }
 
+function tagHtml(modifier, label) {
+  return '<span class="tag tag--' + modifier + '"><span class="tag__mark" aria-hidden="true"></span>' +
+    escHtml(label) + '</span>';
+}
+
 function classificationBadgeHtml(classification) {
   var s = CLASSIFICATION_STYLE[classification] || CLASSIFICATION_STYLE.not_evaluable;
-  return '<span style="font-size:.72rem;font-weight:700;background:' + s.bg + ';color:' + s.fg + ';' +
-    'border-radius:4px;padding:.14rem .5rem;white-space:nowrap;">' + escHtml(classificationLabel(classification)) + '</span>';
+  return tagHtml('cls-' + s.tone, classificationLabel(classification));
 }
 
 /* ── Four-dimension label system (Fase 7) ──────────────────────────────────
@@ -2752,11 +3005,24 @@ function relevanceLabel(relevance) {
   return tUI(key);
 }
 
+/** Three-step meter + text label: the number of filled steps mirrors the
+ * same mapping relevanceLabel() already uses, so shape and text agree. */
 function relevanceBadgeHtml(relevance) {
-  var color = relevance === 'alta' ? '#27ae60' : relevance === 'moderada' ? '#e67e22' : '#7f8c8d';
-  return '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
-    'padding:.1rem .4rem;border-radius:3px;text-transform:uppercase;letter-spacing:.03em;">' +
+  var level = relevance === 'alta' ? 3 : relevance === 'moderada' ? 2 : 1;
+  return '<span class="meter meter--' + level + '">' +
+    '<span class="meter__bars" aria-hidden="true"><i></i><i></i><i></i></span>' +
     escHtml(relevanceLabel(relevance)) + '</span>';
+}
+
+/** Step 5 KB-confidence chip: shows the engine's own c.confidence value
+ * through the same conf_* vocabulary; an unexpected value is shown as-is
+ * rather than being coerced onto the scale. */
+function confidenceBadgeHtml(confidence) {
+  var known = { high: 3, medium: 2, low: 1 }[confidence];
+  if (!known) return '<span class="meter">' + escHtml(confidence || '') + '</span>';
+  return '<span class="meter meter--' + known + '">' +
+    '<span class="meter__bars" aria-hidden="true"><i></i><i></i><i></i></span>' +
+    escHtml(tUI('conf_' + confidence)) + '</span>';
 }
 
 /** knowledgeValidationStatus text label — whether the KB entry backing this
@@ -2767,10 +3033,7 @@ function knowledgeValidationLabel(status) {
 }
 
 function knowledgeValidationBadgeHtml(status) {
-  var reviewed = status === 'reviewed_source';
-  var color = reviewed ? '#2980b9' : '#95a5a6';
-  return '<span style="font-size:.7rem;font-weight:700;color:#fff;background:' + color + ';' +
-    'padding:.1rem .4rem;border-radius:3px;">' + escHtml(knowledgeValidationLabel(status)) + '</span>';
+  return tagHtml(status === 'reviewed_source' ? 'kb-reviewed' : 'kb-pending', knowledgeValidationLabel(status));
 }
 
 /** professionalValidation badge — the clinician's own recorded verdict for
@@ -2782,21 +3045,18 @@ function professionalValidationBadgeHtml(manualVerdict) {
     : manualVerdict === 'possible' ? tUI('ver_possible')
     : manualVerdict === 'not_cascade' ? tUI('classification_manual_discarded')
     : tUI('dim_professional_pending');
-  var color = manualVerdict === 'confirmed' ? '#1e8449'
-    : manualVerdict === 'possible' ? '#e67e22'
-    : manualVerdict === 'not_cascade' ? '#bdc3c7'
-    : '#dcdfe1';
-  var fg = manualVerdict ? '#fff' : '#5d6d7e';
-  return '<span style="font-size:.7rem;font-weight:700;color:' + fg + ';background:' + color + ';' +
-    'padding:.1rem .4rem;border-radius:3px;">' + escHtml(label) + '</span>';
+  var modifier = manualVerdict === 'confirmed' ? 'prof-confirmed'
+    : manualVerdict === 'possible' ? 'prof-possible'
+    : manualVerdict === 'not_cascade' ? 'prof-discarded'
+    : 'prof-pending';
+  return tagHtml(modifier, label);
 }
 
-/** One labeled row: "<dimension label> <badge>" — the pattern every one of
+/** One labeled cell: "<dimension label> <badge>" — the pattern every one of
  * the four dimensions uses, so a reader always sees which judgment a badge
  * represents instead of a bare color chip. */
 function dimensionRowHtml(labelKey, badgeHtml) {
-  return '<div style="margin-top:.28rem;font-size:.78rem;color:#5d6d7e;">' +
-    '<span>' + escHtml(tUI(labelKey)) + '</span>&nbsp;' + badgeHtml + '</div>';
+  return '<div class="dims__item"><dt>' + escHtml(tUI(labelKey)) + '</dt><dd>' + badgeHtml + '</dd></div>';
 }
 
 /** Compact legend explaining the four dimensions — rendered once above the
@@ -2804,9 +3064,9 @@ function dimensionRowHtml(labelKey, badgeHtml) {
  * Fase 7 "Leyendas" requirement. */
 function renderDimensionLegendHtml() {
   return (
-    '<details style="margin:.5rem 0 .8rem;font-size:.78rem;color:#5d6d7e;">' +
-      '<summary style="cursor:pointer;color:#2980b9;font-weight:600;">' + escHtml(tUI('dim_legend_title')) + '</summary>' +
-      '<p style="margin:.4rem 0 0;line-height:1.5;">' + escHtml(tUI('dim_legend_text')) + '</p>' +
+    '<details class="legend">' +
+      '<summary>' + escHtml(tUI('dim_legend_title')) + '</summary>' +
+      '<p>' + escHtml(tUI('dim_legend_text')) + '</p>' +
     '</details>'
   );
 }
@@ -2816,12 +3076,39 @@ function renderDimensionLegendHtml() {
  * header is never read as an unqualified verdict. */
 function classificationGroupHeaderHtml(level, count) {
   return (
-    '<div style="margin:.9rem 0 .5rem;padding:.45rem .6rem;background:#f8f9fa;' +
-      'border:1px solid #e0e0e0;border-radius:5px;">' +
-      '<span style="font-size:.72rem;color:#7f8c8d;">' + escHtml(tUI('dim_assessment_lbl')) + '</span>&nbsp;' +
+    '<div class="group-header group-header--' + ((CLASSIFICATION_STYLE[level] || CLASSIFICATION_STYLE.not_evaluable).tone) + '">' +
+      '<span class="group-header__dim">' + escHtml(tUI('dim_assessment_lbl')) + '</span>' +
       classificationBadgeHtml(level) +
-      '<strong style="margin-left:.5rem;">' + tUI('classification_group_count', count) + '</strong>' +
+      '<strong class="group-header__count">' + tUI('classification_group_count', count) + '</strong>' +
     '</div>'
+  );
+}
+
+/** At-a-glance distribution of signals per automated classification level
+ * (Step 4 header). Purely a count of c.classification values. */
+function renderClassificationSummaryHtml(signals) {
+  var items = CLASSIFICATION_ORDER.map(function (level) {
+    var n = signals.filter(function (c) { return c.classification === level; }).length;
+    if (!n) return '';
+    return '<li>' + classificationBadgeHtml(level) + '<span class="cls-summary__n">' + n + '</span></li>';
+  }).join('');
+  return items ? '<ul class="cls-summary">' + items + '</ul>' : '';
+}
+
+/** Index drug → intermediate problem → subsequent drug, with each node
+ * labelled so the relationship is readable without relying on colour. */
+function chainHtml(indexDrug, ade, cascadeDrug) {
+  return (
+    '<ol class="chain">' +
+      '<li class="chain__node chain__node--index"><span class="chain__lbl">' + tUI('chain_index_lbl') + '</span>' +
+        '<span class="chain__val">' + escHtml(indexDrug) + '</span></li>' +
+      '<li class="chain__arrow" aria-hidden="true">' + ICONS.arrow + '</li>' +
+      '<li class="chain__node chain__node--ade"><span class="chain__lbl">' + tUI('chain_ade_lbl') + '</span>' +
+        '<span class="chain__val">' + escHtml(ade || tUI('seq_potential_ade')) + '</span></li>' +
+      '<li class="chain__arrow" aria-hidden="true">' + ICONS.arrow + '</li>' +
+      '<li class="chain__node chain__node--cascade"><span class="chain__lbl">' + tUI('chain_cascade_lbl') + '</span>' +
+        '<span class="chain__val">' + escHtml(cascadeDrug) + '</span></li>' +
+    '</ol>'
   );
 }
 
@@ -2877,9 +3164,6 @@ function buildEvidenceListHtml(c) {
  * Step 6 — see module comment above.
  * @param {object} c  a possibleCascades[] entry from ClinicalEngine.buildCaseModel()
  * @param {object} [opts]
- * @param {boolean} [opts.showClassifyButtons=false]  Step 4 preview omits
- *   the clinician verdict buttons (that is Step 5's job); Step 6's report
- *   shows the clinician's already-recorded verdict as a badge, read-only.
  * @param {object[]} [opts.siblings]  The full list of cascade signals
  *   currently on screen (possibleCascades or the report's cascades). Used
  *   only to detect whether `c` is one of several independent candidates the
@@ -2904,81 +3188,59 @@ function renderCascadeCardHtml(c, opts) {
   var presentation = CE.getRecommendationPresentation(c.classification, findCascadeEntryForSignal(c), manualVerdict);
   var recDisplay = (lang === 'es' ? presentation.action_es : presentation.action_en) || '';
   var reasonDisplay = (lang === 'es' ? c.classification_reason_es : c.classification_reason_en) || '';
-
-  var chain = (
-    '<div style="margin:.6rem 0 0;font-size:.9rem;display:flex;align-items:center;' +
-      'flex-wrap:wrap;gap:.2rem;">' +
-      '<span style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:4px;' +
-        'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' + escHtml(c.index_drug) + '</span>' +
-      '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
-      '<span style="background:#fef9e7;border:1px solid #f9e79f;border-radius:4px;' +
-        'padding:.18rem .55rem;font-size:.82rem;color:#7d6608;">' + escHtml(adeDisplay || tUI('seq_potential_ade')) + '</span>' +
-      '<span style="color:#95a5a6;font-size:.8rem;">&rarr;</span>' +
-      '<span style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:4px;' +
-        'padding:.18rem .55rem;font-weight:700;font-size:.85rem;">' + escHtml(c.cascade_drug) + '</span>' +
-    '</div>'
-  );
+  var tone = (CLASSIFICATION_STYLE[c.classification] || CLASSIFICATION_STYLE.not_evaluable).tone;
 
   var ddiBox = ddiDisplay
-    ? '<div style="margin-top:.55rem;font-size:.83rem;color:#922b21;border-left:3px solid #e74c3c;' +
-        'padding:.35rem .65rem;background:#fdedec;border-radius:0 3px 3px 0;">' +
-        '<strong>' + tUI('ddi_alert') + '</strong>&nbsp;' + escHtml(ddiDisplay) + '</div>'
+    ? '<div class="note note--danger"><strong>' + tUI('ddi_alert') + '</strong> ' + escHtml(ddiDisplay) + '</div>'
     : '';
 
   var recBox = recDisplay
-    ? '<div style="margin-top:.45rem;font-size:.83rem;color:#1a5276;border-left:3px solid #2980b9;' +
-        'padding:.35rem .65rem;background:#eaf4fb;border-radius:0 3px 3px 0;">' +
-        '<strong>' + tUI('clinical_action') + '</strong>&nbsp;' + escHtml(recDisplay) + '</div>'
+    ? '<div class="note note--action"><strong>' + tUI('clinical_action') + '</strong> ' + escHtml(recDisplay) + '</div>'
     : '';
 
   var reasonBox = (
-    '<div style="margin-top:.42rem;font-size:.78rem;color:#5d6d7e;border-left:3px solid #aab7b8;' +
-      'padding:.3rem .6rem;background:#f4f6f7;border-radius:0 3px 3px 0;">' +
-      '<strong>' + tUI('classification_reason_lbl') + '</strong>&nbsp;' + escHtml(reasonDisplay) + '</div>'
+    '<div class="note note--neutral"><strong>' + tUI('classification_reason_lbl') + '</strong> ' + escHtml(reasonDisplay) + '</div>'
   );
 
   var evidenceItems = buildEvidenceListHtml(c).map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('');
   var evidenceBox = (
-    '<details style="margin-top:.5rem;font-size:.79rem;color:#444;">' +
-      '<summary style="cursor:pointer;color:#2980b9;">' + tUI('evidence_details_toggle') + '</summary>' +
-      '<ul style="margin:.35rem 0 0 1.1rem;">' + evidenceItems + '</ul>' +
+    '<details class="finding__evidence">' +
+      '<summary>' + tUI('evidence_details_toggle') + '</summary>' +
+      '<ul>' + evidenceItems + '</ul>' +
     '</details>'
   );
 
-  /* The four dimensions, each on its own labeled row — never combined into
+  /* The four dimensions, each on its own labeled cell — never combined into
      one bare badge cluster (the exact defect documented in
      docs/clinical-engine-fix-audit.md §1.4). */
   var dimensionsBox = (
-    dimensionRowHtml('dim_relevance_lbl', relevanceBadgeHtml(c.potential_clinical_relevance)) +
-    dimensionRowHtml('dim_knowledge_lbl', knowledgeValidationBadgeHtml(c.knowledge_validation_status)) +
-    dimensionRowHtml('dim_assessment_lbl', classificationBadgeHtml(c.classification)) +
-    dimensionRowHtml('dim_professional_lbl', professionalValidationBadgeHtml(manualVerdict))
+    '<dl class="dims">' +
+      dimensionRowHtml('dim_relevance_lbl', relevanceBadgeHtml(c.potential_clinical_relevance)) +
+      dimensionRowHtml('dim_knowledge_lbl', knowledgeValidationBadgeHtml(c.knowledge_validation_status)) +
+      dimensionRowHtml('dim_assessment_lbl', classificationBadgeHtml(c.classification)) +
+      dimensionRowHtml('dim_professional_lbl', professionalValidationBadgeHtml(manualVerdict)) +
+    '</dl>'
   );
 
   return (
-    '<div style="border:1px solid #d0d7de;border-radius:6px;padding:.85rem 1rem;' +
-      'margin-bottom:.8rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.4rem;">' +
-        '<span style="font-size:.92rem;font-weight:700;line-height:1.35;">' +
+    '<article class="finding finding--' + tone + '">' +
+      '<header class="finding__head">' +
+        '<h4 class="finding__title">' +
           escHtml(displayName) +
           (c.signal_type === 'symptom_bridge'
-            ? '<span style="font-size:.65rem;font-weight:600;color:#6c3483;border:1px solid #a569bd;' +
-                'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
-                tUI('via_symptom') + '</span>'
+            ? ' <span class="chip chip--symptom">' + tUI('via_symptom') + '</span>'
             : '') +
           (roleKey
-            ? '<span title="' + escHtml(tUI(roleKey + '_title')) + '" style="font-size:.65rem;font-weight:600;' +
-                'color:' + (c.candidate_role === 'initial_response' ? '#0b6473' : '#8a5a00') + ';' +
-                'border:1px solid ' + (c.candidate_role === 'initial_response' ? '#8fc1c9' : '#e0b463') + ';' +
-                'border-radius:3px;padding:.08rem .38rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;">' +
-                tUI(roleKey) + '</span>'
+            ? ' <span class="chip chip--role-' + (c.candidate_role === 'initial_response' ? 'initial' : 'later') + '" title="' +
+                escHtml(tUI(roleKey + '_title')) + '">' + tUI(roleKey) + '</span>'
             : '') +
-        '</span>' +
-        '<code style="font-size:.76rem;color:#aaa;white-space:nowrap;">' + escHtml(c.cascade_id) + '</code>' +
-      '</div>' +
+        '</h4>' +
+        '<code class="rule-id" title="' + escHtml(tUI('rule_id_lbl')) + '">' + escHtml(c.cascade_id) + '</code>' +
+      '</header>' +
+      chainHtml(c.index_drug, adeDisplay, c.cascade_drug) +
       dimensionsBox +
-      chain + ddiBox + recBox + reasonBox + evidenceBox +
-    '</div>'
+      ddiBox + recBox + reasonBox + evidenceBox +
+    '</article>'
   );
 }
 
@@ -2989,19 +3251,18 @@ function renderCascadeCardHtml(c, opts) {
  */
 function renderGlobalAlertsSection(alerts) {
   if (!alerts || !alerts.length) {
-    return '<p style="font-size:.82rem;color:#7f8c8d;">' + tUI('no_global_alerts') + '</p>';
+    return '<p class="text-muted">' + tUI('no_global_alerts') + '</p>';
   }
   var lang = currentLanguage;
   return alerts.map(function (a) {
     var msg = (lang === 'es' ? a.message_es : a.message_en) || a.message_es || '';
     var name = (lang === 'es' ? a.name_es : a.name_en) || a.name_es || '';
     return (
-      '<div style="border:1px solid #f5c16c;border-left:4px solid #e67e22;border-radius:0 6px 6px 0;' +
-        'padding:.6rem .85rem;margin-bottom:.6rem;background:#fffaf0;font-size:.84rem;">' +
-        '<div style="font-weight:700;color:#7d4a00;">' + escHtml(name) + '</div>' +
-        '<div style="margin-top:.25rem;color:#5c4326;">' + escHtml(msg) + '</div>' +
+      '<div class="alert-card">' +
+        '<div class="alert-card__title">' + escHtml(name) + '</div>' +
+        '<div class="alert-card__body">' + escHtml(msg) + '</div>' +
         (a.drugs_involved && a.drugs_involved.length
-          ? '<div style="margin-top:.3rem;font-size:.75rem;color:#8a6d3b;">' + escHtml(a.drugs_involved.join(', ')) + '</div>'
+          ? '<div class="alert-card__drugs">' + escHtml(a.drugs_involved.join(', ')) + '</div>'
           : '') +
       '</div>'
     );
@@ -3016,10 +3277,9 @@ function renderMissingInformationSection(missing) {
     return '<li>' + escHtml(msg) + '</li>';
   }).join('');
   return (
-    '<div style="margin-top:.6rem;padding:.5rem .8rem;background:#f4f6f7;border:1px solid #d6d9dd;' +
-      'border-radius:5px;font-size:.82rem;color:#444;">' +
+    '<div class="info-panel">' +
       '<strong>' + tUI('missing_information_lbl') + '</strong>' +
-      '<ul style="margin:.3rem 0 0 1.1rem;">' + items + '</ul>' +
+      '<ul>' + items + '</ul>' +
     '</div>'
   );
 }
@@ -3249,6 +3509,15 @@ window.copyReportForClinicalRecord = function () {
 
 window.printReportAsPDF = function () {
   showToast(tUI('toast_print_hint'), 'success');
+  /* Expand the per-signal evidence so the printed/PDF report carries the
+     same traceability as the screen; restore the reader's view afterwards. */
+  var closed = Array.prototype.slice.call(document.querySelectorAll('.report details:not([open])'));
+  closed.forEach(function (d) { d.open = true; });
+  var restore = function () {
+    closed.forEach(function (d) { d.open = false; });
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
   window.print();
 };
 
@@ -3790,6 +4059,12 @@ function escHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function decodeEntities(str) {
+  var decoder = document.createElement('textarea');
+  decoder.innerHTML = String(str || '');
+  return decoder.value;
+}
+
 function isoDate() {
   return new Date().toISOString().split('T')[0];
 }
@@ -3800,17 +4075,43 @@ function showToast(message, type) {
   if (!container) return;
   var toast = document.createElement('div');
   toast.className = 'toast ' + (type || 'info');
-  toast.innerHTML = escHtml(message) +
-    '<button class="toast-close" aria-label="' + escHtml(tStatic('dismiss')) + '">&times;</button>';
-  toast.querySelector('.toast-close').addEventListener('click', function () {
+  if (type === 'error') toast.setAttribute('role', 'alert');
+  /* UI strings carry HTML entities (e.g. "Revisi&oacute;n"). They used to be
+     escaped a second time and shown literally; decode them as text instead.
+     A detached <textarea> parses its content as RCDATA, so markup inside a
+     message (e.g. from an error string) is never interpreted. */
+  var decoder = document.createElement('textarea');
+  decoder.innerHTML = String(message || '');
+  var text = document.createElement('span');
+  text.className = 'toast__text';
+  text.textContent = decoder.value;
+  var close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'toast-close';
+  close.setAttribute('aria-label', decodeEntities(tStatic('dismiss')));
+  close.innerHTML = '&times;';
+  toast.appendChild(text);
+  toast.appendChild(close);
+  /* Keep at most three toasts on screen so repeated actions never bury
+     the workspace (HAL-05). */
+  while (container.children.length >= 3) container.removeChild(container.firstChild);
+  var dismiss = function () {
     toast.classList.add('hiding');
-    setTimeout(function () { toast.remove(); }, 350);
-  });
+    setTimeout(function () { toast.remove(); }, 250);
+  };
+  close.addEventListener('click', dismiss);
   container.appendChild(toast);
-  setTimeout(function () {
-    toast.classList.add('hiding');
-    setTimeout(function () { toast.remove(); }, 350);
-  }, 4000);
+  /* Errors stay until dismissed; confirmations leave after 6 s. Hover or
+     focus pauses the timer so the message can be read (WCAG 2.2.1). */
+  if (type !== 'error') {
+    var timer = setTimeout(dismiss, 6000);
+    var pause = function () { clearTimeout(timer); };
+    var resume = function () { clearTimeout(timer); timer = setTimeout(dismiss, 3000); };
+    toast.addEventListener('mouseenter', pause);
+    toast.addEventListener('focusin', pause);
+    toast.addEventListener('mouseleave', resume);
+    toast.addEventListener('focusout', resume);
+  }
 }
 
 /* ============================================================
@@ -3853,16 +4154,6 @@ function handleDelegatedAction(event) {
   var trigger = event.target.closest('[data-action]');
   if (!trigger) return;
   var action = trigger.getAttribute('data-action');
-
-  if (action === 'toggle-help') {
-    var helpContent = document.getElementById('help-content');
-    var helpArrow = document.getElementById('help-arrow');
-    var helpOpen = trigger.getAttribute('aria-expanded') === 'true';
-    trigger.setAttribute('aria-expanded', String(!helpOpen));
-    if (helpContent) helpContent.style.display = helpOpen ? 'none' : '';
-    if (helpArrow) helpArrow.classList.toggle('collapsed', helpOpen);
-    return;
-  }
 
   if (action === 'toggle-kb-validation') {
     var detail = document.getElementById('kb-val-detail');
@@ -4001,6 +4292,19 @@ function handleDelegatedAction(event) {
 
 function wireEvents() {
   document.addEventListener('click', handleDelegatedAction);
+
+  /* View navigation (hash routes) */
+  window.addEventListener('hashchange', routeFromHash);
+  document.querySelectorAll('[data-view-link]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var view = link.getAttribute('data-view-link');
+      showView(view);
+      if (view === 'analysis') renderStepContent(state.step);
+      var main = document.getElementById('main-content');
+      if (main) main.focus({ preventScroll: true });
+    });
+  });
 
   /* Step tab buttons */
   document.querySelectorAll('.step-btn').forEach(function (btn) {
@@ -4145,6 +4449,9 @@ function wireEvents() {
     updateNavButtons(state.step);
     /* Re-render the current step so all text reflects the new language */
     renderStepContent(state.step);
+    if (currentView === 'knowledge') renderKnowledgeView();
+    var saved = document.getElementById('save-indicator');
+    if (saved) saved.innerHTML = '';
   }
 
   if (btnLangEs) btnLangEs.addEventListener('click', function () { applyLanguage('es'); });
@@ -4188,6 +4495,20 @@ async function init() {
 
     /* Render the active step — this replaces "Loading application..." */
     goTo(state.step);
+
+    /* Optional link to an official award announcement (site.config.js);
+       hidden while unset. Only http(s) URLs are accepted. */
+    var cfg = (typeof window !== 'undefined' && window.SITE_CONFIG) || {};
+    var awardLink = document.getElementById('award-link');
+    if (awardLink && /^https:\/\//i.test(cfg.awardUrl || '')) {
+      awardLink.href = cfg.awardUrl;
+      awardLink.rel = 'noopener noreferrer';
+      awardLink.target = '_blank';
+      awardLink.hidden = false;
+    }
+
+    appReady = true;
+    routeFromHash();
 
   } catch (err) {
     console.error('[App] Initialization failed:', err);
