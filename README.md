@@ -95,14 +95,22 @@ Los ficheros exportados no contienen identificadores de la herramienta ni metada
 ### Opción A — GitHub Pages
 1. Haga fork de este repositorio.
 2. Vaya a **Settings → Pages → Source: rama `main`, carpeta raíz**.
-3. Acceda a la URL de Pages generada.
+3. Acceda a la URL de Pages generada: la raíz muestra la web pública (`index.html`) y la herramienta está en `app.html`.
+
+No hay paso de compilación: el sitio es estático y todas las rutas internas son relativas, por lo que funciona igual en GitHub Pages, en un dominio propio o en un servidor local.
+
+### Dominio propio (cuando se decida)
+1. Edite `site.config.js` → `publicUrl: 'https://<dominio>/'` (y, si existe una noticia oficial verificable del premio, `awardUrl`).
+2. Ejecute `node scripts/set-public-url.js` para regenerar canonical/Open Graph absolutos, `robots.txt` y `sitemap.xml` (`--check` verifica que estén al día).
+3. Configure el dominio en **Settings → Pages → Custom domain** y los registros DNS indicados por GitHub. Este repositorio no incluye ni modifica `CNAME`, DNS ni la configuración de Pages.
+4. Tenga en cuenta que `localStorage` es por origen: los casos guardados en la URL antigua no aparecerán en el nuevo dominio (exporte en JSON e importe si es necesario).
 
 ### Opción B — Servidor local
 ```bash
 git clone <url-del-repositorio>
 cd hiv-prescribing-cascade-auditor
 python3 -m http.server 8080
-# Abrir http://localhost:8080 en un navegador moderno
+# Web pública: http://localhost:8080/  ·  Herramienta: http://localhost:8080/app.html
 ```
 
 **Compatibilidad de navegadores:** Chrome 80+, Firefox 75+, Safari 14+, Edge 80+.
@@ -113,11 +121,22 @@ python3 -m http.server 8080
 
 ```
 hiv-prescribing-cascade-auditor/
-├── index.html                  # Aplicación principal (SPA estática)
+├── index.html                  # Web pública de presentación (landing bilingüe)
+├── app.html                    # Herramienta clínica (SPA estática; vistas #analysis, #knowledge, #about)
+├── landing.js                  # Comportamiento de la landing (idioma, menú) — sin datos clínicos
+├── kb-catalog.js               # Catálogo de solo lectura de la KB (vista «Base de conocimiento»)
+├── site.config.js              # URL pública y enlace oficial del premio (configuración central)
+├── site.webmanifest, favicon.svg, robots.txt
+├── assets/
+│   ├── css/                    # Sistema de diseño: base.css (tokens), app.css, landing.css
+│   ├── fonts/                  # Inter y Source Serif 4 autoalojadas (licencia OFL)
+│   └── brand/                  # Símbolo, iconos de aplicación e imagen social (og-image.png)
+├── scripts/
+│   ├── set-public-url.js       # Aplica la URL pública a SEO/Open Graph, robots.txt y sitemap.xml
+│   └── render-brand-assets.js  # Regenera los PNG de marca (requiere Playwright; solo mantenimiento)
 ├── clinical-engine.js          # Motor clínico puro (sin DOM): normalización, extracción,
 │                                #   problemas activos, clasificación de cascadas. Testeable con Node.
 ├── app.js                      # Capa de UI/estado sobre ClinicalEngine (wizard, render, i18n)
-├── styles.css                  # Estilos (CSS3, sin frameworks)
 ├── kb/
 │   ├── drug_dictionary.json            # Diccionario de fármacos (genéricos/marcas), track-independiente
 │   ├── drug_combinations.json          # Combinaciones de dosis fija (marca → principios activos)
@@ -167,6 +186,7 @@ npm test
 - [`docs/PRODUCT_BASELINE.md`](docs/PRODUCT_BASELINE.md): línea base congelada, límites del producto y titularidad.
 - [`docs/RELEASE_GATES.md`](docs/RELEASE_GATES.md): clasificación de cambios, evidencias y revisiones obligatorias.
 - [`.github/pull_request_template.md`](.github/pull_request_template.md): declaración de impacto clínico, privacidad, bilingüismo y verificación para cada cambio.
+- [`docs/redesign/REDESIGN_REPORT.md`](docs/redesign/REDESIGN_REPORT.md): rediseño web — auditoría, decisiones, verificación de equivalencia clínica y pendientes.
 
 La rama principal debe aceptar cambios mediante pull request y exigir que la suite completa de regresión finalice correctamente.
 

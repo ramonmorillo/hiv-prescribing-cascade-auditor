@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — rediseño web: landing pública, nueva interfaz y preparación para dominio propio
+
+Cambio exclusivamente de presentación. `clinical-engine.js`, `report-contract.js`, los módulos de revisión y toda la KB (`kb/`) no se modifican. Las salidas clínicas (informe ES/EN, CSV, texto para historia clínica, con y sin revisión profesional) se han comparado antes/después en navegador sobre 7 casos de referencia: 0 diferencias (ver `docs/redesign/REDESIGN_REPORT.md`).
+
+- Nueva landing pública en `index.html` (bilingüe ES/EN) y herramienta trasladada a `app.html`, en la misma carpeta, por lo que todas las rutas relativas (scripts, `kb/`) se conservan.
+- Nuevo sistema de diseño (`assets/css/base.css`, `app.css`, `landing.css`) con tipografías autoalojadas (Inter y Source Serif 4, OFL) y nueva identidad (símbolo, favicon, iconos de aplicación, imagen social). Sustituye a `styles.css` y `theme-siafcmo.css`.
+- Interfaz de la herramienta: barra lateral con caso y flujo de revisión con estado real por paso; vistas «Base de conocimiento» (catálogo de solo lectura, `kb-catalog.js`) y «Ayuda y proyecto» con rutas hash; resultados reestructurados (cadena índice → problema → posterior rotulada, cuatro dimensiones con forma + texto, no solo color); informe con estructura de documento; control segmentado accesible para el veredicto profesional.
+- Reconocimiento «1.er Premio — XII Premios SEFH/CSL…» incorporado en landing y en «Acerca del proyecto», con la denominación exacta y la distinción entre proyecto premiado y software.
+- Correcciones de interfaz sin efecto clínico: toasts que mostraban entidades HTML literales (doble escape) y se acumulaban sin límite (HAL-05); indicador de guardado que nunca se activaba (HAL-12); preferencia de idioma no restaurada cuando no había caso guardado; botón «Finalizar» sin acción en el paso 6 (ahora oculto); recuento «patrones de cascada» que incluía reglas fusionadas que el motor no ejecuta; contraste insuficiente de insignias de clasificación (HAL-04). El PDF impreso incluye ahora la evidencia desplegada de cada señal.
+- Preparación para dominio propio: `site.config.js` (URL pública y enlace oficial del premio, vacíos por defecto) y `scripts/set-public-url.js`, que regenera canonical/Open Graph absolutos, `robots.txt` y `sitemap.xml`. Sin cambios de DNS, CNAME ni configuración de Pages.
+- Pruebas: los tests de shell apuntan ahora a `app.html`; nuevas comprobaciones de seguridad de la landing (misma CSP, sin scripts en línea) y nueva suite `site-redesign.test.js` (catálogo KB coherente con el motor, cobertura bilingüe, denominación del premio, independencia de dominio, paridad ES/EN de `UI_STRINGS`).
+
 ## Unreleased — eliminación de tarjetas de cascada duplicadas/contradictorias
 
 - Corregido un fallo de detección que presentaba dos veces el mismo hallazgo clínico cuando una combinación a dosis fija (p. ej. Symtuza) coincidía a la vez con la forma "bare" y con la forma compuesta de un mismo fármaco índice listadas en una misma regla (ejemplo reportado: VIH027/cobicistat). Corregido de forma genérica en `clinical-engine.js`, no regla por regla; afectaba a 9 reglas más de la KB.
