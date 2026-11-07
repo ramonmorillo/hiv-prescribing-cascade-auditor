@@ -19,7 +19,7 @@ function referencedKeys(html) {
 
 function run() {
   reset(); console.log('== static-i18n.test.js ==');
-  const html = read('index.html');
+  const html = read('app.html');  /* tool shell (index.html is the public landing) */
   const app = read('app.js');
   const keys = referencedKeys(html);
   const esKeys = Object.keys(strings.es).sort();
@@ -50,7 +50,15 @@ function run() {
     'Decision Support Only /',
     'No Real Patient Data /'
   ].some((fragment) => html.includes(fragment)));
-  assert('no external font import is present', !/@import\s+url|fonts\.googleapis|fonts\.gstatic/.test(read('theme-siafcmo.css')));
+  ['assets/css/base.css', 'assets/css/app.css', 'assets/css/landing.css'].forEach((file) => {
+    const css = read(file);
+    assert('no external font or stylesheet import: ' + file, !/@import|fonts\.googleapis|fonts\.gstatic/.test(css));
+    const urls = [...css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]);
+    assert('every CSS url() is local or an inline data: URI: ' + file,
+      urls.every((u) => u.startsWith('data:') || !/^(?:[a-z]+:)?\/\//i.test(u)));
+  });
+  assert('self-hosted fonts exist', ['inter-latin-wght.woff2', 'source-serif-4-latin-wght.woff2']
+    .every((f) => fs.existsSync(path.join(__dirname, '..', 'assets', 'fonts', f))));
 
   const r = summary(); console.log(`  -> ${r.pass} passed, ${r.fail} failed\n`); return r.fail === 0;
 }

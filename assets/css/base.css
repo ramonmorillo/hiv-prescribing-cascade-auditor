@@ -1,0 +1,299 @@
+/* ============================================================
+   HIV Prescribing Cascade Auditor — design system (base layer)
+   Shared by the public site (index.html) and the tool (app.html).
+   Presentation only: no clinical logic or content semantics.
+   All assets are self-hosted (CSP font-src 'self'); no CDN.
+   ============================================================ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/inter-latin-wght.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("../fonts/source-serif-4-latin-wght.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("../fonts/source-serif-4-latin-wght-italic.woff2") format("woff2");
+}
+
+/* ── Tokens ────────────────────────────────────────────────────
+   Palette rationale: the proposed brief palette is kept; two
+   adjustments are made for WCAG 2.2 AA text contrast on white:
+   teal text uses #0F766E (5.5:1) instead of #0D9488 (3.7:1), and
+   award gold text uses #7A5C22 (6.6:1); #0D9488 and #B89554 stay
+   as decorative/large-graphic accents only. */
+:root {
+  --ink-950: #0A1C2E;
+  --ink-900: #102A43;
+  --ink-800: #1B3A59;
+  --ink-700: #334E68;
+  --ink-600: #475569;
+  --ink-500: #5B6B7F;
+  --ink-400: #94A3B8;
+  --ink-300: #CBD5E1;
+  --ink-200: #E2E8F0;
+  --ink-100: #F1F5F9;
+  --ink-50:  #F8FAFC;
+  --white:   #FFFFFF;
+
+  --blue-700: #1D4ED8;
+  --blue-600: #2563EB;
+  --blue-100: #DBEAFE;
+  --blue-50:  #EFF6FF;
+
+  --teal-800: #0B5D56;
+  --teal-700: #0F766E;
+  --teal-600: #0D9488;
+  --teal-100: #CCFBF1;
+  --teal-50:  #F0FDFA;
+
+  --gold-700: #7A5C22;
+  --gold-500: #B89554;
+  --gold-200: #E9DCC0;
+  --gold-50:  #FBF8F1;
+
+  --amber-800: #854D0E;
+  --amber-200: #FDE68A;
+  --amber-50:  #FFFBEB;
+
+  --red-700: #B91C1C;
+  --red-200: #FECACA;
+  --red-50:  #FEF2F2;
+
+  --green-700: #15803D;
+  --green-200: #BBF7D0;
+  --green-50:  #F0FDF4;
+
+  /* Semantic aliases */
+  --color-bg: var(--ink-50);
+  --color-surface: var(--white);
+  --color-surface-alt: var(--ink-100);
+  --color-border: var(--ink-200);
+  --color-border-strong: var(--ink-300);
+  --color-text: var(--ink-900);
+  --color-text-secondary: var(--ink-600);
+  --color-text-muted: var(--ink-500);
+  --color-primary: var(--blue-600);
+  --color-primary-dk: var(--blue-700);
+  --color-accent: var(--teal-700);
+  --color-focus: var(--blue-600);
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* Spacing (4px grid) */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.25rem; --sp-6: 1.5rem; --sp-8: 2rem; --sp-10: 2.5rem;
+  --sp-12: 3rem; --sp-16: 4rem; --sp-20: 5rem; --sp-24: 6rem;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(16, 42, 67, 0.06);
+  --shadow-sm: 0 1px 2px rgba(16, 42, 67, 0.05), 0 2px 8px rgba(16, 42, 67, 0.04);
+  --shadow-md: 0 1px 3px rgba(16, 42, 67, 0.06), 0 8px 24px rgba(16, 42, 67, 0.06);
+  --shadow-lg: 0 2px 6px rgba(16, 42, 67, 0.06), 0 24px 48px rgba(16, 42, 67, 0.10);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+
+  --content-width: 1200px;
+}
+
+/* ── Reset / base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  color-scheme: light;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 {
+  margin: 0 0 var(--sp-3);
+  color: var(--color-text);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+p { margin: 0 0 var(--sp-3); }
+p:last-child { margin-bottom: 0; }
+a { color: var(--color-primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { color: var(--color-primary-dk); }
+img, svg { max-width: 100%; }
+code, pre, kbd { font-family: var(--font-mono); font-size: 0.875em; }
+button, input, select, textarea { font: inherit; color: inherit; }
+ul, ol { padding-left: 1.25rem; }
+hr { border: none; border-top: 1px solid var(--color-border); margin: var(--sp-5) 0; }
+[hidden] { display: none !important; }
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 1000;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-sm);
+  background: var(--ink-900);
+  color: var(--white);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--dur) var(--ease);
+}
+.skip-link:focus, .skip-link:focus-visible { transform: translateY(0); color: var(--white); }
+
+/* ── Brand lockup ─────────────────────────────────────────── */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.brand:hover { color: inherit; }
+.brand__mark { flex: 0 0 auto; width: 36px; height: 36px; display: block; }
+.brand__text { display: flex; flex-direction: column; min-width: 0; line-height: 1.1; }
+.brand__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.brand__name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+.brand--inverse .brand__eyebrow { color: rgba(255, 255, 255, 0.68); }
+.brand--inverse .brand__name { color: var(--white); }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn svg { width: 1.05em; height: 1.05em; flex: 0 0 auto; }
+
+.btn-primary { background: var(--blue-600); color: var(--white); box-shadow: var(--shadow-xs); }
+.btn-primary:hover:not(:disabled) { background: var(--blue-700); color: var(--white); }
+.btn-dark { background: var(--ink-900); color: var(--white); }
+.btn-dark:hover:not(:disabled) { background: var(--ink-950); color: var(--white); }
+.btn-secondary { background: var(--white); color: var(--ink-900); border-color: var(--ink-300); box-shadow: var(--shadow-xs); }
+.btn-secondary:hover:not(:disabled) { background: var(--ink-50); border-color: var(--ink-400); color: var(--ink-900); }
+.btn-outline { background: transparent; color: var(--blue-700); border-color: var(--blue-600); }
+.btn-outline:hover:not(:disabled) { background: var(--blue-50); color: var(--blue-700); }
+.btn-ghost { background: transparent; color: var(--ink-700); border-color: transparent; }
+.btn-ghost:hover:not(:disabled) { background: var(--ink-100); color: var(--ink-900); }
+.btn-danger { background: var(--white); color: var(--red-700); border-color: var(--red-200); }
+.btn-danger:hover:not(:disabled) { background: var(--red-50); border-color: var(--red-700); color: var(--red-700); }
+.btn-success { background: var(--green-700); color: var(--white); }
+.btn-inverse { background: var(--white); color: var(--ink-900); }
+.btn-inverse:hover:not(:disabled) { background: var(--ink-100); color: var(--ink-900); }
+.btn-inverse-outline { background: transparent; color: var(--white); border-color: rgba(255, 255, 255, 0.4); }
+.btn-inverse-outline:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.7); color: var(--white); }
+
+.btn-sm { min-height: 34px; padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+.btn-lg { min-height: 48px; padding: 0.75rem 1.375rem; font-size: var(--text-base); border-radius: var(--radius-md); }
+
+/* ── Award seal (institutional, no official logos) ────────── */
+.award-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.375rem 0.75rem 0.375rem 0.5rem;
+  border: 1px solid var(--gold-200);
+  border-radius: var(--radius-pill);
+  background: var(--gold-50);
+  color: var(--gold-700);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.award-chip svg { width: 18px; height: 18px; flex: 0 0 auto; }
+
+/* ── Motion preferences ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

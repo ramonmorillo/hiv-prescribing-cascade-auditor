@@ -5,235 +5,381 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; media-src 'none'; worker-src 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" data-i18n-content="meta_description" content="HIV Prescribing Cascade Auditor — herramienta de apoyo a la decisión para detectar posibles cascadas de prescripción en personas con VIH">
-  <meta name="theme-color" content="#12384b">
-  <title>HIV Prescribing Cascade Auditor</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="theme-siafcmo.css">
+  <title>HIV Prescribing Cascade Auditor — Detección de cascadas terapéuticas en personas que viven con VIH</title>
+  <meta name="description" data-i18n-content="meta_description" content="Herramienta de apoyo a la revisión farmacoterapéutica para identificar posibles cascadas de prescripción en personas que viven con VIH. Procesamiento local en el navegador, sin envío de datos clínicos.">
+  <meta name="theme-color" content="#102A43">
+  <meta name="color-scheme" content="light">
+  <meta name="author" content="Ramón Morillo Verdugo, Cecilia Solís Martín">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+
+  <!-- Open Graph / social preview. Relative image path while no public URL
+       is configured; `node scripts/set-public-url.js` writes the absolute
+       canonical/og:url/og:image block below from site.config.js. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="HIV Prescribing Cascade Auditor">
+  <meta property="og:title" content="HIV Prescribing Cascade Auditor">
+  <meta property="og:description" content="Tecnología aplicada a la detección y evaluación de cascadas terapéuticas en personas que viven con VIH. Apoyo a la decisión clínica con procesamiento local.">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:locale:alternate" content="en_GB">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="HIV Prescribing Cascade Auditor — detección y evaluación de cascadas terapéuticas en VIH">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HIV Prescribing Cascade Auditor">
+  <meta name="twitter:description" content="Detección y evaluación de posibles cascadas terapéuticas en personas que viven con VIH. Procesamiento local, sin envío de datos clínicos.">
+  <!-- public-url:start -->
+  <meta property="og:image" content="assets/brand/og-image.png">
+  <meta name="twitter:image" content="assets/brand/og-image.png">
+  <!-- public-url:end -->
+
+  <link rel="preload" href="assets/fonts/inter-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/source-serif-4-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
 </head>
-<body>
+<body class="site">
 
-<a class="skip-link" href="#main-content" data-i18n="skip_link">Saltar al contenido principal</a>
+<a class="skip-link" href="#contenido" data-i18n="skip_link">Saltar al contenido principal</a>
 
-<header class="app-header">
-  <div class="header-content">
-    <div class="brand-lockup">
-      <span class="brand-mark" aria-hidden="true">HC</span>
-      <div class="header-title">
-        <h1>HIV Prescribing Cascade Auditor</h1>
-        <span class="subtitle" data-i18n="product_subtitle">Auditor de Cascadas de Prescripción en VIH</span>
+<header class="site-header" id="top">
+  <div class="site-header__inner">
+    <a class="brand" href="#top" aria-label="HIV Prescribing Cascade Auditor — inicio" data-i18n-aria-label="brand_label">
+      <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><rect width="40" height="40" rx="10" fill="#102A43"/><path d="M10 11.5h9.5v9h9.5v9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><circle cx="10" cy="11.5" r="3" fill="#fff"/><circle cx="19.5" cy="20.5" r="4.6" fill="#102A43" stroke="#5EEAD4" stroke-width="2.2"/><circle cx="19.5" cy="20.5" r="1.3" fill="#5EEAD4"/><circle cx="29" cy="29.5" r="3" fill="#5EEAD4"/></svg>
+      <span class="brand__text">
+        <span class="brand__eyebrow">HIV Prescribing</span>
+        <span class="brand__name">Cascade Auditor</span>
+      </span>
+    </a>
+
+    <button type="button" class="site-nav-toggle" id="site-nav-toggle" aria-expanded="false" aria-controls="site-nav" data-i18n-aria-label="menu_label" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="site-nav" id="site-nav" aria-label="Secciones" data-i18n-aria-label="nav_label">
+      <a href="#problema" data-i18n="nav_problem">El problema</a>
+      <a href="#como-funciona" data-i18n="nav_how">Cómo funciona</a>
+      <a href="#funcionalidades" data-i18n="nav_features">Funcionalidades</a>
+      <a href="#privacidad" data-i18n="nav_privacy">Privacidad</a>
+      <a href="#reconocimientos" data-i18n="nav_award">Reconocimiento</a>
+      <a href="#equipo" data-i18n="nav_team">Autoría</a>
+      <div class="site-nav__actions">
+        <div class="lang-selector" role="group" aria-label="Selección de idioma" data-i18n-aria-label="language_selector">
+          <button type="button" class="lang-btn lang-btn-active" data-lang="es" aria-pressed="true" title="Español">ES</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-pressed="false" title="English">EN</button>
+        </div>
+        <a class="btn btn-primary btn-sm" href="app.html" data-i18n="cta_access_short">Acceder</a>
       </div>
-    </div>
-    <div class="header-actions">
-      <div class="lang-selector" role="group" aria-label="Selección de idioma" data-i18n-aria-label="language_selector">
-        <button id="lang-es" class="btn btn-sm lang-btn lang-btn-active" title="Español" aria-pressed="true">ES</button>
-        <button id="lang-en" class="btn btn-sm lang-btn" title="English" aria-pressed="false">EN</button>
-      </div>
-      <button id="dev-panel-toggle" class="btn btn-sm header-dev-btn"
-        title="Herramientas y opciones técnicas" data-i18n="tools_button" data-i18n-title="tools_button_title"
-        aria-expanded="false" aria-controls="dev-panel">
-        &#9881; Herramientas
-      </button>
-    </div>
+    </nav>
   </div>
 </header>
 
-<!-- Developer / Tools Panel (collapsed by default) -->
-<div id="dev-panel" class="dev-panel" hidden>
-  <div class="dev-panel-inner">
-    <span class="dev-panel-section" data-i18n="kb_section">Base de conocimiento</span>
-    <label class="kb-mode-label" for="kb-mode-select" data-i18n="kb_track_label">Entorno:</label>
-    <select id="kb-mode-select" class="kb-mode-select" title="Cambiar entorno de la base de conocimiento (PROD / DEV)" data-i18n-title="kb_track_title">
-      <option value="PROD">PROD</option>
-      <option value="DEV">DEV</option>
-    </select>
-    <button id="btn-export-kb" class="btn btn-secondary btn-sm" title="Descargar la base de conocimiento original sin normalización" data-i18n="export_kb_source" data-i18n-title="export_kb_source_title">
-      &#128190; Exportar KB (fuente)
-    </button>
-    <button id="btn-export-kb-operational" class="btn btn-secondary btn-sm" title="Descargar la base normalizada con contenido inglés de respaldo" data-i18n="export_kb_operational" data-i18n-title="export_kb_operational_title">
-      &#128190; Exportar KB (operativa)
-    </button>
-    <span class="dev-panel-sep"></span>
-    <span class="dev-panel-section" data-i18n="case_section">Caso</span>
-    <button id="btn-export-json" class="btn btn-secondary btn-sm" title="Exportar el caso en formato JSON" data-i18n="export_json" data-i18n-title="export_json_title" disabled>
-      &#8595; Exportar JSON
-    </button>
-    <button id="btn-export-csv" class="btn btn-secondary btn-sm" title="Exportar las cascadas en formato CSV" data-i18n="export_csv" data-i18n-title="export_csv_title" disabled>
-      &#8595; Exportar CSV
-    </button>
-    <button id="btn-delete-data" class="btn btn-danger btn-sm" title="Eliminar todos los datos locales" data-i18n="delete_data" data-i18n-title="delete_data_title">
-      &#128465; Eliminar todos los datos
-    </button>
-    <span class="dev-panel-sep"></span>
-    <span class="dev-panel-meta" id="dev-panel-version">Pipeline v1.0</span>
-    <span class="dev-panel-meta" id="kb-footer-mode"></span>
-  </div>
-</div>
+<main id="contenido" tabindex="-1">
 
-<!-- Safety Notice (collapsed by default) -->
-<div id="safety-banner" class="safety-banner">
-  <button class="safety-toggle" id="safety-toggle" aria-expanded="false">
-    <span class="safety-icon">&#9888;</span>
-    <strong data-i18n="safety_summary">Solo apoyo a la decisión · Sin datos identificables · Interacciones no exhaustivas</strong>
-    <span class="safety-details-hint" data-i18n="expand_hint">— pulse para ampliar</span>
-    <span class="toggle-arrow collapsed" id="safety-arrow">&#9650;</span>
-  </button>
-  <div class="safety-content" id="safety-content" style="display:none">
-    <div class="safety-grid">
-      <div class="safety-item">
-        <strong data-i18n="safety_support_title">Solo apoyo a la decisión</strong>
-        <p data-i18n="safety_support_body">Todos los hallazgos deben ser revisados por un profesional sanitario cualificado. La herramienta no toma decisiones clínicas autónomas.</p>
+  <!-- ══ HERO ══════════════════════════════════════════════ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__grid-bg" aria-hidden="true"></div>
+    <div class="container hero__inner">
+      <div class="hero__copy">
+        <a class="award-chip award-chip--dark" href="#reconocimientos">
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="m10 5 1.4 2.9 3.2.5-2.3 2.2.5 3.2L10 12.3l-2.8 1.5.5-3.2-2.3-2.2 3.2-.5z" fill="currentColor"/></svg>
+          <span data-i18n="hero_award">1.<sup>er</sup> Premio · XII Premios SEFH/CSL</span>
+        </a>
+        <h1 id="hero-title" class="hero__title">HIV Prescribing Cascade&nbsp;Auditor</h1>
+        <p class="hero__subtitle" data-i18n="hero_subtitle">Tecnología aplicada a la detección y evaluación de cascadas terapéuticas en personas que viven con VIH</p>
+        <p class="hero__lead" data-i18n="hero_lead">Una herramienta de apoyo a la revisión farmacoterapéutica que contrasta la medicación y los problemas clínicos de un caso con una base de conocimiento curada, y presenta cada posible cascada con la evidencia que la sustenta para su valoración profesional.</p>
+        <div class="hero__actions">
+          <a class="btn btn-lg btn-inverse" href="app.html">
+            <span data-i18n="cta_access">Acceder a la herramienta</span>
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10h11m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="btn btn-lg btn-inverse-outline" href="#problema" data-i18n="cta_learn">Conocer el proyecto</a>
+        </div>
+        <p class="hero__resume" id="resume-case" hidden>
+          <span data-i18n="resume_text">Hay un caso en curso guardado en este navegador.</span>
+          <a href="app.html#analysis" data-i18n="resume_link">Continuar la revisión</a>
+        </p>
+        <ul class="hero__facts">
+          <li data-i18n="fact_local">Procesamiento local en el navegador</li>
+          <li data-i18n="fact_nodata">Sin envío de datos clínicos</li>
+          <li data-i18n="fact_bilingual">Español e inglés</li>
+        </ul>
       </div>
-      <div class="safety-item">
-        <strong data-i18n="safety_privacy_title">Sin datos identificables de pacientes</strong>
-        <p data-i18n="safety_privacy_body">Utilice únicamente identificadores seudonimizados o anonimizados. No introduzca nombres, números de historia clínica ni otros identificadores personales.</p>
-      </div>
-      <div class="safety-item">
-        <strong data-i18n="safety_coverage_title">Interacciones no exhaustivas</strong>
-        <p data-i18n="safety_coverage_body">La base de conocimiento no es exhaustiva. Verifique siempre los hallazgos con fuentes clínicas actualizadas y juicio profesional.</p>
+
+      <!-- Product composition: real components and the real output of the
+           bundled pseudonymised demo case (rule CC004). Decorative copy of
+           the interface, hidden from assistive technology. -->
+      <div class="hero__visual" aria-hidden="true">
+        <div class="mock mock--steps">
+          <p class="mock__label" data-i18n="mock_workflow">Flujo de revisión</p>
+          <ol class="mock-steps">
+            <li class="is-done"><span>1</span><b data-i18n="mock_s1">Datos</b></li>
+            <li class="is-done"><span>2</span><b data-i18n="mock_s2">Medicación</b></li>
+            <li class="is-done"><span>3</span><b data-i18n="mock_s3">Clasificación</b></li>
+            <li class="is-active"><span>4</span><b data-i18n="mock_s4">Cascadas</b></li>
+            <li><span>5</span><b data-i18n="mock_s5">Plan</b></li>
+            <li><span>6</span><b data-i18n="mock_s6">Informe</b></li>
+          </ol>
+        </div>
+        <article class="mock mock--card finding finding--supported">
+          <header class="finding__head">
+            <h4 class="finding__title" data-i18n="mock_title">Antagonista del calcio → Edema maleolar → Diurético</h4>
+            <code class="rule-id">CC004</code>
+          </header>
+          <ol class="chain">
+            <li class="chain__node chain__node--index"><span class="chain__lbl" data-i18n="chain_index">Fármaco índice</span><span class="chain__val">amlodipine</span></li>
+            <li class="chain__arrow"><svg viewBox="0 0 24 12"><path d="M1 6h20m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+            <li class="chain__node chain__node--ade"><span class="chain__lbl" data-i18n="chain_ade">Problema intermedio</span><span class="chain__val" data-i18n="mock_ade">Edema de tobillo/pierna</span></li>
+            <li class="chain__arrow"><svg viewBox="0 0 24 12"><path d="M1 6h20m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+            <li class="chain__node chain__node--cascade"><span class="chain__lbl" data-i18n="chain_cascade">Fármaco posterior</span><span class="chain__val">furosemide</span></li>
+          </ol>
+          <dl class="dims">
+            <div class="dims__item"><dt data-i18n="dim_rel">Relevancia clínica potencial (bibliografía/KB)</dt><dd><span class="meter meter--3"><span class="meter__bars"><i></i><i></i><i></i></span><span data-i18n="dim_rel_v">alto</span></span></dd></div>
+            <div class="dims__item"><dt data-i18n="dim_kb">Estado de validación del conocimiento</dt><dd><span class="tag tag--kb-reviewed"><span class="tag__mark"></span><span data-i18n="dim_kb_v">Fuente bibliográfica revisada</span></span></dd></div>
+            <div class="dims__item"><dt data-i18n="dim_auto">Valoración automatizada de este caso</dt><dd><span class="tag tag--cls-supported"><span class="tag__mark"></span><span data-i18n="dim_auto_v">Posible cascada con evidencia suficiente para revisión</span></span></dd></div>
+            <div class="dims__item"><dt data-i18n="dim_prof">Validación profesional</dt><dd><span class="tag tag--prof-pending"><span class="tag__mark"></span><span data-i18n="dim_prof_v">Pendiente de revisión por el profesional</span></span></dd></div>
+          </dl>
+        </article>
+        <p class="mock__caption" data-i18n="mock_caption">Resultado real del caso demo seudonimizado incluido en la herramienta.</p>
       </div>
     </div>
-  </div>
-</div>
+  </section>
 
-<!-- Main App -->
-<main class="app-main" id="main-content">
-
-  <!-- Patient ID Bar -->
-  <div class="patient-bar">
-    <label for="patient-id"><strong data-i18n="patient_id_label">ID seudonimizado:</strong></label>
-    <input type="text" id="patient-id" placeholder="p. ej., PAC-001" data-i18n-placeholder="patient_id_placeholder" maxlength="50">
-    <span id="save-indicator" class="save-indicator" aria-live="polite"></span>
-    <div class="patient-bar-actions">
-      <button id="btn-new-case" class="btn btn-primary btn-sm" data-i18n="new_case">+ Nuevo caso</button>
-      <button id="btn-import" class="btn btn-secondary btn-sm" title="Importar un caso guardado en JSON" data-i18n="import_case" data-i18n-title="import_case_title">
-        &#8593; Importar caso
-      </button>
-      <button id="btn-demo" class="btn btn-outline btn-sm" title="Cargar un caso clínico de demostración" data-i18n="demo_case" data-i18n-title="demo_case_title">
-        &#9654; Probar demo
-      </button>
+  <!-- ══ EL PROBLEMA CLÍNICO ══════════════════════════════ -->
+  <section class="section" id="problema" aria-labelledby="problem-title">
+    <div class="container">
+      <header class="section__head">
+        <p class="eyebrow" data-i18n="problem_eyebrow">El problema clínico</p>
+        <h2 class="section__title" id="problem-title" data-i18n="problem_title">Cuando un efecto adverso se trata como una enfermedad nueva</h2>
+      </header>
+      <div class="problem">
+        <div class="problem__text">
+          <p class="lead" data-i18n="problem_p1">Una <strong>cascada de prescripción</strong> se produce cuando el efecto adverso de un fármaco se interpreta como un problema clínico nuevo y se trata con otro fármaco, en lugar de reconsiderar el primero.</p>
+          <p data-i18n="problem_p2">En las personas que viven con VIH, el tratamiento antirretroviral convive con frecuencia con fármacos para comorbilidades cardiovasculares, metabólicas u óseas. Las interacciones farmacocinéticas —en especial las mediadas por CYP3A4 con potenciadores como ritonavir o cobicistat— añaden una capa más de complejidad.</p>
+          <p data-i18n="problem_p3">En contextos de polifarmacia, la secuencia que conecta ambos fármacos queda dispersa entre notas, fechas y prescriptores distintos, y resulta difícil de reconocer en una revisión rutinaria. Una herramienta que reúna esa información de forma estructurada ayuda al profesional a formular la pregunta adecuada; la respuesta sigue siendo clínica.</p>
+        </div>
+        <figure class="cascade-figure">
+          <figcaption class="cascade-figure__caption" data-i18n="fig_caption">Ejemplo canónico</figcaption>
+          <ol class="cascade-steps">
+            <li><span class="cascade-steps__k" data-i18n="fig_k1">Fármaco A</span><span class="cascade-steps__v" data-i18n="fig_v1">Amlodipino, para la hipertensión</span></li>
+            <li class="is-ade"><span class="cascade-steps__k" data-i18n="fig_k2">Efecto adverso</span><span class="cascade-steps__v" data-i18n="fig_v2">Edema maleolar</span></li>
+            <li><span class="cascade-steps__k" data-i18n="fig_k3">Fármaco B</span><span class="cascade-steps__v" data-i18n="fig_v3">Furosemida, prescrita para el edema</span></li>
+          </ol>
+          <p class="cascade-figure__note" data-i18n="fig_note">La causa del edema puede ser el propio antihipertensivo: el diurético añade medicación sin abordar la causa.</p>
+        </figure>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Step Progress -->
-  <nav class="wizard-nav" aria-label="Pasos del caso clínico" data-i18n-aria-label="wizard_label">
-    <button class="step-btn active" data-step="1">
-      <span class="step-num">1</span>
-      <span class="step-label">Datos</span>
-    </button>
-    <span class="step-connector"></span>
-    <button class="step-btn" data-step="2">
-      <span class="step-num">2</span>
-      <span class="step-label">Medicación</span>
-    </button>
-    <span class="step-connector"></span>
-    <button class="step-btn" data-step="3">
-      <span class="step-num">3</span>
-      <span class="step-label">Clasificación</span>
-    </button>
-    <span class="step-connector"></span>
-    <button class="step-btn" data-step="4">
-      <span class="step-num">4</span>
-      <span class="step-label">Cascadas</span>
-    </button>
-    <span class="step-connector"></span>
-    <button class="step-btn" data-step="5">
-      <span class="step-num">5</span>
-      <span class="step-label">Plan</span>
-    </button>
-    <span class="step-connector"></span>
-    <button class="step-btn" data-step="6">
-      <span class="step-num">&#9654;</span>
-      <span class="step-label">Informe</span>
-    </button>
-  </nav>
-
-  <!-- Step Content Area -->
-  <div id="step-content" class="step-content" aria-live="polite">
-    <!-- Dynamically rendered by app.js -->
-    <div class="loading-placeholder">
-      <span class="spinner" aria-hidden="true"></span>
+  <!-- ══ CÓMO FUNCIONA ═════════════════════════════════════ -->
+  <section class="section section--tint" id="como-funciona" aria-labelledby="how-title">
+    <div class="container">
+      <header class="section__head">
+        <p class="eyebrow" data-i18n="how_eyebrow">Cómo funciona</p>
+        <h2 class="section__title" id="how-title" data-i18n="how_title">Un flujo de revisión trazable, de la nota al informe</h2>
+        <p class="section__lead" data-i18n="how_lead">Cada paso deja constancia de qué se ha detectado, qué ha corregido el profesional y por qué el sistema valora cada señal como lo hace.</p>
+      </header>
+      <ol class="steps">
+        <li class="step-card">
+          <span class="step-card__n">01</span>
+          <h3 data-i18n="how_1_t">Información farmacoterapéutica</h3>
+          <p data-i18n="how_1_b">Se pega una nota clínica seudonimizada. Reglas locales identifican la medicación —incluidas las combinaciones a dosis fija, desglosadas en sus principios activos—, los problemas clínicos con su estado y mediciones simples.</p>
+        </li>
+        <li class="step-card">
+          <span class="step-card__n">02</span>
+          <h3 data-i18n="how_2_t">Revisión profesional de la entrada</h3>
+          <p data-i18n="how_2_b">El farmacéutico revisa y corrige la medicación y los problemas extraídos antes del análisis. Solo la revisión confirmada se aplica al razonamiento, y queda registrada en el informe.</p>
+        </li>
+        <li class="step-card">
+          <span class="step-card__n">03</span>
+          <h3 data-i18n="how_3_t">Análisis con la base de conocimiento</h3>
+          <p data-i18n="how_3_b">Cada secuencia fármaco índice → problema intermedio → fármaco posterior se contrasta con reglas generales y específicas de VIH, comprobando si el problema está documentado, negado, es un antecedente o tiene una indicación alternativa.</p>
+        </li>
+        <li class="step-card">
+          <span class="step-card__n">04</span>
+          <h3 data-i18n="how_4_t">Valoración profesional e informe</h3>
+          <p data-i18n="how_4_b">El sistema nunca da una cascada por confirmada: propone niveles prudentes de valoración. El profesional emite su propio juicio sobre cada señal y genera un informe exportable.</p>
+        </li>
+      </ol>
+      <p class="disclaimer-line">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 2.5 3.5 5v4.6c0 4 2.8 7 6.5 8 3.7-1 6.5-4 6.5-8V5L10 2.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span data-i18n="how_disclaimer">Herramienta de apoyo a la decisión clínica. No es un sistema de diagnóstico autónomo ni emite prescripciones.</span>
+      </p>
     </div>
-  </div>
+  </section>
 
-  <!-- Navigation Buttons -->
-  <div class="wizard-nav-buttons">
-    <button id="btn-prev" class="btn btn-secondary" disabled>&#8592; Anterior</button>
-    <div class="step-counter" id="step-counter">Paso 1 de 6</div>
-    <button id="btn-next" class="btn btn-primary">Siguiente &#8594;</button>
-  </div>
+  <!-- ══ FUNCIONALIDADES ═══════════════════════════════════ -->
+  <section class="section" id="funcionalidades" aria-labelledby="features-title">
+    <div class="container">
+      <header class="section__head">
+        <p class="eyebrow" data-i18n="feat_eyebrow">Funcionalidades</p>
+        <h2 class="section__title" id="features-title" data-i18n="feat_title">Capacidades disponibles hoy</h2>
+      </header>
+      <ul class="features">
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 6h6v6h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="6" r="2" fill="currentColor"/><circle cx="11" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="18" r="2" fill="currentColor"/></svg>
+          <h3 data-i18n="f1_t">Detección de posibles cascadas</h3>
+          <p data-i18n="f1_b">Dos mecanismos complementarios: secuencias fármaco–fármaco y puente sintomático (un síntoma que puede ser efecto adverso de un fármaco y que trata otro).</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 12h7M12 8.5v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3 data-i18n="f2_t">Contexto específico de VIH</h3>
+          <p data-i18n="f2_b">Reglas propias de la farmacología antirretroviral y avisos de interacción asociados a cada cascada, como los de los potenciadores farmacocinéticos.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m15 16 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3 data-i18n="f3_t">Trazabilidad en cuatro dimensiones</h3>
+          <p data-i18n="f3_b">Relevancia potencial, validación bibliográfica de la regla, valoración automatizada del caso y validación profesional, siempre por separado y con la evidencia de cada señal.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="7" ry="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 6v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <h3 data-i18n="f4_t">Base de conocimiento consultable</h3>
+          <p data-i18n="f4_b">Reglas curadas y versionadas, con referencias cuando existen y estado de revisión explícito. Un catálogo de solo lectura permite consultarlas dentro de la herramienta.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5 4.5 7v5c0 4.3 3.1 7.5 7.5 8.5 4.4-1 7.5-4.2 7.5-8.5V7L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3 data-i18n="f5_t">Alertas globales de la medicación</h3>
+          <p data-i18n="f5_b">Hallazgos que dependen del conjunto del tratamiento —carga anticolinérgica, carga depresora del SNC o duplicidad de AINE— mostrados aparte de las cascadas.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3.5V8h4M10 13h5M10 16.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3 data-i18n="f6_t">Informes y exportaciones</h3>
+          <p data-i18n="f6_b">Texto listo para la historia clínica, impresión en PDF, exportación JSON y CSV para investigación, e importación de casos guardados.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="11.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 20h8M12 16.5V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3 data-i18n="f7_t">Procesamiento local</h3>
+          <p data-i18n="f7_b">Todo el análisis se ejecuta en el navegador. Funciona sin conexión una vez cargada y no requiere instalación ni servidor de aplicaciones.</p>
+        </li>
+        <li class="feature">
+          <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h9M8.5 3v2M6 5c.5 3 2.5 5.5 5 6.5M11 5c-.6 3.4-3 6.3-6.5 7.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m12 21 4-9 4 9M13.4 18h5.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3 data-i18n="f8_t">Bilingüe</h3>
+          <p data-i18n="f8_b">Interfaz, informes y base de conocimiento en español e inglés.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
 
+  <!-- ══ SEGURIDAD Y PRIVACIDAD ════════════════════════════ -->
+  <section class="section section--dark" id="privacidad" aria-labelledby="privacy-title">
+    <div class="container privacy">
+      <header class="section__head section__head--inverse">
+        <p class="eyebrow" data-i18n="priv_eyebrow">Seguridad y privacidad</p>
+        <h2 class="section__title" id="privacy-title" data-i18n="priv_title">Diseñada para que los datos clínicos no salgan del navegador</h2>
+        <p class="section__lead" data-i18n="priv_lead">Garantías verificables en el código fuente de la herramienta, y límites que conviene conocer.</p>
+      </header>
+      <div class="privacy__grid">
+        <ul class="guarantees">
+          <li><strong data-i18n="g1_t">Procesamiento local</strong><span data-i18n="g1_b">La extracción y el análisis se ejecutan en el navegador. No existe backend propio.</span></li>
+          <li><strong data-i18n="g2_t">Sin envío de datos clínicos</strong><span data-i18n="g2_b">Sin llamadas a modelos de IA externos, sin telemetría ni analítica. La política de seguridad de contenido limita las conexiones al propio sitio.</span></li>
+          <li><strong data-i18n="g3_t">Seudonimización</strong><span data-i18n="g3_b">Diseñada para notas seudonimizadas. La herramienta no detecta identificadores automáticamente: retirar nombres, NHC u otros datos identificativos es responsabilidad del usuario.</span></li>
+          <li><strong data-i18n="g4_t">Validación profesional</strong><span data-i18n="g4_b">Ningún hallazgo se da por confirmado sin el juicio explícito del profesional, que queda registrado por separado de la valoración automática.</span></li>
+        </ul>
+        <aside class="limits" aria-labelledby="limits-title">
+          <h3 id="limits-title" data-i18n="lim_title">Límites conocidos</h3>
+          <ul>
+            <li data-i18n="lim_1">El caso se guarda sin cifrar en el almacenamiento local del navegador. Use equipos profesionales y elimine los datos al terminar.</li>
+            <li data-i18n="lim_2">La base de conocimiento no es exhaustiva y parte de sus reglas está pendiente de revisión bibliográfica.</li>
+            <li data-i18n="lim_3">No sustituye el juicio clínico ni las guías vigentes. Su cualificación regulatoria está en evaluación; no dispone de marcado CE.</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ INVESTIGACIÓN Y RECONOCIMIENTOS ═══════════════════ -->
+  <section class="section" id="reconocimientos" aria-labelledby="award-title">
+    <div class="container">
+      <header class="section__head">
+        <p class="eyebrow eyebrow--gold" data-i18n="award_eyebrow">Investigación y reconocimientos</p>
+        <h2 class="section__title" id="award-title" data-i18n="award_section_title">Un proyecto reconocido por su contribución a la seguridad del paciente</h2>
+      </header>
+      <article class="laurel">
+        <div class="laurel__seal" aria-hidden="true">
+          <svg viewBox="0 0 120 120" focusable="false"><circle cx="60" cy="60" r="56" fill="none" stroke="#B89554" stroke-width="1.5"/><circle cx="60" cy="60" r="49" fill="none" stroke="#B89554" stroke-width=".8" stroke-dasharray="2 3"/><path d="M60 33l5.9 12 13.2 1.9-9.6 9.3 2.3 13.2L60 63.2l-11.8 6.2 2.3-13.2-9.6-9.3 13.2-1.9z" fill="#B89554"/><text x="60" y="88" text-anchor="middle" font-family="Source Serif 4, Georgia, serif" font-size="11" letter-spacing="2" fill="#7A5C22">I · PREMIO</text></svg>
+        </div>
+        <div class="laurel__body">
+          <p class="laurel__kicker" data-i18n="laurel_kicker">Primer premio</p>
+          <h3 class="laurel__title" data-i18n="laurel_title">1.<sup>er</sup> Premio — XII Premios SEFH/CSL sobre Calidad de los Servicios de Farmacia y Seguridad en el Uso de los Medicamentos</h3>
+          <div class="laurel__project">
+            <p class="laurel__project-label" data-i18n="laurel_project_label">Proyecto galardonado</p>
+            <blockquote class="laurel__quote" data-i18n="laurel_project">«Mejora de la seguridad farmacoterapéutica en personas que viven con VIH mediante una herramienta digital basada en inteligencia artificial para la detección y abordaje de cascadas terapéuticas»</blockquote>
+          </div>
+          <p class="laurel__note" data-i18n="laurel_note">El reconocimiento corresponde al proyecto de investigación en el que se enmarca esta herramienta. No constituye una validación clínica ni una certificación regulatoria del software.</p>
+          <a class="laurel__link" id="award-link" href="#" hidden data-i18n="laurel_link">Ver la comunicación oficial</a>
+        </div>
+      </article>
+      <dl class="research">
+        <div><dt data-i18n="r1_t">Fundamento investigador</dt><dd data-i18n="r1_b">Tesis doctoral «Utilidad de la herramienta SANPAT para la prevención de cascadas de prescripción en pacientes VIH mayores».</dd></div>
+        <div><dt data-i18n="r2_t">Comité de ética</dt><dd data-i18n="r2_b">Código de aprobación SICEIA-2025-002829.</dd></div>
+        <div><dt data-i18n="r3_t">Propiedad intelectual</dt><dd data-i18n="r3_b">Programa de ordenador inscrito en el Registro de la Propiedad Intelectual, asiento 04/2026/2614.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ══ EQUIPO Y AUTORÍA ══════════════════════════════════ -->
+  <section class="section section--tint" id="equipo" aria-labelledby="team-title">
+    <div class="container">
+      <header class="section__head">
+        <p class="eyebrow" data-i18n="team_eyebrow">Equipo y autoría</p>
+        <h2 class="section__title" id="team-title" data-i18n="team_title">Autoría del proyecto</h2>
+      </header>
+      <ul class="people">
+        <li class="person">
+          <span class="person__initials" aria-hidden="true">RM</span>
+          <span class="person__name">Ramón Morillo Verdugo</span>
+          <span class="person__role" data-i18n="person_role">Coautoría y cotitularidad de la herramienta</span>
+        </li>
+        <li class="person">
+          <span class="person__initials" aria-hidden="true">CS</span>
+          <span class="person__name">Cecilia Solís Martín</span>
+          <span class="person__role" data-i18n="person_role">Coautoría y cotitularidad de la herramienta</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══ ACCESO ════════════════════════════════════════════ -->
+  <section class="section access" aria-labelledby="access-title">
+    <div class="container">
+      <div class="access__panel">
+        <div>
+          <h2 class="access__title" id="access-title" data-i18n="access_title">Empiece una revisión</h2>
+          <p class="access__text" data-i18n="access_text">Sin instalación ni registro. Incluye un caso de demostración seudonimizado para conocer el flujo completo en pocos minutos.</p>
+        </div>
+        <div class="access__actions">
+          <a class="btn btn-lg btn-primary" href="app.html">
+            <span data-i18n="cta_access">Acceder a la herramienta</span>
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10h11m0 0-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <p class="access__req" data-i18n="access_req">Navegador moderno (Chrome, Edge, Firefox o Safari actualizados).</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
-<!-- Help / Best Practices / Legal -->
-<section id="help-section" class="help-section">
-  <button class="safety-toggle help-toggle" id="help-toggle" aria-expanded="false" aria-controls="help-content" data-action="toggle-help">
-    <span class="safety-icon">&#8505;</span>
-    <strong data-i18n="help_summary">Buenas prácticas, información científica y aspectos legales</strong>
-    <span class="toggle-arrow collapsed" id="help-arrow">&#9650;</span>
-  </button>
-
-  <div class="safety-content" id="help-content" style="display:none;">
-
-    <!-- ── Best Practices ── -->
-    <div class="help-block">
-      <h3 class="help-heading" data-i18n="best_practices_title">&#128273; Buenas prácticas</h3>
-      <div class="safety-grid">
-        <div class="safety-item help-item">
-          <strong data-i18n="backups_title">Copias de seguridad</strong>
-          <p data-i18n="backups_body">Utilice «Exportar JSON» periódicamente para conservar una copia de sus casos.</p>
-        </div>
-        <div class="safety-item help-item">
-          <strong data-i18n="privacy_title">&#128274; Privacidad (local-first · RGPD)</strong>
-          <p data-i18n="privacy_body">Los datos se almacenan únicamente en este navegador; no existe servidor ni transmisión. Utilice un identificador seudonimizado.</p>
-        </div>
-        <div class="safety-item help-item">
-          <strong data-i18n="research_title">&#128200; Investigación</strong>
-          <p data-i18n="research_body">Exporte JSON o CSV para análisis metodológicos. Todos los hallazgos requieren validación clínica profesional.</p>
-        </div>
-      </div>
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
+      <a class="brand brand--inverse" href="#top" aria-label="HIV Prescribing Cascade Auditor" data-i18n-aria-label="brand_label">
+        <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><rect width="40" height="40" rx="10" fill="#1B3A59"/><path d="M10 11.5h9.5v9h9.5v9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><circle cx="10" cy="11.5" r="3" fill="#fff"/><circle cx="19.5" cy="20.5" r="4.6" fill="#1B3A59" stroke="#5EEAD4" stroke-width="2.2"/><circle cx="19.5" cy="20.5" r="1.3" fill="#5EEAD4"/><circle cx="29" cy="29.5" r="3" fill="#5EEAD4"/></svg>
+        <span class="brand__text"><span class="brand__eyebrow">HIV Prescribing</span><span class="brand__name">Cascade Auditor</span></span>
+      </a>
+      <p class="site-footer__disclaimer" data-i18n="footer_disclaimer">Herramienta de apoyo a la decisión clínica en evaluación. No constituye consejo médico, diagnóstico ni prescripción. Todos los resultados requieren revisión por un profesional sanitario cualificado.</p>
     </div>
-
-    <!-- ── Authorship, scientific basis and legal aspects ── -->
-    <div class="help-block">
-      <h3 class="help-heading" data-i18n="legal_title">&#128196; Autoría, fundamento científico y aspectos legales</h3>
-      <div class="safety-item help-item" style="max-width:100%;" data-i18n="legal_content">
-        <p><strong>Coautores y cotitulares:</strong> Ramón Morillo Verdugo y Cecilia Solís Martín, al 50% cada uno.</p>
-        <p><strong>Registro de propiedad intelectual:</strong> 04/2026/2614.</p>
-        <p><strong>Fundamento investigador:</strong> tesis doctoral «Utilidad de la herramienta SANPAT para la prevención de cascadas de prescripción en pacientes VIH mayores».</p>
-        <p><strong>Código de aprobación del comité de ética:</strong> SICEIA-2025-002829.</p>
-        <p>La herramienta ofrece apoyo a la decisión clínica y no sustituye el juicio del profesional sanitario. Su cualificación y clasificación regulatoria están pendientes de evaluación formal; no dispone de marcado CE.</p>
-        <p>El código, diseño, estructura, base de conocimiento y contenidos están protegidos por la normativa de propiedad intelectual. La reutilización o explotación requiere autorización de los titulares.</p>
-        <p><strong>Versión:</strong> v1.0.0 — <strong>Año:</strong> 2026.</p>
-      </div>
-    </div>
-
-  </div><!-- /help-content -->
-</section>
-
-<!-- Import file input (hidden) -->
-<input type="file" id="import-file-input" accept=".json" style="display:none">
-
-<!-- Toast notifications -->
-<div id="toast-container" class="toast-container" aria-live="assertive"></div>
-
-<footer class="app-footer">
-  <div class="footer-main">
-    <span data-i18n="footer_main">HIV Prescribing Cascade Auditor v1.0 — ejecución local, sin API externas —</span>
-    <span id="kb-status"></span>
-  </div>
-  <div class="footer-legal">
-    <span data-i18n="footer_legal">&copy; HIV Prescribing Cascade Auditor. Programa de ordenador inscrito en el Registro de la Propiedad Intelectual. Asiento registral 04/2026/2614. Fecha de presentación y efectos: 18/03/2026.</span>
+    <nav class="site-footer__nav" aria-label="Pie de página" data-i18n-aria-label="footer_nav">
+      <a href="app.html" data-i18n="cta_access">Acceder a la herramienta</a>
+      <a href="app.html#knowledge" data-i18n="footer_kb">Base de conocimiento</a>
+      <a href="app.html#about" data-i18n="footer_about">Acerca del proyecto</a>
+    </nav>
+    <p class="site-footer__legal" data-i18n="footer_legal">© HIV Prescribing Cascade Auditor · v1.0.0 · Ramón Morillo Verdugo y Cecilia Solís Martín. Programa de ordenador inscrito en el Registro de la Propiedad Intelectual, asiento 04/2026/2614.</p>
   </div>
 </footer>
 
-<script src="kb/dev/kb_validator.js"></script>
-<script src="clinical-engine.js"></script>
-<script src="medication-review.js"></script>
-  <script src="problem-review.js"></script>
-  <script src="reviewed-input-adapter.js"></script>
-<script src="report-contract.js"></script>
-<script src="ui-static-i18n.js"></script>
-<script src="app.js"></script>
+<script src="site.config.js"></script>
+<script src="landing.js"></script>
 </body>
 </html>

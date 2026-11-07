@@ -1,0 +1,16 @@
+{
+  "name": "HIV Prescribing Cascade Auditor",
+  "short_name": "Cascade Auditor",
+  "description": "Apoyo a la revisión farmacoterapéutica para identificar posibles cascadas de prescripción en personas que viven con VIH.",
+  "start_url": "app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#102A43",
+  "lang": "es",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "assets/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

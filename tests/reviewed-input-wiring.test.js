@@ -10,7 +10,7 @@ function read(file) {
 
 function run() {
   reset(); console.log('== reviewed-input-wiring.test.js ==');
-  const html = read('index.html');
+  const html = read('app.html');  /* tool shell (index.html is the public landing) */
   const app = read('app.js');
   const engine = read('clinical-engine.js');
 

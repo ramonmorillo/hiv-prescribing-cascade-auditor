@@ -17,7 +17,9 @@ function values(source, pattern) {
 
 function run() {
   reset(); console.log('== browser-security.test.js ==');
-  const html = read('index.html');
+  /* app.html is the tool shell; index.html is the public landing page.
+     Both must honour the same browser security contract. */
+  const html = read('app.html');
   const app = read('app.js');
   const cspMatch = html.match(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/i);
   const csp = cspMatch ? cspMatch[1] : '';
@@ -45,6 +47,27 @@ function run() {
   assert('all stylesheets are same-origin files',
     stylesheets.length > 0 && stylesheets.every((href) => !/^(?:[a-z]+:)?\/\//i.test(href)));
   assert('application code defines no external HTTP endpoint', !/https?:\/\//i.test(app));
+
+  const landing = read('index.html');
+  const landingCsp = (landing.match(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/i) || [])[1] || '';
+  assert('landing declares the same Content Security Policy as the tool', landingCsp === csp);
+  assert('landing has a no-referrer policy', /<meta\s+name="referrer"\s+content="no-referrer"/i.test(landing));
+  assert('landing has no inline event handlers or javascript: URLs',
+    !/\son[a-z]+\s*=/i.test(landing) && !/javascript\s*:/i.test(landing));
+  const landingScripts = [...landing.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+  assert('landing scripts are same-origin files without inline bodies', landingScripts.length > 0 && landingScripts.every((m) => {
+    const src = m[1].match(/\bsrc="([^"]+)"/i);
+    return src && !/^(?:[a-z]+:)?\/\//i.test(src[1]) && !m[2].trim();
+  }));
+  const landingSheets = [...landing.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/gi)].map((m) => m[1]);
+  assert('landing stylesheets are same-origin files',
+    landingSheets.length > 0 && landingSheets.every((href) => !/^(?:[a-z]+:)?\/\//i.test(href)));
+  ['landing.js', 'kb-catalog.js', 'site.config.js'].forEach((file) => {
+    assert(file + ' defines no external HTTP endpoint and no network call',
+      !/https?:\/\//i.test(read(file)) && !/\bfetch\s*\(|XMLHttpRequest|sendBeacon|WebSocket/.test(read(file)));
+  });
+  assert('site.config.js ships without a public URL or award link (set explicitly when verified)',
+    /publicUrl:\s*''/.test(read('site.config.js')) && /awardUrl:\s*''/.test(read('site.config.js')));
 
   const actions = values(html + '\n' + app, /data-action="([a-z-]+)"/g);
   const handlers = values(app, /action\s*===\s*'([a-z-]+)'/g);
