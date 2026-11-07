@@ -33,6 +33,9 @@
         "pregabalina",
         "lyrica",
         "pregabalin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -43,6 +46,9 @@
         "neurontin",
         "gabapentín",
         "gabapentin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -199,6 +205,9 @@
         "morfin",
         "morfina sulfato",
         "morphine sulfate"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -209,6 +218,9 @@
         "oxycontin",
         "targin",
         "oxinorm"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -222,6 +234,9 @@
         "fentanilo parche",
         "abstral",
         "instanyl"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -232,6 +247,9 @@
         "tramal",
         "ultram",
         "tramadol clorhidrato"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -242,6 +260,9 @@
         "codeína",
         "codenin",
         "codeina fosfato"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -255,6 +276,9 @@
         "buprenorfina parche",
         "norspan",
         "butrans"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -264,6 +288,9 @@
         "tapentadol",
         "palexia",
         "nucynta"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -999,6 +1026,9 @@
         "amitriptilina",
         "tryptizol",
         "elavil"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1008,6 +1038,9 @@
         "clomipramina",
         "clomipramine",
         "anafranil"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1036,6 +1069,9 @@
         "remeron",
         "rexer",
         "mirtazapin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1065,6 +1101,9 @@
         "quetiapina",
         "seroquel",
         "quentiax"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1083,6 +1122,9 @@
         "olanzapina",
         "zyprexa",
         "olanzapín"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1178,6 +1220,9 @@
         "clonazepam",
         "rivotril",
         "klonopin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1188,6 +1233,9 @@
         "imovane",
         "zimovane",
         "zopiclon"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1198,6 +1246,9 @@
         "stilnox",
         "ambien",
         "zolpidem tartrato"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1208,6 +1259,9 @@
         "orfidal",
         "ativan",
         "lorazepam oral"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1217,6 +1271,9 @@
         "diazepam",
         "valium",
         "diazepan"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1226,6 +1283,79 @@
         "alprazolam",
         "xanax",
         "trankimazin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "lormetazepam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "lormetazepam",
+        "noctamid",
+        "loramet"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "bromazepam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "bromazepam",
+        "lexatin"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "ketazolam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "ketazolam",
+        "sedotime"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "clorazepate",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "clorazepate",
+        "clorazepato",
+        "clorazepato dipotasico",
+        "clorazepato dipotásico",
+        "tranxilium"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "triazolam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "triazolam",
+        "halcion"
+      ],
+      "pharmacological_properties": [
+        "sedative"
+      ]
+    },
+    {
+      "canonical": "flurazepam",
+      "drug_class": "Benzodiazepine",
+      "variants": [
+        "flurazepam",
+        "dormodor"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1235,6 +1365,9 @@
         "midazolam",
         "dormicum",
         "versed"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1858,6 +1991,9 @@
         "diphenhydramine",
         "benadryl",
         "nytol"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -1868,6 +2004,9 @@
         "hydroxyzine",
         "atarax",
         "vistaril"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -2340,6 +2479,9 @@
         "trazodone",
         "deprax",
         "desyrel"
+      ],
+      "pharmacological_properties": [
+        "sedative"
       ]
     },
     {
@@ -2466,5 +2608,6 @@
         "maalox"
       ]
     }
-  ]
+  ],
+  "pharmacological_properties_note": "pharmacological_properties describe clinically relevant effects independent of the therapeutic class label (e.g. 'sedative' for trazodone, classified as an antidepressant/SARI). They are used for safety alerts (concomitant sedatives), never to infer an indication or a diagnosis."
 }

@@ -175,6 +175,20 @@ const UI_STRINGS = {
     problem_review_onset:              'Inicio documentado',
     problem_review_onset_placeholder:  'Ej.: sep 2022',
     problem_review_evidence:           'Evidencia original:',
+    problem_review_why:                'Por qu&eacute; aparece:',
+    problem_evidence_explicit_mention: 'Diagn&oacute;stico/hallazgo expl&iacute;cito en la nota',
+    problem_evidence_documented_indication: 'Indicaci&oacute;n documentada de un medicamento',
+    problem_evidence_contextual_inference: 'Inferencia contextual (requiere validaci&oacute;n)',
+    problem_evidence_pharmacological_inference: 'Inferencia s&oacute;lo farmacol&oacute;gica: sospecha, no diagn&oacute;stico',
+    problem_evidence_manual_entry:     'Entrada manual',
+    problem_review_certainty:          function (level) { return 'Certeza de la extracci&oacute;n: ' + ({ high: 'alta', medium: 'media', low: 'baja' }[level] || level); },
+    problem_review_related_meds:       'Medicamentos relacionados:',
+    problem_review_first_documented:   function (raw, sem) { return 'Documentado al menos desde: ' + raw + (sem === 'treatment_start' ? ' (fecha de inicio del tratamiento, no del diagn&oacute;stico)' : sem === 'documented_presence' ? ' (fecha de la menci&oacute;n)' : ''); },
+    problem_review_code:               'C&oacute;digo orientativo:',
+    problem_review_contradiction:      '&#9888; La nota contiene informaci&oacute;n contradictoria sobre este problema: precise el estado.',
+    problem_review_consequence:        'Si se incluye y se confirma la revisi&oacute;n, este problema se utilizar&aacute; en el an&aacute;lisis de cascadas y en los informes; si se excluye, deja de utilizarse en todo el an&aacute;lisis.',
+    problem_review_unresolved:         'Texto no normalizado: se conserva literalmente; revise la denominaci&oacute;n.',
+    problem_review_inactive_hint:      'Los problemas negados, resueltos o pasados permanecen en la lista con su estado para mantener la trazabilidad.',
     problem_review_original:           function (concept) { return 'Valor extra&iacute;do: ' + concept; },
     problem_review_add:                '+ A&ntilde;adir problema',
     problem_review_remove:             'Eliminar',
@@ -301,6 +315,9 @@ const UI_STRINGS = {
     main_interventions:     'Principales intervenciones sugeridas:',
     no_dominant_interventions: 'No hay intervenciones dominantes con los datos actuales.',
     section_findings:       function (n) { return 'Hallazgos farmacoterap&eacute;uticos (' + n + ')'; },
+    section_problems:       function (n) { return 'Problemas cl&iacute;nicos utilizados en el an&aacute;lisis (' + n + ')'; },
+    problems_source_review: 'Fuente: revisi&oacute;n profesional confirmada.',
+    problems_source_extraction: 'Fuente: extracci&oacute;n autom&aacute;tica pendiente de validaci&oacute;n profesional.',
     no_cascades_report:     'Sin se&ntilde;ales de cascada terap&eacute;utica detectadas.',
 
     /* Verification status badges */
@@ -644,6 +661,20 @@ const UI_STRINGS = {
     problem_review_onset:              'Documented onset',
     problem_review_onset_placeholder:  'E.g. Sep 2022',
     problem_review_evidence:           'Original evidence:',
+    problem_review_why:                'Why it appears:',
+    problem_evidence_explicit_mention: 'Explicit diagnosis/finding in the note',
+    problem_evidence_documented_indication: 'Documented indication of a medicine',
+    problem_evidence_contextual_inference: 'Contextual inference (requires validation)',
+    problem_evidence_pharmacological_inference: 'Pharmacological inference only: suspicion, not a diagnosis',
+    problem_evidence_manual_entry:     'Manual entry',
+    problem_review_certainty:          function (level) { return 'Extraction certainty: ' + level; },
+    problem_review_related_meds:       'Related medicines:',
+    problem_review_first_documented:   function (raw, sem) { return 'Documented at least since: ' + raw + (sem === 'treatment_start' ? ' (treatment start date, not diagnosis date)' : sem === 'documented_presence' ? ' (date of mention)' : ''); },
+    problem_review_code:               'Orientative code:',
+    problem_review_contradiction:      '&#9888; The note contains contradictory information about this problem: please specify its status.',
+    problem_review_consequence:        'If included and the review is confirmed, this problem is used in the cascade analysis and reports; if excluded, it is no longer used anywhere in the analysis.',
+    problem_review_unresolved:         'Wording not normalized: kept literally; please review the name.',
+    problem_review_inactive_hint:      'Negated, resolved or past problems stay in the list with their status for traceability.',
     problem_review_original:           function (concept) { return 'Extracted value: ' + concept; },
     problem_review_add:                '+ Add problem',
     problem_review_remove:             'Remove',
@@ -770,6 +801,9 @@ const UI_STRINGS = {
     main_interventions:     'Main suggested interventions:',
     no_dominant_interventions: 'No dominant interventions with current data.',
     section_findings:       function (n) { return 'Pharmacotherapy findings (' + n + ')'; },
+    section_problems:       function (n) { return 'Clinical problems used by the analysis (' + n + ')'; },
+    problems_source_review: 'Source: confirmed professional review.',
+    problems_source_extraction: 'Source: automated extraction pending professional validation.',
     no_cascades_report:     'No therapeutic cascade signals detected.',
 
     /* Verification status badges */
@@ -1010,7 +1044,7 @@ const state = {
   patientId: '',
   clinicalNote: '',
   kbMode: 'PROD',
-  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null, clinicalProblems: null, drugDictionary: null, drugCombinations: null, anticholinergicBurdenScale: null },
+  kb: { coreCascades: null, vihModifiers: null, ddiWatchlist: null, symptomDictionary: null, clinicalModifiers: null, adeTreatmentMap: null, clinicalProblems: null, drugDictionary: null, drugCombinations: null, anticholinergicBurdenScale: null, clinicalTerminology: null },
   /* Cached CaseModel from ClinicalEngine.buildCaseModel() — invalidated
      whenever the note or KB changes. This is now the single source of
      truth for medications/activeProblems/possibleCascades/globalMedicationAlerts;
@@ -1172,7 +1206,12 @@ async function loadKB(track) {
      * ClinicalEngine.scoreAnticholinergicBurden — replaces the old
      * CM006 keyword-trigger alert (see kb/CHANGELOG.md, Fase 6). Also
      * track-independent: the scale itself doesn't vary by KB track. */
-    anticholinergicBurdenScale: 'kb/anticholinergic_burden_scale.json'
+    anticholinergicBurdenScale: 'kb/anticholinergic_burden_scale.json',
+    /* Central clinical terminology (synonyms, abbreviations, broader/
+     * related-not-equivalent relations, orientative codes). Single
+     * normalization layer for problems, indications, ADE and symptom terms;
+     * track-independent like the drug dictionary. */
+    clinicalTerminology: 'kb/clinical_terminology.json'
   };
 
   /* cache:'no-cache' sends a conditional GET on each load — the browser still
@@ -1704,6 +1743,43 @@ function reviewOption(value, current, labelKey) {
   return '<option value="' + value + '"' + (value === current ? ' selected' : '') + '>' + tUI(labelKey) + '</option>';
 }
 
+/** Why a problem appeared and what validating it implies: evidence types,
+ * every original span, related medicines, dated facts with their meaning,
+ * normalization notes. Read-only, derived from the extraction. */
+function renderProblemTraceability(item) {
+  var t = item.traceability;
+  if (!t) {
+    return item.evidence_span
+      ? '<div class="problem-review-evidence"><strong>' + tUI('problem_review_evidence') + '</strong> “' + escHtml(item.evidence_span) + '”</div>'
+      : '';
+  }
+  var parts = [];
+  var types = (t.evidence_types || []).map(function (type) {
+    return '<span class="problem-evidence-type is-' + escHtml(type) + '">' + tUI('problem_evidence_' + type) + '</span>';
+  }).join(' ');
+  parts.push('<div class="problem-review-why"><strong>' + tUI('problem_review_why') + '</strong> ' + types +
+    (t.certainty_level ? ' <span class="problem-review-certainty">' + tUI('problem_review_certainty', t.certainty_level) + '</span>' : '') + '</div>');
+  if (t.contradiction) parts.push('<div class="problem-review-contradiction">' + tUI('problem_review_contradiction') + '</div>');
+  if (!t.concept_id) parts.push('<div class="problem-review-note">' + tUI('problem_review_unresolved') + '</div>');
+  var spans = (t.evidence_spans || []).map(function (e) { return e.text; })
+    .filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+  if (!spans.length && item.evidence_span) spans = [item.evidence_span];
+  if (spans.length) {
+    parts.push('<div class="problem-review-evidence"><strong>' + tUI('problem_review_evidence') + '</strong> ' +
+      spans.map(function (span) { return '“' + escHtml(span) + '”'; }).join(' · ') + '</div>');
+  }
+  if ((t.related_medications || []).length) {
+    parts.push('<div class="problem-review-meds"><strong>' + tUI('problem_review_related_meds') + '</strong> ' +
+      t.related_medications.map(function (m) { return escHtml(m.drug) + (m.start_date ? ' (' + escHtml(m.start_date) + ')' : ''); }).join('; ') + '</div>');
+  }
+  if (t.first_documented_date && !item.onset_date) {
+    parts.push('<div class="problem-review-dates">' + tUI('problem_review_first_documented', escHtml(t.first_documented_date), t.first_documented_semantics) + '</div>');
+  }
+  (t.normalization_notes || []).forEach(function (note) { parts.push('<div class="problem-review-note">' + escHtml(note) + '</div>'); });
+  if (t.code) parts.push('<div class="problem-review-code">' + tUI('problem_review_code') + ' ' + escHtml(t.code) + '</div>');
+  return '<div class="problem-review-trace">' + parts.join('') + '</div>';
+}
+
 function renderProblemReview(problems) {
   var review = ensureProblemReview(problems);
   if (!review) return '';
@@ -1719,9 +1795,7 @@ function renderProblemReview(problems) {
     var original = item.source === 'extracted'
       ? '<div class="problem-review-original">' + tUI('problem_review_original', escHtml(item.original_concept)) + '</div>'
       : '';
-    var evidence = item.evidence_span
-      ? '<div class="problem-review-evidence"><strong>' + tUI('problem_review_evidence') + '</strong> “' + escHtml(item.evidence_span) + '”</div>'
-      : '';
+    var evidence = renderProblemTraceability(item);
     var statusOptions = [
       reviewOption('active', item.status, 'problem_review_status_active'),
       reviewOption('suspected', item.status, 'problem_review_status_suspected'),
@@ -1766,6 +1840,7 @@ function renderProblemReview(problems) {
         '<div><h3 id="problem-review-title">' + tUI('problem_review_title') + '</h3><p>' + tUI('problem_review_intro') + '</p></div>' +
         '<span class="problem-review-review-status ' + statusClass + '">' + tUI(statusKey) + ' · ' + includedCount + '</span>' +
       '</div>' +
+      '<p class="problem-review-consequence">' + tUI('problem_review_consequence') + ' ' + tUI('problem_review_inactive_hint') + '</p>' +
       '<div class="problem-review-list">' + rows + '</div>' +
       '<div class="problem-review-actions">' +
         '<button type="button" class="btn btn-outline btn-sm" data-action="add-problem-row">' + tUI('problem_review_add') + '</button>' +
@@ -2007,73 +2082,22 @@ const STEP_CONTENT = {
 
       var clinicalProblemsHtml = renderProblemReview(clinicalProblems);
 
-      var symCountLabel;
-      var symptomSection;
-      if (!state.kb.symptomDictionary) {
-        symCountLabel = tUI('symptoms_dict_missing');
-        symptomSection = (
-          '<div class="callout callout-warning">' +
-            tUI('symptoms_dict_unavailable_title') + ' ' +
-            tUI('symptoms_dict_unavailable_detail') +
-          '</div>' + clinicalProblemsHtml
-        );
-      } else if (symptoms.length === 0 && clinicalProblems.length === 0) {
-        symCountLabel = tUI('symptoms_zero_label');
-        symptomSection = (
-          '<div class="callout callout-success">' +
-            tUI('no_symptoms') +
-          '</div>' + clinicalProblemsHtml
-        );
-      } else if (symptoms.length === 0) {
-        symCountLabel = tUI('symptoms_count', clinicalProblems.length, 0);
-        symptomSection = clinicalProblemsHtml;
-      } else {
-        /* Split into active vs non-active (negated / historical) */
-        var activeSyms   = symptoms.filter(function (s) { return s.active !== false; });
-        var inactiveSyms = symptoms.filter(function (s) { return s.active === false; });
-        symCountLabel = tUI('symptoms_count', activeSyms.length + clinicalProblems.length, inactiveSyms.length);
-
-        /* Category is shown as text inside each tag; the tint only
-           reinforces it (never colour alone). Inactive mentions are
-           rendered separately and visibly muted. */
-        var renderSymTag = function (s, inactive) {
-          var category = String(s.category || '').toLowerCase().replace(/[^a-z_-]/g, '');
-          var label = escHtml(s.term);
-          if (s.matched_term && s.matched_term.toLowerCase() !== s.term.toLowerCase()) {
-            label += ' <span class="sym-tag__matched">(' + escHtml(s.matched_term) + ')</span>';
-          }
-          var catLabel = s.category
-            ? '<span class="sym-tag__meta">' + escHtml(s.category) + '</span>'
-            : '';
-          var negBadge = inactive
-            ? '<span class="sym-tag__meta sym-tag__meta--reason">' + escHtml(s.reason || 'non-active') + '</span>'
-            : '';
-          return (
-            '<span class="sym-tag' + (inactive ? ' is-inactive' : ' sym-tag--' + category) + '"' +
-              ' title="' + escHtml(s.cascade_relevance || '') + '">' +
-              '<span class="sym-tag__term">' + label + '</span>' + catLabel + negBadge +
-            '</span>'
-          );
-        };
-
-        var symTagsActive   = activeSyms.map(function (s) { return renderSymTag(s, false); }).join('');
-        var symTagsInactive = inactiveSyms.map(function (s) { return renderSymTag(s, true); }).join('');
-
-        var inactiveRow = inactiveSyms.length
-          ? '<div class="sym-tags sym-tags--inactive">' +
-              '<span class="sym-tags__label">' + tUI('inactive_mentions') + '</span>' +
-              symTagsInactive +
-            '</div>'
-          : '';
-
-        symptomSection = (
-          clinicalProblemsHtml +
-          '<div class="sym-tags">' +
-            (activeSyms.length ? symTagsActive : '<span class="text-muted">' + tUI('none') + '</span>') +
-          '</div>' +
-          inactiveRow
-        );
-      }
+      /* Every detected problem — diagnoses, medication indications, symptoms,
+       * ADE findings and contextual inferences — goes through ONE review
+       * circuit. The former separate symptom chips were display-only: they
+       * could not be validated or excluded, yet still drove symptom-bridge
+       * reasoning. `symptoms` stays computed for state/export traceability. */
+      void symptoms;
+      var activeProblemCount = clinicalProblems.filter(function (p) {
+        return p.status === 'active' || p.status === 'suspected' || p.status === 'unknown';
+      }).length;
+      var symCountLabel = tUI('symptoms_count', activeProblemCount, clinicalProblems.length - activeProblemCount);
+      var symptomSection =
+        (!state.kb.symptomDictionary
+          ? '<div class="callout callout-warning">' + tUI('symptoms_dict_unavailable_title') + ' ' + tUI('symptoms_dict_unavailable_detail') + '</div>'
+          : '') +
+        (clinicalProblems.length === 0 ? '<div class="callout callout-success">' + tUI('no_symptoms') + '</div>' : '') +
+        clinicalProblemsHtml;
 
       return (
         '<section class="content-block">' +
@@ -2592,6 +2616,8 @@ const STEP_CONTENT = {
             section(tUI('section_drugs', r.drugs_detected.length), listOrEmpty(r.drugs_detected, 'none_detected')) +
             section(tUI('section_classes', r.drug_classes.length), listOrEmpty(r.drug_classes, 'not_classified')) +
           '</div>' +
+
+          section(tUI('section_problems', (r.clinical_problems || []).length), renderReportProblemsHtml(r)) +
 
           section(tUI('section_findings', r.cascade_count), cascadeContent) +
 
@@ -3290,6 +3316,26 @@ function renderMissingInformationSection(missing) {
    function only adds display-oriented derived fields (localized labels,
    clinician verification status) on top of the CaseModel.
    ──────────────────────────────────────────────────────────────────────── */
+/** Step 6 list of the EFFECTIVE clinical problems — identical data to the
+ * clinical-text, CSV and JSON exports (ReportContract.clinical_problems). */
+function renderReportProblemsHtml(r) {
+  var problems = r.clinical_problems || [];
+  var applied = r.input_provenance && r.input_provenance.problem_review && r.input_provenance.problem_review.applied;
+  var source = '<div style="font-size:.78rem;color:#777;margin-bottom:.3rem;">' + tUI(applied ? 'problems_source_review' : 'problems_source_extraction') + '</div>';
+  if (!problems.length) return source + '<em style="color:#aaa;font-size:.85rem;">' + tUI('none_detected') + '</em>';
+  return source + '<ul style="margin:.2rem 0 .2rem 1rem;font-size:.84rem;">' + problems.map(function (p) {
+    var types = (p.evidence_types || []).map(function (t) { return tUI('problem_evidence_' + t); }).join(', ');
+    var meds = (p.related_medications || []).map(function (m) { return escHtml(m.drug) + (m.start_date ? ' (' + escHtml(m.start_date) + ')' : ''); }).join('; ');
+    var dated = p.documented_onset ? escHtml(p.documented_onset)
+      : (p.first_documented ? tUI('problem_review_first_documented', escHtml(p.first_documented.raw), p.first_documented.semantics) : '');
+    return '<li><strong>' + escHtml(p.concept) + '</strong> &mdash; ' + escHtml(p.status) + ' / ' + escHtml(p.temporality) +
+      (types ? ' <span style="color:#777;">[' + types + ']</span>' : '') +
+      (dated ? '<div style="color:#777;font-size:.78rem;">' + dated + '</div>' : '') +
+      (meds ? '<div style="color:#777;font-size:.78rem;">' + tUI('problem_review_related_meds') + ' ' + meds + '</div>' : '') +
+      '</li>';
+  }).join('') + '</ul>';
+}
+
 function buildReport() {
   var model = getCaseModel(state.clinicalNote);
 

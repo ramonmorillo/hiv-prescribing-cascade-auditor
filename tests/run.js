@@ -30,7 +30,8 @@ const suites = [
   './reviewed-input-edge-cases.test.js',
   './report-contract.test.js',
   './report-wiring.test.js',
-  './site-redesign.test.js'
+  './site-redesign.test.js',
+  './unified-problem-extraction.test.js'
 ];
 
 let allOk = true;

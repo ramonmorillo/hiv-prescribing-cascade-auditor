@@ -1,0 +1,1580 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-10-19",
+  "description": "Terminología clínica central (track-independent, como drug_dictionary.json). Normaliza texto libre de problemas de salud a conceptos estables: términos equivalentes, abreviaturas, términos coloquiales (confianza media), relaciones de concepto más amplio (broader) y términos relacionados que NO son sinónimos. La consumen la extracción de problemas, la normalización de indicaciones, la verificación del problema intermedio de las cascadas (ade_treatment_map / kb_symptoms se resuelven a través de esta misma terminología) y la revisión profesional.",
+  "disclaimer": "Los códigos CIE-10 son de la clasificación OMS y se ofrecen sólo como referencia orientativa: deben verificarse frente a la edición de CIE-10-ES vigente antes de cualquier uso administrativo. Ningún término coloquial ni relación 'related_not_equivalent' convierte por sí solo un hallazgo en diagnóstico confirmado.",
+  "matching_rules": {
+    "accent_insensitive": true,
+    "case_insensitive": true,
+    "approximate_matching": "Distancia de edición ≤1 sólo para términos de una palabra de ≥8 caracteres; se marca como coincidencia aproximada (confianza baja) y requiere validación.",
+    "ambiguous_abbreviations_excluded": [
+      "fa",
+      "ic",
+      "sca",
+      "tag",
+      "te"
+    ],
+    "adjectival_forms_excluded": "Formas adjetivas (diabético/a, diabetic) excluidas: suelen modificar otro sustantivo (cetoacidosis diabética, pie diabético) y no nombran el problema por sí mismas."
+  },
+  "concepts": [
+    {
+      "id": "TC_HTN",
+      "preferred_es": "hipertensión arterial",
+      "preferred_en": "hypertension",
+      "category": "cardiovascular",
+      "terms_es": [
+        "hipertension",
+        "hipertension arterial",
+        "hipertension esencial",
+        "hipertension arterial esencial",
+        "presion arterial elevada",
+        "tension arterial elevada",
+        "cifras tensionales elevadas",
+        "hipertension arterial cronica"
+      ],
+      "terms_en": [
+        "hypertension",
+        "high blood pressure",
+        "elevated blood pressure",
+        "essential hypertension",
+        "raised blood pressure"
+      ],
+      "abbreviations": [
+        "hta",
+        "htn"
+      ],
+      "lay_terms_es": [
+        "tension alta",
+        "presion alta",
+        "la tension alta"
+      ],
+      "catalog_problem_id": "CPB001",
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I10",
+        "display": "Hipertensión esencial (primaria)",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HF",
+      "preferred_es": "insuficiencia cardiaca",
+      "preferred_en": "heart failure",
+      "category": "cardiovascular",
+      "terms_es": [
+        "insuficiencia cardiaca",
+        "insuficiencia cardiaca congestiva",
+        "fallo cardiaco"
+      ],
+      "terms_en": [
+        "heart failure",
+        "congestive heart failure",
+        "cardiac failure"
+      ],
+      "abbreviations": [
+        "icc",
+        "hf",
+        "chf"
+      ],
+      "catalog_problem_id": "CPB002",
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I50",
+        "display": "Insuficiencia cardíaca",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_DM",
+      "preferred_es": "diabetes mellitus (tipo no especificado)",
+      "preferred_en": "diabetes mellitus (type not specified)",
+      "category": "metabolic",
+      "terms_es": [
+        "diabetes",
+        "diabetes mellitus"
+      ],
+      "terms_en": [
+        "diabetes",
+        "diabetes mellitus"
+      ],
+      "abbreviations": [
+        "dm"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E14",
+        "display": "Diabetes mellitus, no especificada",
+        "status": "orientativo"
+      },
+      "note_es": "Concepto amplio: si la nota especifica el tipo, se consolida en el concepto específico."
+    },
+    {
+      "id": "TC_DM2",
+      "preferred_es": "diabetes mellitus tipo 2",
+      "preferred_en": "type 2 diabetes mellitus",
+      "category": "metabolic",
+      "terms_es": [
+        "diabetes mellitus tipo 2",
+        "diabetes tipo 2",
+        "diabetes mellitus tipo ii",
+        "diabetes tipo ii",
+        "diabetes mellitus no insulinodependiente",
+        "diabetes del adulto"
+      ],
+      "terms_en": [
+        "type 2 diabetes",
+        "type 2 diabetes mellitus",
+        "type ii diabetes",
+        "non-insulin-dependent diabetes"
+      ],
+      "abbreviations": [
+        "dm2",
+        "dm 2",
+        "dm tipo 2",
+        "dm ii",
+        "dmt2",
+        "dm-2",
+        "dmnid",
+        "t2dm"
+      ],
+      "catalog_problem_id": "CPB003",
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E11",
+        "display": "Diabetes mellitus tipo 2",
+        "status": "orientativo"
+      },
+      "broader": "TC_DM",
+      "merge_into_narrower": true
+    },
+    {
+      "id": "TC_DM1",
+      "preferred_es": "diabetes mellitus tipo 1",
+      "preferred_en": "type 1 diabetes mellitus",
+      "category": "metabolic",
+      "terms_es": [
+        "diabetes mellitus tipo 1",
+        "diabetes tipo 1",
+        "diabetes mellitus tipo i",
+        "diabetes tipo i",
+        "diabetes insulinodependiente"
+      ],
+      "terms_en": [
+        "type 1 diabetes",
+        "type 1 diabetes mellitus"
+      ],
+      "abbreviations": [
+        "dm1",
+        "dm 1",
+        "dm tipo 1",
+        "dmt1",
+        "t1dm"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E10",
+        "display": "Diabetes mellitus tipo 1",
+        "status": "orientativo"
+      },
+      "broader": "TC_DM",
+      "merge_into_narrower": true
+    },
+    {
+      "id": "TC_DYSLIPIDEMIA",
+      "preferred_es": "dislipemia",
+      "preferred_en": "dyslipidaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "dislipemia",
+        "dislipidemia",
+        "dislipemia mixta",
+        "dislipidemia mixta",
+        "hiperlipidemia",
+        "hiperlipemia",
+        "hipercolesterolemia",
+        "hipertrigliceridemia",
+        "alteraciones lipidicas",
+        "alteracion lipidica",
+        "alteracion del perfil lipidico",
+        "colesterol elevado",
+        "colesterol alto",
+        "ldl elevado"
+      ],
+      "terms_en": [
+        "dyslipidemia",
+        "dyslipidaemia",
+        "hyperlipidemia",
+        "hypercholesterolemia",
+        "hypertriglyceridemia",
+        "high cholesterol",
+        "lipid disorder"
+      ],
+      "abbreviations": [
+        "dlp"
+      ],
+      "lay_terms_es": [
+        "el colesterol alto"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E78.5",
+        "display": "Hiperlipidemia, no especificada",
+        "status": "orientativo"
+      },
+      "note_es": "Agrupa hipercolesterolemia, hipertrigliceridemia y dislipemia mixta; el término literal se conserva como evidencia."
+    },
+    {
+      "id": "TC_INSOMNIA",
+      "preferred_es": "insomnio",
+      "preferred_en": "insomnia",
+      "category": "neurological",
+      "terms_es": [
+        "insomnio",
+        "insomnio cronico",
+        "insomnio de conciliacion",
+        "insomnio de mantenimiento",
+        "dificultad para conciliar el sueno",
+        "dificultades para conciliar el sueno",
+        "dificultad para mantener el sueno",
+        "dificultad para dormir",
+        "dificultades para dormir"
+      ],
+      "terms_en": [
+        "insomnia",
+        "difficulty sleeping",
+        "difficulty falling asleep",
+        "sleeplessness",
+        "trouble sleeping"
+      ],
+      "abbreviations": [],
+      "lay_terms_es": [
+        "problemas para dormir",
+        "problema para dormir",
+        "no puede dormir",
+        "no consigue dormir",
+        "duerme mal",
+        "le cuesta dormir",
+        "no duerme"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G47.0",
+        "display": "Trastornos del inicio y del mantenimiento del sueño [insomnios]",
+        "status": "orientativo"
+      },
+      "broader": "TC_SLEEP_DISORDER",
+      "merge_into_narrower": false,
+      "note_es": "Las expresiones coloquiales («problemas para dormir») se aceptan como equivalentes con confianza media y requieren validación."
+    },
+    {
+      "id": "TC_SLEEP_DISORDER",
+      "preferred_es": "trastorno del sueño (no especificado)",
+      "preferred_en": "sleep disorder (unspecified)",
+      "category": "neurological",
+      "terms_es": [
+        "trastorno del sueno",
+        "trastornos del sueno",
+        "alteracion del sueno",
+        "alteraciones del sueno",
+        "trastorno del ritmo del sueno"
+      ],
+      "terms_en": [
+        "sleep disorder",
+        "sleep disturbance",
+        "sleep disturbances"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G47.9",
+        "display": "Trastorno del sueño, no especificado",
+        "status": "orientativo"
+      },
+      "note_es": "Concepto más amplio que insomnio: incluye apnea, hipersomnia, parasomnias o trastornos del ritmo. No se convierte automáticamente en insomnio."
+    },
+    {
+      "id": "TC_BPH",
+      "preferred_es": "hiperplasia benigna de próstata",
+      "preferred_en": "benign prostatic hyperplasia",
+      "category": "urological",
+      "terms_es": [
+        "hiperplasia benigna de prostata",
+        "hiperplasia prostatica benigna",
+        "hipertrofia benigna de prostata",
+        "hipertrofia prostatica benigna",
+        "crecimiento prostatico benigno",
+        "adenoma de prostata",
+        "hiperplasia de prostata"
+      ],
+      "terms_en": [
+        "benign prostatic hyperplasia",
+        "benign prostatic hypertrophy",
+        "prostatic hyperplasia",
+        "enlarged prostate"
+      ],
+      "abbreviations": [
+        "hbp",
+        "bph"
+      ],
+      "lay_terms_es": [
+        "prostata agrandada"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "N40",
+        "display": "Hiperplasia de la próstata",
+        "status": "orientativo"
+      },
+      "related_not_equivalent": [
+        {
+          "term": "prostatismo",
+          "resolves_to": "TC_LUTS",
+          "note_es": "Síntoma urinario compatible, no diagnóstico de HBP."
+        },
+        {
+          "term": "sintomas del tracto urinario inferior",
+          "resolves_to": "TC_LUTS",
+          "note_es": "Los STUI tienen causas distintas de la HBP."
+        }
+      ]
+    },
+    {
+      "id": "TC_LUTS",
+      "preferred_es": "síntomas del tracto urinario inferior",
+      "preferred_en": "lower urinary tract symptoms",
+      "category": "urological",
+      "terms_es": [
+        "sintomas del tracto urinario inferior",
+        "sintomas urinarios",
+        "prostatismo",
+        "sintomatologia miccional"
+      ],
+      "terms_en": [
+        "lower urinary tract symptoms"
+      ],
+      "abbreviations": [
+        "stui",
+        "luts"
+      ],
+      "code": null,
+      "note_es": "Síndrome sintomático; no equivale a hiperplasia benigna de próstata."
+    },
+    {
+      "id": "TC_ESSENTIAL_TREMOR",
+      "preferred_es": "temblor esencial",
+      "preferred_en": "essential tremor",
+      "category": "neurological",
+      "terms_es": [
+        "temblor esencial",
+        "temblor esencial familiar",
+        "temblor familiar benigno"
+      ],
+      "terms_en": [
+        "essential tremor",
+        "benign essential tremor"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G25.0",
+        "display": "Temblor esencial",
+        "status": "orientativo"
+      },
+      "related_not_equivalent": [
+        {
+          "term": "temblor de accion",
+          "resolves_to": "TC_TREMOR",
+          "note_es": "El temblor de acción es característico del temblor esencial, pero también aparece en temblor fisiológico exacerbado, farmacológico o distónico: no es sinónimo."
+        },
+        {
+          "term": "temblor postural",
+          "resolves_to": "TC_TREMOR",
+          "note_es": "Fenomenología compatible, no diagnóstico etiológico."
+        }
+      ]
+    },
+    {
+      "id": "TC_TREMOR",
+      "preferred_es": "temblor (no especificado)",
+      "preferred_en": "tremor (unspecified)",
+      "category": "neurological",
+      "terms_es": [
+        "temblor",
+        "temblores",
+        "temblor de reposo"
+      ],
+      "terms_en": [
+        "tremor"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R25.1",
+        "display": "Temblor, no especificado",
+        "status": "orientativo"
+      },
+      "note_es": "Descripción fenomenológica; el diagnóstico etiológico (p. ej. temblor esencial) requiere documentación explícita."
+    },
+    {
+      "id": "TC_HIV",
+      "preferred_es": "infección por VIH",
+      "preferred_en": "HIV infection",
+      "category": "infectious",
+      "terms_es": [
+        "infeccion por vih",
+        "infeccion vih",
+        "vih positivo",
+        "vih+",
+        "seropositivo para vih",
+        "persona que vive con el vih",
+        "personas que viven con el vih",
+        "virus de la inmunodeficiencia humana"
+      ],
+      "terms_en": [
+        "hiv infection",
+        "hiv positive",
+        "people living with hiv",
+        "person living with hiv",
+        "human immunodeficiency virus"
+      ],
+      "abbreviations": [
+        "vih",
+        "hiv",
+        "pvvih",
+        "plwh",
+        "plhiv"
+      ],
+      "code": null,
+      "note_es": "Codificación CIE-10 dependiente del estadio (B20–B24 / Z21): requiere codificación profesional. El control virológico es un atributo evolutivo, no el diagnóstico.",
+      "contextual_inference": {
+        "evidence_type": "contextual_inference",
+        "required_drug_class_prefix": "Antiretroviral",
+        "core_drug_class_patterns": [
+          "INSTI",
+          "PI",
+          "NNRTI",
+          "Capsid",
+          "Attachment",
+          "Post-attachment"
+        ],
+        "supporting_terms_es": [
+          "control virologico",
+          "carga viral",
+          "cv indetectable",
+          "indetectable",
+          "suprimida",
+          "cd4",
+          "tar",
+          "tarv",
+          "tratamiento antirretroviral",
+          "antirretroviral",
+          "antirretrovirales"
+        ],
+        "supporting_terms_en": [
+          "viral load",
+          "virologic control",
+          "virological control",
+          "undetectable",
+          "cd4",
+          "antiretroviral therapy"
+        ],
+        "status_with_support": "active",
+        "status_without_support": "suspected",
+        "rationale_es": "Un régimen antirretroviral con agente principal (INSTI/IP/ITINAN/otros) y referencias explícitas a control virológico, carga viral, CD4 o TAR constituye evidencia contextual suficiente de infección por VIH. Sin esas referencias sólo se propone como sospecha (p. ej. profilaxis o uso no documentado).",
+        "attribute_terms_es": {
+          "virological_control": [
+            "control virologico",
+            "carga viral indetectable",
+            "cv indetectable",
+            "indetectable",
+            "suprimida"
+          ]
+        }
+      }
+    },
+    {
+      "id": "TC_GERD_DYSPEPSIA",
+      "preferred_es": "reflujo gastroesofágico / dispepsia",
+      "preferred_en": "gastro-oesophageal reflux / dyspepsia",
+      "category": "gastrointestinal",
+      "terms_es": [
+        "reflujo gastroesofagico",
+        "enfermedad por reflujo gastroesofagico",
+        "dispepsia",
+        "pirosis",
+        "reflujo acido",
+        "ardor de estomago",
+        "acidez de estomago"
+      ],
+      "terms_en": [
+        "gastroesophageal reflux",
+        "gerd",
+        "dyspepsia",
+        "heartburn",
+        "acid reflux"
+      ],
+      "abbreviations": [
+        "erge",
+        "rge"
+      ],
+      "catalog_problem_id": "CPB004",
+      "code": null
+    },
+    {
+      "id": "TC_OA_MSK_PAIN",
+      "preferred_es": "artrosis / dolor musculoesquelético crónico",
+      "preferred_en": "osteoarthritis / chronic musculoskeletal pain",
+      "category": "musculoskeletal",
+      "terms_es": [
+        "artrosis",
+        "osteoartritis",
+        "gonartrosis",
+        "coxartrosis",
+        "dolor musculoesqueletico cronico",
+        "dolor articular cronico"
+      ],
+      "terms_en": [
+        "osteoarthritis",
+        "chronic musculoskeletal pain"
+      ],
+      "abbreviations": [],
+      "catalog_problem_id": "CPB005",
+      "code": null
+    },
+    {
+      "id": "TC_PARKINSON",
+      "preferred_es": "enfermedad de Parkinson",
+      "preferred_en": "Parkinson's disease",
+      "category": "neurological",
+      "terms_es": [
+        "enfermedad de parkinson",
+        "parkinson"
+      ],
+      "terms_en": [
+        "parkinson's disease",
+        "parkinson disease",
+        "parkinsons disease"
+      ],
+      "abbreviations": [],
+      "catalog_problem_id": "CPB006",
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G20",
+        "display": "Enfermedad de Parkinson",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_DEPRESSION",
+      "preferred_es": "depresión",
+      "preferred_en": "depression",
+      "category": "psychiatric",
+      "terms_es": [
+        "depresion",
+        "sindrome depresivo",
+        "episodio depresivo",
+        "trastorno depresivo",
+        "trastorno depresivo mayor",
+        "estado de animo deprimido"
+      ],
+      "terms_en": [
+        "depression",
+        "major depressive disorder",
+        "depressive episode"
+      ],
+      "abbreviations": [
+        "tdm"
+      ],
+      "lay_terms_es": [
+        "animo bajo"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "F32.9",
+        "display": "Episodio depresivo, no especificado",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_ANXIETY",
+      "preferred_es": "ansiedad",
+      "preferred_en": "anxiety",
+      "category": "psychiatric",
+      "terms_es": [
+        "ansiedad",
+        "trastorno de ansiedad",
+        "trastorno de ansiedad generalizada",
+        "sindrome ansioso"
+      ],
+      "terms_en": [
+        "anxiety",
+        "anxiety disorder",
+        "generalized anxiety disorder"
+      ],
+      "abbreviations": [],
+      "lay_terms_es": [
+        "nerviosismo"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "F41.9",
+        "display": "Trastorno de ansiedad, no especificado",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPOTHYROIDISM",
+      "preferred_es": "hipotiroidismo",
+      "preferred_en": "hypothyroidism",
+      "category": "endocrine",
+      "terms_es": [
+        "hipotiroidismo",
+        "hipofuncion tiroidea"
+      ],
+      "terms_en": [
+        "hypothyroidism"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E03.9",
+        "display": "Hipotiroidismo, no especificado",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_OSTEOPOROSIS",
+      "preferred_es": "osteoporosis",
+      "preferred_en": "osteoporosis",
+      "category": "musculoskeletal",
+      "terms_es": [
+        "osteoporosis",
+        "perdida osea",
+        "densidad mineral osea baja"
+      ],
+      "terms_en": [
+        "osteoporosis"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "M81.9",
+        "display": "Osteoporosis, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_AF",
+      "preferred_es": "fibrilación auricular",
+      "preferred_en": "atrial fibrillation",
+      "category": "cardiovascular",
+      "terms_es": [
+        "fibrilacion auricular"
+      ],
+      "terms_en": [
+        "atrial fibrillation"
+      ],
+      "abbreviations": [
+        "acxfa"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I48",
+        "display": "Fibrilación y aleteo auricular",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_IHD",
+      "preferred_es": "cardiopatía isquémica",
+      "preferred_en": "ischaemic heart disease",
+      "category": "cardiovascular",
+      "terms_es": [
+        "cardiopatia isquemica",
+        "enfermedad coronaria",
+        "angina de pecho",
+        "infarto agudo de miocardio",
+        "infarto de miocardio"
+      ],
+      "terms_en": [
+        "ischemic heart disease",
+        "coronary artery disease",
+        "angina",
+        "myocardial infarction"
+      ],
+      "abbreviations": [
+        "iam"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I25.9",
+        "display": "Enfermedad isquémica crónica del corazón, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_STROKE",
+      "preferred_es": "ictus",
+      "preferred_en": "stroke",
+      "category": "neurological",
+      "terms_es": [
+        "ictus",
+        "accidente cerebrovascular",
+        "enfermedad cerebrovascular"
+      ],
+      "terms_en": [
+        "stroke",
+        "cerebrovascular accident"
+      ],
+      "abbreviations": [
+        "acv",
+        "avc"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I64",
+        "display": "Accidente vascular encefálico agudo, no especificado",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_CKD",
+      "preferred_es": "enfermedad renal crónica",
+      "preferred_en": "chronic kidney disease",
+      "category": "renal",
+      "terms_es": [
+        "enfermedad renal cronica",
+        "insuficiencia renal cronica"
+      ],
+      "terms_en": [
+        "chronic kidney disease",
+        "chronic renal failure"
+      ],
+      "abbreviations": [
+        "erc",
+        "irc",
+        "ckd"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "N18",
+        "display": "Enfermedad renal crónica",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_COPD",
+      "preferred_es": "enfermedad pulmonar obstructiva crónica",
+      "preferred_en": "chronic obstructive pulmonary disease",
+      "category": "respiratory",
+      "terms_es": [
+        "enfermedad pulmonar obstructiva cronica",
+        "bronquitis cronica",
+        "enfisema"
+      ],
+      "terms_en": [
+        "chronic obstructive pulmonary disease",
+        "emphysema"
+      ],
+      "abbreviations": [
+        "epoc",
+        "copd"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "J44.9",
+        "display": "EPOC, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_ASTHMA",
+      "preferred_es": "asma",
+      "preferred_en": "asthma",
+      "category": "respiratory",
+      "terms_es": [
+        "asma",
+        "asma bronquial"
+      ],
+      "terms_en": [
+        "asthma"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "J45",
+        "display": "Asma",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_GOUT",
+      "preferred_es": "gota",
+      "preferred_en": "gout",
+      "category": "musculoskeletal",
+      "terms_es": [
+        "gota",
+        "artritis gotosa"
+      ],
+      "terms_en": [
+        "gout"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "M10",
+        "display": "Gota",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPERURICEMIA",
+      "preferred_es": "hiperuricemia",
+      "preferred_en": "hyperuricaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hiperuricemia",
+        "acido urico elevado"
+      ],
+      "terms_en": [
+        "hyperuricemia"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E79.0",
+        "display": "Hiperuricemia sin signos de artritis inflamatoria ni enfermedad tofácea",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_OBESITY",
+      "preferred_es": "obesidad",
+      "preferred_en": "obesity",
+      "category": "metabolic",
+      "terms_es": [
+        "obesidad",
+        "obesidad morbida"
+      ],
+      "terms_en": [
+        "obesity"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E66",
+        "display": "Obesidad",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_WEIGHT_GAIN",
+      "preferred_es": "aumento de peso",
+      "preferred_en": "weight gain",
+      "category": "metabolic",
+      "terms_es": [
+        "aumento de peso",
+        "ganancia de peso",
+        "ganancia ponderal",
+        "incremento de peso"
+      ],
+      "terms_en": [
+        "weight gain"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R63.5",
+        "display": "Aumento anormal de peso",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_METABOLIC_SYNDROME",
+      "preferred_es": "síndrome metabólico",
+      "preferred_en": "metabolic syndrome",
+      "category": "metabolic",
+      "terms_es": [
+        "sindrome metabolico",
+        "resistencia a la insulina"
+      ],
+      "terms_en": [
+        "metabolic syndrome",
+        "insulin resistance"
+      ],
+      "abbreviations": [],
+      "code": null
+    },
+    {
+      "id": "TC_EPILEPSY",
+      "preferred_es": "epilepsia",
+      "preferred_en": "epilepsy",
+      "category": "neurological",
+      "terms_es": [
+        "epilepsia",
+        "crisis epilepticas"
+      ],
+      "terms_en": [
+        "epilepsy",
+        "seizure disorder"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G40",
+        "display": "Epilepsia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_MIGRAINE",
+      "preferred_es": "migraña",
+      "preferred_en": "migraine",
+      "category": "neurological",
+      "terms_es": [
+        "migrana",
+        "jaqueca"
+      ],
+      "terms_en": [
+        "migraine"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "G43.9",
+        "display": "Migraña, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_CHRONIC_PAIN",
+      "preferred_es": "dolor crónico",
+      "preferred_en": "chronic pain",
+      "category": "musculoskeletal",
+      "terms_es": [
+        "dolor cronico",
+        "lumbalgia cronica",
+        "dolor neuropatico"
+      ],
+      "terms_en": [
+        "chronic pain",
+        "neuropathic pain"
+      ],
+      "abbreviations": [],
+      "code": null
+    },
+    {
+      "id": "TC_HEPATITIS_C",
+      "preferred_es": "hepatitis C",
+      "preferred_en": "hepatitis C",
+      "category": "infectious",
+      "terms_es": [
+        "hepatitis c",
+        "infeccion por vhc",
+        "hepatitis cronica c"
+      ],
+      "terms_en": [
+        "hepatitis c",
+        "hcv infection"
+      ],
+      "abbreviations": [
+        "vhc",
+        "hcv"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "B18.2",
+        "display": "Hepatitis viral crónica C",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HEPATITIS_B",
+      "preferred_es": "hepatitis B",
+      "preferred_en": "hepatitis B",
+      "category": "infectious",
+      "terms_es": [
+        "hepatitis b",
+        "infeccion por vhb",
+        "hepatitis cronica b"
+      ],
+      "terms_en": [
+        "hepatitis b",
+        "hbv infection"
+      ],
+      "abbreviations": [
+        "vhb",
+        "hbv"
+      ],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "B18.1",
+        "display": "Hepatitis viral crónica B",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_CONSTIPATION",
+      "preferred_es": "estreñimiento",
+      "preferred_en": "constipation",
+      "category": "gastrointestinal",
+      "terms_es": [
+        "estrenimiento",
+        "heces duras",
+        "transito intestinal lento"
+      ],
+      "terms_en": [
+        "constipation"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "K59.0",
+        "display": "Constipación",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_DRY_MOUTH",
+      "preferred_es": "sequedad de boca",
+      "preferred_en": "dry mouth",
+      "category": "anticholinergic",
+      "terms_es": [
+        "sequedad de boca",
+        "boca seca",
+        "xerostomia"
+      ],
+      "terms_en": [
+        "dry mouth",
+        "xerostomia"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R68.2",
+        "display": "Sequedad de la boca, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_DIZZINESS",
+      "preferred_es": "mareo",
+      "preferred_en": "dizziness",
+      "category": "neurological",
+      "terms_es": [
+        "mareo",
+        "mareos",
+        "vertigo",
+        "sensacion de inestabilidad",
+        "inestabilidad"
+      ],
+      "terms_en": [
+        "dizziness",
+        "vertigo",
+        "lightheadedness"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R42",
+        "display": "Mareo y desvanecimiento",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_FALLS",
+      "preferred_es": "caídas",
+      "preferred_en": "falls",
+      "category": "safety",
+      "terms_es": [
+        "caidas",
+        "caida",
+        "caidas de repeticion"
+      ],
+      "terms_en": [
+        "falls",
+        "fall"
+      ],
+      "abbreviations": [],
+      "code": null
+    },
+    {
+      "id": "TC_SEDATION",
+      "preferred_es": "somnolencia / sedación",
+      "preferred_en": "drowsiness / sedation",
+      "category": "neurological",
+      "terms_es": [
+        "somnolencia",
+        "sedacion",
+        "sedacion excesiva",
+        "somnolencia diurna"
+      ],
+      "terms_en": [
+        "drowsiness",
+        "sedation",
+        "somnolence"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R40.0",
+        "display": "Somnolencia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_URINARY_RETENTION",
+      "preferred_es": "retención urinaria",
+      "preferred_en": "urinary retention",
+      "category": "urological",
+      "terms_es": [
+        "retencion urinaria",
+        "incapacidad para orinar",
+        "vaciado vesical incompleto"
+      ],
+      "terms_en": [
+        "urinary retention"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R33",
+        "display": "Retención de orina",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_URINARY_INCONTINENCE",
+      "preferred_es": "incontinencia urinaria / vejiga hiperactiva",
+      "preferred_en": "urinary incontinence / overactive bladder",
+      "category": "urological",
+      "terms_es": [
+        "incontinencia urinaria",
+        "vejiga hiperactiva",
+        "urgencia urinaria",
+        "incontinencia de urgencia"
+      ],
+      "terms_en": [
+        "urinary incontinence",
+        "overactive bladder"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R32",
+        "display": "Incontinencia urinaria, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_NAUSEA",
+      "preferred_es": "náuseas / vómitos",
+      "preferred_en": "nausea / vomiting",
+      "category": "gastrointestinal",
+      "terms_es": [
+        "nauseas",
+        "vomitos",
+        "emesis"
+      ],
+      "terms_en": [
+        "nausea",
+        "vomiting"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R11",
+        "display": "Náusea y vómito",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_EDEMA",
+      "preferred_es": "edema periférico",
+      "preferred_en": "peripheral oedema",
+      "category": "cardiovascular",
+      "terms_es": [
+        "edema",
+        "edemas",
+        "edema periferico",
+        "edema de tobillo",
+        "edemas maleolares",
+        "edema maleolar",
+        "retencion de liquidos",
+        "piernas hinchadas"
+      ],
+      "terms_en": [
+        "oedema",
+        "edema",
+        "peripheral edema",
+        "ankle swelling"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R60",
+        "display": "Edema, no clasificado en otra parte",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_CONFUSION",
+      "preferred_es": "confusión / delirium",
+      "preferred_en": "confusion / delirium",
+      "category": "neurological",
+      "terms_es": [
+        "confusion",
+        "sindrome confusional",
+        "delirium",
+        "desorientacion"
+      ],
+      "terms_en": [
+        "confusion",
+        "delirium"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R41.0",
+        "display": "Desorientación, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPOKALEMIA",
+      "preferred_es": "hipopotasemia",
+      "preferred_en": "hypokalaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hipopotasemia",
+        "hipokaliemia",
+        "potasio bajo"
+      ],
+      "terms_en": [
+        "hypokalemia",
+        "low potassium"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E87.6",
+        "display": "Hipopotasemia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPERKALEMIA",
+      "preferred_es": "hiperpotasemia",
+      "preferred_en": "hyperkalaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hiperpotasemia",
+        "hiperkaliemia",
+        "potasio alto"
+      ],
+      "terms_en": [
+        "hyperkalemia",
+        "high potassium"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E87.5",
+        "display": "Hiperpotasemia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPONATREMIA",
+      "preferred_es": "hiponatremia",
+      "preferred_en": "hyponatraemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hiponatremia",
+        "sodio bajo"
+      ],
+      "terms_en": [
+        "hyponatremia",
+        "low sodium"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E87.1",
+        "display": "Hiposmolaridad e hiponatremia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPOMAGNESEMIA",
+      "preferred_es": "hipomagnesemia",
+      "preferred_en": "hypomagnesaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hipomagnesemia",
+        "magnesio bajo"
+      ],
+      "terms_en": [
+        "hypomagnesemia"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E83.4",
+        "display": "Trastornos del metabolismo del magnesio",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_B12_DEFICIENCY",
+      "preferred_es": "déficit de vitamina B12",
+      "preferred_en": "vitamin B12 deficiency",
+      "category": "metabolic",
+      "terms_es": [
+        "deficit de vitamina b12",
+        "deficiencia de vitamina b12",
+        "deficit de cobalamina"
+      ],
+      "terms_en": [
+        "vitamin b12 deficiency"
+      ],
+      "abbreviations": [],
+      "code": null
+    },
+    {
+      "id": "TC_VITD_DEFICIENCY",
+      "preferred_es": "déficit de vitamina D",
+      "preferred_en": "vitamin D deficiency",
+      "category": "metabolic",
+      "terms_es": [
+        "deficit de vitamina d",
+        "hipovitaminosis d",
+        "vitamina d baja"
+      ],
+      "terms_en": [
+        "vitamin d deficiency"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E55.9",
+        "display": "Deficiencia de vitamina D, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPERGLYCEMIA",
+      "preferred_es": "hiperglucemia",
+      "preferred_en": "hyperglycaemia",
+      "category": "metabolic",
+      "terms_es": [
+        "hiperglucemia",
+        "glucosa elevada",
+        "intolerancia a la glucosa"
+      ],
+      "terms_en": [
+        "hyperglycemia",
+        "high glucose"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "R73.9",
+        "display": "Hiperglucemia, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_ORTHOSTATIC_HYPOTENSION",
+      "preferred_es": "hipotensión ortostática",
+      "preferred_en": "orthostatic hypotension",
+      "category": "cardiovascular",
+      "terms_es": [
+        "hipotension ortostatica",
+        "hipotension postural",
+        "mareo al levantarse"
+      ],
+      "terms_en": [
+        "orthostatic hypotension",
+        "postural hypotension"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I95.1",
+        "display": "Hipotensión ortostática",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_MYALGIA",
+      "preferred_es": "mialgia / miopatía",
+      "preferred_en": "myalgia / myopathy",
+      "category": "musculoskeletal",
+      "terms_es": [
+        "mialgia",
+        "mialgias",
+        "dolor muscular",
+        "miopatia",
+        "rabdomiolisis"
+      ],
+      "terms_en": [
+        "myalgia",
+        "muscle pain",
+        "myopathy",
+        "rhabdomyolysis"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "M79.1",
+        "display": "Mialgia",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_HYPOTENSION",
+      "preferred_es": "hipotensión arterial",
+      "preferred_en": "hypotension",
+      "category": "cardiovascular",
+      "terms_es": [
+        "hipotension",
+        "hipotension arterial",
+        "tension baja"
+      ],
+      "terms_en": [
+        "hypotension",
+        "low blood pressure"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "I95.9",
+        "display": "Hipotensión, no especificada",
+        "status": "orientativo"
+      }
+    },
+    {
+      "id": "TC_DIABETES_INSIPIDUS",
+      "preferred_es": "diabetes insípida",
+      "preferred_en": "diabetes insipidus",
+      "category": "endocrine",
+      "terms_es": [
+        "diabetes insipida",
+        "diabetes insipida nefrogenica",
+        "diabetes insipida central"
+      ],
+      "terms_en": [
+        "diabetes insipidus",
+        "nephrogenic diabetes insipidus"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "E23.2",
+        "display": "Diabetes insípida",
+        "status": "orientativo"
+      },
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_RESPIRATORY_DEPRESSION",
+      "preferred_es": "depresión respiratoria",
+      "preferred_en": "respiratory depression",
+      "category": "respiratory",
+      "terms_es": [
+        "depresion respiratoria"
+      ],
+      "terms_en": [
+        "respiratory depression"
+      ],
+      "abbreviations": [],
+      "code": null,
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_PULMONARY_HTN",
+      "preferred_es": "hipertensión pulmonar",
+      "preferred_en": "pulmonary hypertension",
+      "category": "respiratory",
+      "terms_es": [
+        "hipertension pulmonar",
+        "hipertension arterial pulmonar"
+      ],
+      "terms_en": [
+        "pulmonary hypertension",
+        "pulmonary arterial hypertension"
+      ],
+      "abbreviations": [],
+      "code": null,
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_PORTAL_HTN",
+      "preferred_es": "hipertensión portal",
+      "preferred_en": "portal hypertension",
+      "category": "gastrointestinal",
+      "terms_es": [
+        "hipertension portal"
+      ],
+      "terms_en": [
+        "portal hypertension"
+      ],
+      "abbreviations": [],
+      "code": {
+        "system": "ICD-10 (OMS)",
+        "code": "K76.6",
+        "display": "Hipertensión portal",
+        "status": "orientativo"
+      },
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_OCULAR_HTN",
+      "preferred_es": "hipertensión ocular",
+      "preferred_en": "ocular hypertension",
+      "category": "ophthalmological",
+      "terms_es": [
+        "hipertension ocular",
+        "hipertension intraocular"
+      ],
+      "terms_en": [
+        "ocular hypertension"
+      ],
+      "abbreviations": [],
+      "code": null,
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_INTRACRANIAL_HTN",
+      "preferred_es": "hipertensión intracraneal",
+      "preferred_en": "intracranial hypertension",
+      "category": "neurological",
+      "terms_es": [
+        "hipertension intracraneal",
+        "hipertension intracraneal idiopatica"
+      ],
+      "terms_en": [
+        "intracranial hypertension"
+      ],
+      "abbreviations": [],
+      "code": null,
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    },
+    {
+      "id": "TC_GESTATIONAL_DM",
+      "preferred_es": "diabetes gestacional",
+      "preferred_en": "gestational diabetes",
+      "category": "metabolic",
+      "terms_es": [
+        "diabetes gestacional"
+      ],
+      "terms_en": [
+        "gestational diabetes"
+      ],
+      "abbreviations": [],
+      "code": null,
+      "note_es": "Concepto de desambiguación: impide que el término genérico contenido (p. ej. «hipertensión», «diabetes», «depresión») se interprete como otro problema distinto."
+    }
+  ]
+}

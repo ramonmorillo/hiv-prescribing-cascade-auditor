@@ -18,8 +18,35 @@
     'potential_clinical_relevance', 'knowledge_validation_status',
     'automated_classification', 'professional_validation',
     'classification_reason', 'temporal_support', 'clinical_recommendation',
-    'input_provenance_json', 'limitations_json'
+    'input_provenance_json', 'clinical_problems_json', 'limitations_json'
   ];
+
+  /* Compact, presentation-only view of the EFFECTIVE problem list (the
+     confirmed professional review when applied, otherwise the extraction):
+     the same records the cascade engine reasoned on. */
+  function clinicalProblemSummary(problem, lang) {
+    var meds = list(problem.related_medications).map(function (m) {
+      return { drug: m.drug, relation: m.relation, start_date: m.start_date || null };
+    });
+    var first = problem.first_active_date && problem.first_active_date.raw ? problem.first_active_date : null;
+    return {
+      id: problem.id || null,
+      concept_id: problem.concept_id || null,
+      concept: problem.problem || (lang === 'en' ? problem.concept_en : problem.concept_es) || problem.concept_es || '',
+      status: problem.status || 'unknown',
+      temporality: problem.temporality || 'undetermined',
+      evidence_types: list(problem.evidence_types),
+      certainty_level: problem.certainty_level || null,
+      validation_status: problem.validation_status || 'pending_professional_validation',
+      documented_onset: problem.documented_onset && problem.documented_onset.raw ? problem.documented_onset.raw
+        : (problem.review_provenance && problem.first_active_date && problem.first_active_date.source === 'professional_review'
+          ? problem.first_active_date.raw : null),
+      first_documented: first ? { raw: first.raw, semantics: first.semantics || first.source || null } : null,
+      related_medications: meds,
+      code: problem.code && problem.code.code ? problem.code.system + ' ' + problem.code.code : null,
+      source: problem.source || null
+    };
+  }
 
   function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -117,6 +144,7 @@
       medication_review: reviewState(report, 'medication'),
       problem_review: reviewState(report, 'problem')
     };
+    report.clinical_problems = list(report.activeProblems).map(function (problem) { return clinicalProblemSummary(problem, lang); });
     report.professional_changes = {
       medications: { counts: auditCounts(medicationAudit), items: clone(medicationAudit || { changed: [], added: [], excluded: [] }) },
       problems: { counts: auditCounts(problemAudit), items: clone(problemAudit || { changed: [], added: [], excluded: [] }) }
@@ -193,7 +221,7 @@
         candidate.temporal_support, candidate.clinical_recommendation,
         JSON.stringify(candidate.input_provenance || {})
       ] : ['', '', '', '', '', '', '', '', '', '', '', '', '', ''];
-      rows.push(common.concat(specific, [JSON.stringify(report.limitations || [])]).map(csvCell).join(','));
+      rows.push(common.concat(specific, [JSON.stringify(report.clinical_problems || []), JSON.stringify(report.limitations || [])]).map(csvCell).join(','));
     });
     return rows.join('\r\n');
   }
@@ -219,6 +247,22 @@
     lines.push((en ? '- Effective medications: ' : '- Medicación efectiva: ') + (list(report.drugs_detected).join(', ') || (en ? 'None' : 'Ninguna')));
     lines.push((en ? '- Medication review applied: ' : '- Revisión de medicamentos aplicada: ') + ((provenance.medication_review && provenance.medication_review.applied) ? (en ? 'Yes' : 'Sí') : 'No'));
     lines.push((en ? '- Problem review applied: ' : '- Revisión de problemas aplicada: ') + ((provenance.problem_review && provenance.problem_review.applied) ? (en ? 'Yes' : 'Sí') : 'No'));
+    lines.push('');
+
+    lines.push(en ? 'CLINICAL PROBLEMS (input used by the analysis)' : 'PROBLEMAS CLÍNICOS (entrada utilizada por el análisis)');
+    lines.push((provenance.problem_review && provenance.problem_review.applied)
+      ? (en ? '- Source: confirmed professional review' : '- Fuente: revisión profesional confirmada')
+      : (en ? '- Source: automated extraction pending professional validation' : '- Fuente: extracción automática pendiente de validación profesional'));
+    if (!list(report.clinical_problems).length) lines.push(en ? 'No clinical problems recorded.' : 'No se registran problemas clínicos.');
+    list(report.clinical_problems).forEach(function (p, index) {
+      var meds = list(p.related_medications).map(function (m) { return m.drug + (m.start_date ? ' (' + m.start_date + ')' : ''); }).join('; ');
+      lines.push((index + 1) + '. ' + p.concept + ' — ' + p.status + ' / ' + p.temporality +
+        (p.evidence_types.length ? ' [' + p.evidence_types.join(', ') + ']' : '') +
+        (p.documented_onset ? (en ? ' — onset: ' : ' — inicio: ') + p.documented_onset : '') +
+        (!p.documented_onset && p.first_documented ? (en ? ' — documented since: ' : ' — documentado desde: ') + p.first_documented.raw +
+          (p.first_documented.semantics === 'treatment_start' ? (en ? ' (treatment start)' : ' (inicio de tratamiento)') : '') : '') +
+        (meds ? (en ? ' — medicines: ' : ' — medicamentos: ') + meds : ''));
+    });
     lines.push('');
 
     lines.push(en ? 'CLINICAL FINDINGS' : 'HALLAZGOS CLÍNICOS');

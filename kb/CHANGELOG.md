@@ -1,5 +1,12 @@
 # Knowledge Base Changelog
 
+## Unreleased — 2026-10-19: central clinical terminology, sedative property, per-ingredient evidence
+
+- **Added `kb/clinical_terminology.json`** (track-independent): 63 concepts, single normalization layer for problems, indications, ADE and symptom vocabularies. Ambiguous abbreviations (IC, FA, TAG, SCA, TE) and adjectival forms (diabético/a) deliberately excluded; disambiguation concepts added (diabetes insípida, depresión respiratoria, hipertensión pulmonar/portal/ocular/intracraneal, diabetes gestacional). ICD-10 (WHO) codes are orientative only.
+- **`kb/drug_dictionary.json`:** added lormetazepam, bromazepam, ketazolam, clorazepate, triazolam, flurazepam; added `pharmacological_properties: ["sedative"]` to 30 active ingredients (used only for safety alerts, never to infer indications).
+- **`kb/{prod,dev}/kb_vih_modifiers.json` VIH001:** `index_drug_evidence` for dolutegravir and bictegravir (`mechanism: indirect`, `plausibility: low`), derived from the rule's own `ade_mechanism`; pending pharmacist review of the specific literature.
+- See `docs/audit/06-extraccion-problemas-y-cascadas.md`.
+
 ## Unreleased — 2026-09-21: resolved near-duplicate rule pairs and unlinked symptom bridges
 
 **Fixes duplicate/contradictory cascade cards for the same clinical finding**, reported against the production demo case and confirmed systematically against the full active catalogue (prod + dev). Full audit trail in `docs/audit/02-registro-hallazgos.md` (HAL-02) and `docs/audit/03-auditoria-kb.md`.

@@ -24,7 +24,8 @@ function loadKB(track) {
     clinicalProblems: loadJSON(folder + '/clinical_problems.json'),
     drugDictionary: loadJSON('kb/drug_dictionary.json'),
     drugCombinations: loadJSON('kb/drug_combinations.json'),
-    anticholinergicBurdenScale: loadJSON('kb/anticholinergic_burden_scale.json')
+    anticholinergicBurdenScale: loadJSON('kb/anticholinergic_burden_scale.json'),
+    clinicalTerminology: loadJSON('kb/clinical_terminology.json')
   };
 }
 

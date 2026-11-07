@@ -115,6 +115,10 @@ var MESSAGES = {
     es: 'El problema clínico intermedio ya estaba presente antes de que se iniciara el fármaco índice; la información disponible es incompatible con la secuencia temporal propuesta por esta regla.',
     en: 'The intermediate clinical problem was already present before the index drug was started; the available information is incompatible with the temporal sequence proposed by this rule.'
   },
+  index_drug_indirect_mechanism: {
+    es: 'Para este principio activo concreto la base de conocimiento describe un mecanismo indirecto o de menor evidencia que para el resto de la clase de la regla; la coincidencia temporal no basta para considerar la cascada respaldada.',
+    en: 'For this specific active ingredient the knowledge base describes an indirect or lower-evidence mechanism than for the rest of the rule\'s class; temporal coincidence is not enough to consider the cascade supported.'
+  },
   medication_indication_mismatch: {
     es: 'El fármaco propuesto como respuesta a la cascada tiene en esta nota una indicación explícita distinta e incompatible con el problema propuesto por esta regla; la indicación explícita prevalece sobre la inferencia farmacológica genérica.',
     en: 'The drug proposed as the cascade response has an explicit indication in this note that is different from and incompatible with the problem this rule proposes; the explicit indication takes precedence over the generic pharmacological inference.'
@@ -218,6 +222,51 @@ function normalizeDrugText(text) {
     .replace(/\s*\/\s*/g, '/')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Same transformation as normalizeDrugText(), but also returns, for every
+ * character of the normalized output, the index of the ORIGINAL character it
+ * came from. The resolver matches drug variants on the normalized copy (which
+ * collapses punctuation/whitespace and strips diacritics); without this map,
+ * re-locating a match in the original note relied on re-searching the
+ * normalized variant ("olmesartan") in the accented text ("Olmesartán"),
+ * which failed and silently fell back to a drifted offset — attaching the
+ * wrong sentence (date, negation, indication) to that medication.
+ * @returns {{text:string, map:number[]}}
+ */
+function normalizeDrugTextWithMap(text) {
+  var raw = text || '';
+  var chars = [];
+  var map = [];
+  for (var i = 0; i < raw.length; i++) {
+    var piece = raw.charAt(i);
+    if (piece.normalize) piece = piece.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    piece = piece.toLowerCase();
+    for (var k = 0; k < piece.length; k++) {
+      var ch = piece.charAt(k);
+      if (/[’'`´]/.test(ch)) continue;
+      if (/[‐-―]/.test(ch)) ch = '-';
+      if (/[\(\)\[\],;:]/.test(ch)) ch = ' ';
+      chars.push(ch);
+      map.push(i);
+    }
+  }
+  var outC = [], outM = [];
+  for (var j = 0; j < chars.length; j++) {
+    var isSpace = /\s/.test(chars[j]);
+    if (isSpace) {
+      if (outC.length && outC[outC.length - 1] === ' ') continue;
+      if (outC.length && outC[outC.length - 1] === '/') continue;
+      outC.push(' '); outM.push(map[j]);
+    } else {
+      if (chars[j] === '/' && outC.length && outC[outC.length - 1] === ' ') { outC.pop(); outM.pop(); }
+      outC.push(chars[j]); outM.push(map[j]);
+    }
+  }
+  while (outC.length && outC[0] === ' ') { outC.shift(); outM.shift(); }
+  while (outC.length && outC[outC.length - 1] === ' ') { outC.pop(); outM.pop(); }
+  return { text: outC.join(''), map: outM };
 }
 
 function normalizeSymptomText(str) {
@@ -338,14 +387,15 @@ function buildDrugResolver(kb) {
     var drugClass = entry.drug_class || '';
     /* The curated dictionary is authoritative for display taxonomy; cascade
        classes describe rule roles and must not overwrite a medicine's class. */
+    var properties = Array.isArray(entry.pharmacological_properties) ? entry.pharmacological_properties.slice() : [];
     resolver.byVariant[normalizeDrugText(entry.canonical)] = {
       variant: entry.canonical, canonical: entry.canonical, drug_class: drugClass,
-      match_type: 'dict', confidence: 'high'
+      match_type: 'dict', confidence: 'high', properties: properties
     };
     (entry.variants || []).forEach(function (variant) {
       if (variant) resolver.byVariant[normalizeDrugText(variant)] = {
         variant: variant, canonical: entry.canonical, drug_class: drugClass,
-        match_type: 'dict', confidence: 'high'
+        match_type: 'dict', confidence: 'high', properties: properties
       };
     });
   });
@@ -375,7 +425,9 @@ function resolveDrugMentions(noteText, resolver) {
   if (!noteText || !noteText.trim()) return [];
   if (!resolver || !resolver.variantPattern) return [];
 
-  var normalized = normalizeDrugText(noteText);
+  var normalizedWithMap = normalizeDrugTextWithMap(noteText);
+  var normalized = normalizedWithMap.text;
+  var offsetMap = normalizedWithMap.map;
   var mentions = [];
   var seen = {};
   var match;
@@ -383,6 +435,14 @@ function resolveDrugMentions(noteText, resolver) {
   while ((match = resolver.variantPattern.exec(normalized)) !== null) {
     var variant = (match[2] || '').trim();
     if (!variant) continue;
+    /* Exact span of this variant in the ORIGINAL text (see
+       normalizeDrugTextWithMap). start_index keeps its historical meaning
+       (offset into the normalized copy) for backward compatibility. */
+    var variantStart = match.index + (match[1] || '').length;
+    var variantEnd = variantStart + match[2].length - 1;
+    var originalStart = offsetMap[variantStart];
+    var originalEnd = offsetMap[variantEnd] != null ? offsetMap[variantEnd] + 1 : originalStart + variant.length;
+    var originalSpan = { original_start_index: originalStart, original_mention: noteText.slice(originalStart, originalEnd) };
 
     var combo = resolver.combosByVariant && resolver.combosByVariant[variant];
     if (combo) {
@@ -395,10 +455,13 @@ function resolveDrugMentions(noteText, resolver) {
         mentions.push({
           mention: variant, canonical: ingredient,
           drug_class: (ingredientMeta && ingredientMeta.drug_class) || '',
+          pharmacological_properties: (ingredientMeta && ingredientMeta.properties) || [],
           match_type: 'combo_brand', confidence: 'high', start_index: match.index,
           brand: combo.brand, brand_ingredients: combo.activeIngredients,
           brand_therapeutic_class_es: combo.therapeuticClass_es || '',
-          brand_therapeutic_class_en: combo.therapeuticClass_en || ''
+          brand_therapeutic_class_en: combo.therapeuticClass_en || '',
+          original_start_index: originalSpan.original_start_index,
+          original_mention: originalSpan.original_mention
         });
       });
       continue;
@@ -411,8 +474,11 @@ function resolveDrugMentions(noteText, resolver) {
     seen[dedupeKey2] = true;
     mentions.push({
       mention: variant, canonical: meta.canonical, drug_class: meta.drug_class || '',
+      pharmacological_properties: meta.properties || (resolver.byVariant[normalizeDrugText(meta.canonical)] || {}).properties || [],
       match_type: meta.match_type || 'normalized', confidence: meta.confidence || 'medium',
-      start_index: match.index
+      start_index: match.index,
+      original_start_index: originalSpan.original_start_index,
+      original_mention: originalSpan.original_mention
     });
   }
 
@@ -477,6 +543,19 @@ function extractFutureMedicationCondition(noteText, mention) {
     assertion: 'conditional', status: 'conditional_future', temporality: 'future',
     condition: condition ? condition[0].trim() : null, evidence_span: sentence
   };
+}
+
+/** Length of a mention in the ORIGINAL note (the normalized variant can be
+ * shorter/longer than the literal text, e.g. accents or "a / b"). */
+function mentionLength(m) {
+  if (!m) return 0;
+  return (m.original_mention || m.mention || '').length;
+}
+
+function mentionPosition(m) {
+  if (!m) return null;
+  var index = m.actual_start_index != null ? m.actual_start_index : null;
+  return index != null ? { index: index, length: mentionLength(m) } : null;
 }
 
 function isActiveMedication(medication) {
@@ -606,11 +685,15 @@ function findAllTermOccurrences(noteText, term) {
  *     suspected              -> 'suspected'
  */
 function classifyMention(noteText, matchIndex, matchLength) {
-  var preRaw = noteText.slice(Math.max(0, matchIndex - 80), matchIndex);
+  /* Cue windows never cross the sentence boundary: "Hipertensión arterial.
+     Hipertensión arterial resuelta." must not read the second sentence's
+     "resuelta" as a cue for the first mention. */
+  var cueBounds = sentenceBounds(noteText, matchIndex, matchLength);
+  var preRaw = noteText.slice(Math.max(cueBounds.start, matchIndex - 80), matchIndex);
   var preTokens = preRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(-8);
   var preStr = preTokens.join(' ').toLowerCase();
 
-  var postRaw = noteText.slice(matchIndex + matchLength, Math.min(noteText.length, matchIndex + matchLength + 60));
+  var postRaw = noteText.slice(matchIndex + matchLength, Math.min(cueBounds.end, matchIndex + matchLength + 60));
   var postTokens = postRaw.trim().split(/[\s,;:()\.\!\?]+/).filter(Boolean).slice(0, 3);
   var postStr = postTokens.join(' ').toLowerCase();
 
@@ -704,7 +787,8 @@ function findClinicalFinding(originalText, normalizedText, term) {
   };
 }
 
-function detectTimeCues(noteText, matchIndex) {
+function detectTimeCues(noteText, matchIndex, options) {
+  options = options || {};
   var R = 40;
   var start = Math.max(0, matchIndex - R);
   var end = Math.min(noteText.length, matchIndex + R);
@@ -714,8 +798,8 @@ function detectTimeCues(noteText, matchIndex) {
     drugStartHint: (
       /\b(started|initiated|begin|began|since\s+starting|after\s+starting|on\s+\d|commenced)\b/.test(ctx) ||
       /\b(inicia|se\s+inicia|se\s+empez[oó]|tras\s+iniciar|al\s+iniciar|comienza|se\s+pauta)\b/.test(ctx) ||
-      /\bdesde\s+(\d|ene(?:ro)?|feb(?:rero)?|mar(?:zo)?|abr(?:il)?|may(?:o)?|jun(?:io)?|jul(?:io)?|ago(?:sto)?|sept?(?:iembre)?|oct(?:ubre)?|nov(?:iembre)?|dic(?:iembre)?)/.test(ctx) ||
-      /\bsince\s+\d/.test(ctx)
+      (!options.ignoreDates && /\bdesde\s+(\d|ene(?:ro)?|feb(?:rero)?|mar(?:zo)?|abr(?:il)?|may(?:o)?|jun(?:io)?|jul(?:io)?|ago(?:sto)?|sept?(?:iembre)?|oct(?:ubre)?|nov(?:iembre)?|dic(?:iembre)?)/.test(ctx)) ||
+      (!options.ignoreDates && /\bsince\s+\d/.test(ctx))
     ),
     symptomNewHint: (
       /\b(since|after|worsened|new|recent|developed|onset|appearing|presenting\s+with|new[- ]onset)\b/.test(ctx) ||
@@ -763,11 +847,26 @@ var MONTHS_EN = {
  * inventing chronology the note doesn't state.
  * @returns {{year:number, month:number|null, value:number, raw:string, index:number}|null}
  */
+/** Sentence boundary test that does not split decimal doses ("0.5 mg"). */
+function isSentenceBoundary(text, i) {
+  var c = text.charAt(i);
+  if (c === '\n') return true;
+  if (c !== '.') return false;
+  return !(/\d/.test(text.charAt(i - 1)) && /\d/.test(text.charAt(i + 1)));
+}
+
+function sentenceBounds(text, index, length) {
+  var start = index;
+  while (start > 0 && !isSentenceBoundary(text, start - 1)) start--;
+  var end = index + (length || 0);
+  while (end < text.length && !isSentenceBoundary(text, end)) end++;
+  return { start: start, end: end };
+}
+
 function extractDateNear(noteText, matchIndex, matchLength) {
-  var sentStart = matchIndex;
-  while (sentStart > 0 && !/[.\n]/.test(noteText.charAt(sentStart - 1))) sentStart--;
-  var sentEnd = matchIndex + matchLength;
-  while (sentEnd < noteText.length && !/[.\n]/.test(noteText.charAt(sentEnd))) sentEnd++;
+  var bounds = sentenceBounds(noteText, matchIndex, matchLength);
+  var sentStart = bounds.start;
+  var sentEnd = bounds.end;
   var start = sentStart;
   var ctx = noteText.slice(sentStart, sentEnd);
   var monthNames = Object.keys(MONTHS_ES).concat(Object.keys(MONTHS_EN))
@@ -818,6 +917,51 @@ function extractDateNear(noteText, matchIndex, matchLength) {
   }
 
   return null;
+}
+
+/* A date phrase in a medication's sentence belongs to that medication only
+ * when it is not grammatically attached to a different clinical event.
+ * "en tratamiento con Biktarvy, con buen control virológico desde 2021"
+ * dates the virological control, not the start of Biktarvy: treating it as
+ * the ART start date invents a chronology the note does not state. */
+var NON_MEDICATION_EVENT_BEFORE_DATE = /(?:control(?:\s+[\wáéíóúüñ]+)?|carga\s+viral(?:\s+[\wáéíóúüñ]+)?|cv\s+[\wáéíóúüñ]+|indetectable|suprimid[oa]|diagn[oó]stic[\wáéíóúüñ]*|diagnosticad[oa](?:\s+[\wáéíóúüñ]+){0,3}|ingres[\wáéíóúüñ]*|cirug[ií]a|intervenci[oó]n|seguimiento|revisi[oó]n|anal[ií]tica|cd4(?:\s+[\wáéíóúüñ]+){0,2}|asintom[aá]tic[oa]|estable)\s*$/i;
+
+/**
+ * Explicit start date of a medication: the explicit date in its own sentence
+ * that is closest to the mention and not attached to another event. Returns
+ * null (never a guess) when the only dates in the sentence describe something
+ * else; rejected candidates are kept for traceability.
+ */
+function extractMedicationStartDate(noteText, matchIndex, matchLength) {
+  var bounds = sentenceBounds(noteText, matchIndex, matchLength);
+  var ctx = noteText.slice(bounds.start, bounds.end);
+  var monthNames = Object.keys(MONTHS_ES).concat(Object.keys(MONTHS_EN))
+    .sort(function (a, b) { return b.length - a.length; }).join('|');
+  var re = new RegExp('\\b(desde|en|since|in|inicio|onset)\\s+(?:el\\s+mes\\s+de\\s+)?(' + monthNames + ')?\\s*(?:de\\s+|of\\s+)?(\\d{4})\\b', 'gi');
+  var candidates = [];
+  var rejected = [];
+  var m;
+  while ((m = re.exec(ctx)) !== null) {
+    var year = parseInt(m[3], 10);
+    if (year < 1900 || year > 2100) continue;
+    var monthName = m[2] ? m[2].toLowerCase() : null;
+    var month = monthName ? (MONTHS_ES[monthName] || MONTHS_EN[monthName] || null) : null;
+    var absIndex = bounds.start + m.index;
+    var date = { year: year, month: month, value: year * 100 + (month || 0), raw: m[0].trim(), index: absIndex,
+      precision: month ? 'month' : 'year' };
+    var before = noteText.slice(Math.max(bounds.start, absIndex - 40), absIndex);
+    if (NON_MEDICATION_EVENT_BEFORE_DATE.test(before.trim())) { rejected.push(date.raw); continue; }
+    candidates.push(date);
+  }
+  if (!candidates.length) {
+    if (rejected.length) return null;
+    var fallback = extractDateNear(noteText, matchIndex, matchLength);
+    return fallback;
+  }
+  candidates.sort(function (a, b) {
+    return Math.abs(a.index - matchIndex) - Math.abs(b.index - matchIndex);
+  });
+  return candidates[0];
 }
 
 /* ============================================================
@@ -999,120 +1143,402 @@ function problemCertaintyForDisplay(status) {
   return 'suspected'; /* 'unknown' — prudent default, never overclaim */
 }
 
-function detectGenericActiveProblems(noteText, kb, lang) {
+/**
+ * Resolve and classify every medication mention of a note once: exact
+ * original offsets plus assertion/status/temporality. Shared by the problem
+ * extractor and buildCaseModel so both read the same medication facts.
+ */
+function resolveClassifiedMentions(corrected, resolver) {
+  var mentions = resolveDrugMentions(corrected, resolver);
+  mentions.forEach(function (m) {
+    if (m.original_start_index != null) { m.actual_start_index = m.original_start_index; return; }
+    m.actual_start_index = m.start_index;
+  });
+  mentions.forEach(function (m) {
+    var st = classifyMedicationMention(corrected, m);
+    m.assertion = st.assertion; m.status = st.status; m.temporality = st.temporality;
+  });
+  return mentions;
+}
+
+/** One entry per distinct textual medication position (a fixed-dose brand
+ * expands to several ingredients at the same position). */
+function medicationPositions(mentions) {
+  var byIndex = {};
+  var list = [];
+  (mentions || []).forEach(function (m) {
+    if (m.actual_start_index == null) return;
+    var key = m.actual_start_index;
+    if (!byIndex[key]) {
+      byIndex[key] = { index: key, length: mentionLength(m), mentions: [] };
+      list.push(byIndex[key]);
+    }
+    byIndex[key].mentions.push(m);
+  });
+  return list.sort(function (a, b) { return a.index - b.index; });
+}
+
+function dateSemanticsForExplicitMention(date, sentence) {
+  if (!date) return null;
+  if (/^(desde|since|inicio|onset)\b/i.test(date.raw) || /diagnostic|diagnos/i.test(foldText(sentence || ''))) return 'documented_onset';
+  return 'documented_presence';
+}
+
+function medicationSpansFrom(mentions) {
+  return medicationPositions(mentions).map(function (p) { return { start: p.index, end: p.index + p.length }; });
+}
+
+function medicationLabel(position) {
+  var first = position.mentions[0];
+  if (first.brand) return first.brand + ' (' + position.mentions.map(function (m) { return m.canonical; }).join(' / ') + ')';
+  return position.mentions.map(function (m) { return m.canonical; }).join(' / ');
+}
+
+var EVIDENCE_TYPE_LABELS = {
+  explicit_mention: { es: 'Diagnóstico/hallazgo explícito', en: 'Explicit diagnosis/finding' },
+  documented_indication: { es: 'Indicación documentada', en: 'Documented indication' },
+  contextual_inference: { es: 'Inferencia contextual', en: 'Contextual inference' },
+  pharmacological_inference: { es: 'Inferencia farmacológica (sólo sospecha)', en: 'Pharmacological inference (suspicion only)' },
+  manual_entry: { es: 'Entrada manual', en: 'Manual entry' }
+};
+
+/**
+ * Unified clinical-problem extraction — the single source for
+ * CaseModel.activeProblems, the professional review (Step 2), the cascade
+ * engine's intermediate-problem verification and the reports.
+ *
+ * Evidence sources, each kept distinguishable on the resulting record:
+ *   1. documented_indication — "<fármaco> ... por <problema>" or "consulta
+ *      por <problema> y recibe <fármaco>": explicit clinician wording.
+ *   2. explicit_mention — the problem (or symptom / ADE finding) named in the
+ *      note, with negation / suspicion / history / resolution cues.
+ *   3. contextual_inference — data-driven rules in the terminology (e.g. HIV
+ *      from an antiretroviral regimen + virological-control context).
+ *      A medication ALONE never confirms a diagnosis (status 'suspected').
+ * Everything is normalized through the central terminology and consolidated
+ * per concept, keeping every evidence span. Dates keep their meaning: a
+ * treatment start date is recorded as such (it bounds the problem's onset),
+ * never relabelled as the date of diagnosis.
+ */
+function extractClinicalProblems(noteText, kb, lang, resolver, classifiedMentions) {
   if (!noteText || !noteText.trim()) return [];
   lang = lang || 'es';
+  kb = kb || {};
   var original = noteText;
-  var normalized = normalizeSymptomText(noteText);
-  var entries = (kb.clinicalProblems && kb.clinicalProblems.problems) || [];
-  var results = [];
+  var folded = foldText(original);
+  var index = getTerminologyIndex(kb);
+  var mentions = classifiedMentions || resolveClassifiedMentions(original, resolver || buildDrugResolver(kb));
+  var positions = medicationPositions(mentions);
+  var medicationSpans = positions.map(function (p) { return { start: p.index, end: p.index + p.length }; });
+  var events = [];
+  var masked = [];
 
-  entries.forEach(function (entry) {
-    var chronicKeywords = (entry.chronic_keywords_es || []).concat(entry.chronic_keywords_en || []);
-    var plainKeywords = (entry.keywords_es || []).concat(entry.keywords_en || []);
-
-    /* Collect every occurrence of every keyword variant (not just the
-       first) as its own event — this is the fix for "no tenía antecedentes
-       de hipertensión" silently shadowing a later, separate, affirmed
-       mention of the same concept (see docs/clinical-engine-fix-audit.md
-       §1.1). Chronic-specific phrasing ("hipertensión arterial esencial",
-       "HTA previa") forces temporality=historical for that event even when
-       classifyMention's own nearby-word cues wouldn't catch it, since the
-       phrase itself asserts chronicity. */
-    var rawEvents = [];
-    function collect(keywordList, isChronicList) {
-      keywordList.forEach(function (kw) {
-        var normKw = normalizeSymptomText(kw);
-        if (!normKw) return;
-        findAllTermOccurrences(normalized, normKw).forEach(function (pos) {
-          var cls = classifyMention(normalized, pos.index, pos.length);
-          var status = cls.status;
-          var temporality = cls.temporality;
-          if (isChronicList && status === 'active') temporality = 'historical';
-          var date = extractDateNear(original, pos.index, pos.length);
-          rawEvents.push({
-            pos: pos, keyword: kw, is_chronic_phrasing: !!isChronicList,
-            assertion: cls.assertion, temporality: temporality, status: status, reason: cls.reason,
-            evidence_span: extractSentenceSnippet(original, pos.index, pos.length),
-            date: date, matched_keyword: kw
-          });
-        });
+  /* 1. Indications. */
+  positions.forEach(function (p) {
+    var m = p.mentions[0];
+    if (m.assertion === 'negated' || m.status === 'never_started' || m.temporality === 'future') return;
+    var indication = extractExplicitIndicationForMedication(original, { index: p.index, length: p.length }, kb, medicationSpans);
+    if (!indication.found) return;
+    var active = isActiveMedication(m);
+    var startDate = extractMedicationStartDate(original, p.index, p.length);
+    indication.reasons.forEach(function (r) {
+      if (indication.pattern === 'connector') masked.push([r.index, r.index + r.length]);
+      events.push({
+        kind: 'indication', evidence_type: 'documented_indication', concept: r.concept, text: r.text,
+        index: r.index, length: r.length, match_type: r.match_type, confidence: r.confidence,
+        relation_note_es: r.relation_note_es || '',
+        status: active ? (indication.hedged ? 'suspected' : 'active') : 'unknown',
+        assertion: active ? (indication.hedged ? 'suspected' : 'affirmed') : 'unknown',
+        temporality: active ? 'current' : 'historical',
+        drug: medicationLabel(p), drug_canonicals: p.mentions.map(function (x) { return x.canonical; }),
+        drug_active: active,
+        date: startDate ? Object.assign({}, startDate, { semantics: 'treatment_start' }) : null,
+        /* Whole sentence, so the components of one product ("olmesartán/
+           hidroclorotiazida ... por HTA") share a single evidence span. */
+        evidence_span: (function () {
+          var sb = sentenceBounds(original, p.index, p.length);
+          return original.slice(sb.start, sb.end).replace(/\s+/g, ' ').trim();
+        }()),
+        indication_phrase: indication.evidence_span, pattern: indication.pattern
       });
-    }
-    collect(chronicKeywords, true);
-    collect(plainKeywords, false);
-
-    if (!rawEvents.length) return;
-
-    /* De-duplicate events at (near-)identical positions found via more than
-       one keyword variant (e.g. "hipertension" matching both a plain and a
-       chronic-phrase keyword at the same spot). */
-    rawEvents.sort(function (a, b) { return a.pos.index - b.pos.index; });
-    var events = [];
-    rawEvents.forEach(function (e) {
-      var last = events[events.length - 1];
-      if (last && e.pos.index < last.pos.index + last.pos.length) return;
-      events.push(e);
-    });
-
-    var reconciled = reconcileProblemEvents(events);
-    if (!reconciled) return;
-
-    /* UI-compat fields (Step 3 "Clasificación" screen, app.js renderProblemCard):
-       that renderer pre-dates the Fase 2 multi-event/temporal rewrite and
-       still reads problem/certainty/category_label/evidence[]/negatedFindings[]
-       — added here rather than forking a second problem-detection path, so
-       CaseModel.activeProblems (cascade reasoning, tests) and the Step 3
-       display stay backed by the exact same reconciled event data. */
-    var displayEvidence = uniqueStrings(events.filter(function (e) {
-      return e.status === 'active' || e.status === 'resolved' || e.status === 'suspected';
-    }).map(function (e) { return e.evidence_span; }));
-    var displayNegated = uniqueStrings(events.filter(function (e) {
-      return e.status === 'absent';
-    }).map(function (e) { return e.evidence_span; }));
-
-    results.push({
-      id: entry.id,
-      concept_es: entry.concept_es,
-      concept_en: entry.concept_en,
-      category: entry.category || '',
-      status: reconciled.status, /* 'active' | 'absent' | 'resolved' | 'suspected' | 'unknown' */
-      assertion: reconciled.assertion,
-      temporality: reconciled.temporality,
-      contradiction: !!reconciled.contradiction,
-      matched_keyword: reconciled.matched_keyword,
-      is_chronic_phrasing: !!reconciled.is_chronic_phrasing,
-      evidence_span: reconciled.evidence_span,
-      source: 'explicit',
-      confidence: reconciled.contradiction ? 'low' : (reconciled.status === 'active' ? 'high' : 'medium'),
-      /* Step 3 display fields — see comment above. */
-      problem: lang === 'en' ? (entry.concept_en || entry.concept_es) : (entry.concept_es || entry.concept_en),
-      category_label: problemCategoryLabel(entry.category, lang),
-      certainty: problemCertaintyForDisplay(reconciled.status),
-      evidence: displayEvidence,
-      negatedFindings: displayNegated,
-      measurement_type: entry.measurement_type || null,
-      diagnostic_note_es: entry.diagnostic_note_es || '',
-      diagnostic_note_en: entry.diagnostic_note_en || '',
-      alternative_indication_for_drug_examples: entry.alternative_indication_for_drug_examples || [],
-      source_cascade_ids: entry.source_cascade_ids || [],
-      references: entry.references || [],
-      /* Full event history — never discarded, per Fase 2 point 3. */
-      events: events.map(function (e) {
-        return {
-          originalText: e.evidence_span, assertion: e.assertion, temporality: e.temporality,
-          status: e.status, evidenceSpan: e.evidence_span, date: e.date ? e.date.raw : null,
-          startDate: e.date ? e.date.value : null, source: 'explicit', confidence: e.status === 'active' ? 'high' : 'medium'
-        };
-      }),
-      /* Earliest date at which this problem was affirmed active — used to
-         compare against a candidate index drug's own start date (Fase 4:
-         "la hipertensión era previa al AINE" reduces/discards plausibility). */
-      first_active_date: reconciled.first_active_date
     });
   });
 
+  /* 2. Explicit mentions (problems, symptoms, ADE findings) — one scan of
+     the central terminology. A mention that IS the indication phrase of a
+     medication ("... desde 2023 por hipertensión") was already recorded
+     above with its date correctly attributed to the treatment. */
+  scanTerminology(folded, index).forEach(function (hit) {
+    var inMask = masked.some(function (s) { return hit.index < s[1] && hit.index + hit.length > s[0]; });
+    if (inMask) return;
+    var cls = classifyMention(folded, hit.index, hit.length);
+    var status = cls.status, temporality = cls.temporality;
+    if (hit.term.chronic && status === 'active') temporality = 'historical';
+    var date = extractDateNear(original, hit.index, hit.length);
+    var b = sentenceBounds(original, hit.index, hit.length);
+    var sentence = original.slice(b.start, b.end);
+    var semantics = dateSemanticsForExplicitMention(date, sentence);
+    events.push({
+      kind: 'explicit', evidence_type: 'explicit_mention', concept: index.concepts[hit.term.concept_id],
+      text: original.substr(hit.index, hit.length), index: hit.index, length: hit.length,
+      match_type: hit.match_type, confidence: hit.confidence, relation_note_es: hit.term.relation_note_es || '',
+      is_chronic_phrasing: !!hit.term.chronic, matched_keyword: hit.term.raw,
+      status: status, assertion: cls.assertion, temporality: temporality, reason: cls.reason,
+      date: date ? Object.assign({}, date, { semantics: semantics }) : null,
+      evidence_span: extractSentenceSnippet(original, hit.index, hit.length)
+    });
+  });
+
+  /* 3. Group by concept (uncoded indications by their literal text). */
+  var groups = {};
+  var groupOrder = [];
+  events.forEach(function (e) {
+    var key = e.concept ? e.concept.id : 'FREE:' + foldText(e.text).replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!groups[key]) { groups[key] = { key: key, concept: e.concept || null, events: [] }; groupOrder.push(key); }
+    groups[key].events.push(e);
+  });
+
+  /* 4. Contextual inference rules declared in the terminology. */
+  index.order.forEach(function (cid) {
+    var concept = index.concepts[cid];
+    var rule = concept.contextual_inference;
+    if (!rule) return;
+    var prefix = rule.required_drug_class_prefix || '';
+    var core = rule.core_drug_class_patterns || [];
+    var regimen = mentions.filter(function (m) {
+      return isActiveMedication(m) && (m.drug_class || '').indexOf(prefix) === 0 &&
+        core.some(function (pat) { return (m.drug_class || '').indexOf(pat) !== -1; });
+    });
+    var anyArt = mentions.filter(function (m) { return isActiveMedication(m) && (m.drug_class || '').indexOf(prefix) === 0; });
+    if (!regimen.length && !groups[cid]) return;
+    var supportHits = [];
+    (rule.supporting_terms_es || []).concat(rule.supporting_terms_en || []).forEach(function (t) {
+      var re = termRegExp(foldText(t)); var mm;
+      while ((mm = re.exec(folded)) !== null) {
+        var at = mm.index + mm[1].length;
+        supportHits.push({ term: t, index: at, length: mm[2].length });
+      }
+    });
+    var attributes = {};
+    Object.keys(rule.attribute_terms_es || {}).forEach(function (attr) {
+      (rule.attribute_terms_es[attr] || []).some(function (t) {
+        var re = termRegExp(foldText(t)); var mm = re.exec(folded);
+        if (!mm) return false;
+        var at = mm.index + mm[1].length;
+        var date = extractDateNear(original, at, mm[2].length);
+        attributes[attr] = { text: extractSentenceSnippet(original, at, mm[2].length), date: date ? date.raw : null,
+          date_semantics: date ? 'attribute_since' : null };
+        return true;
+      });
+    });
+    if (!regimen.length) {
+      if (groups[cid] && Object.keys(attributes).length) groups[cid].attributes = attributes;
+      return;
+    }
+    var first = regimen[0];
+    var drugText = extractSentenceSnippet(original, first.actual_start_index, mentionLength(first));
+    var evidenceSpan = drugText;
+    if (supportHits.length) {
+      var supSpan = extractSentenceSnippet(original, supportHits[0].index, supportHits[0].length);
+      if (supSpan !== drugText) evidenceSpan += ' / ' + supSpan;
+    }
+    var withSupport = supportHits.length > 0;
+    if (!groups[cid]) { groups[cid] = { key: cid, concept: concept, events: [] }; groupOrder.push(cid); }
+    groups[cid].attributes = attributes;
+    groups[cid].events.push({
+      kind: 'contextual', evidence_type: withSupport ? 'contextual_inference' : 'pharmacological_inference',
+      concept: concept, text: anyArt.map(function (m) { return m.canonical; }).join(' / '),
+      index: first.actual_start_index, length: mentionLength(first),
+      match_type: 'contextual_rule', confidence: withSupport ? 'medium' : 'low',
+      status: withSupport ? (rule.status_with_support || 'active') : (rule.status_without_support || 'suspected'),
+      assertion: withSupport ? 'affirmed' : 'suspected', temporality: 'current',
+      drug: anyArt.map(function (m) { return m.canonical; }).join(' / '),
+      drug_canonicals: anyArt.map(function (m) { return m.canonical; }), drug_active: true,
+      date: null, evidence_span: evidenceSpan,
+      rationale_es: rule.rationale_es || '',
+      supporting_terms: supportHits.map(function (h) { return h.term; }).filter(function (v, i, a) { return a.indexOf(v) === i; })
+    });
+  });
+
+  /* 5. Broader concept folded into its single narrower concept when the
+     terminology allows it ("diabetes" + "DM2" = one problem). */
+  groupOrder.slice().forEach(function (key) {
+    var g = groups[key];
+    if (!g || !g.concept) return;
+    var narrower = groupOrder.filter(function (k) {
+      var other = groups[k];
+      return other && other.concept && other.concept.broader === key && other.concept.merge_into_narrower;
+    });
+    if (narrower.length !== 1) return;
+    g.events.forEach(function (e) { e.merged_from_broader = key; });
+    groups[narrower[0]].events = groups[narrower[0]].events.concat(g.events);
+    delete groups[key];
+  });
+
+  var results = [];
+  groupOrder.forEach(function (key) {
+    var g = groups[key];
+    if (!g) return;
+    results.push(buildProblemRecord(g, index, lang));
+  });
+  results.sort(function (a, b) { return a._order - b._order; });
+  results.forEach(function (r) { delete r._order; });
   return results;
+}
+
+function earliestDate(dates) {
+  return (dates || []).filter(Boolean).reduce(function (best, d) {
+    return !best || d.value < best.value ? d : best;
+  }, null);
+}
+
+function buildProblemRecord(group, index, lang) {
+  var concept = group.concept;
+  var events = group.events.slice().sort(function (a, b) { return a.index - b.index; });
+  var explicit = events.filter(function (e) { return e.kind === 'explicit'; });
+  var indications = events.filter(function (e) { return e.kind === 'indication'; });
+  var contextual = events.filter(function (e) { return e.kind === 'contextual'; });
+  var activeIndications = indications.filter(function (e) { return e.status === 'active'; });
+  var catalogEntry = concept && concept.catalog_problem_id ? index.catalogById[concept.catalog_problem_id] : null;
+
+  var status, assertion, temporality, contradiction = false, resolvedBy = null, reconciled = null;
+  if (explicit.length) {
+    reconciled = reconcileProblemEvents(explicit.map(function (e) {
+      return { status: e.status, assertion: e.assertion, temporality: e.temporality, date: e.date,
+        evidence_span: e.evidence_span, is_chronic_phrasing: e.is_chronic_phrasing, matched_keyword: e.matched_keyword };
+    }));
+    status = reconciled.status; assertion = reconciled.assertion; temporality = reconciled.temporality;
+    contradiction = !!reconciled.contradiction; resolvedBy = reconciled.resolved_by || null;
+    if (activeIndications.length) {
+      if (status === 'absent' || status === 'resolved') {
+        /* A currently prescribed treatment documented FOR this problem while
+           the text also negates/resolves it: never pick a side silently. */
+        status = 'unknown'; assertion = 'unknown'; temporality = 'undetermined'; contradiction = true;
+      } else if (status === 'suspected' || status === 'unknown') {
+        if (!contradiction) { status = 'active'; assertion = 'affirmed'; }
+      }
+    }
+  } else if (indications.length) {
+    if (activeIndications.length) { status = 'active'; assertion = 'affirmed'; temporality = 'current'; }
+    else if (indications.some(function (e) { return e.status === 'suspected'; })) { status = 'suspected'; assertion = 'suspected'; temporality = 'current'; }
+    else { status = 'unknown'; assertion = 'unknown'; temporality = 'historical'; }
+  } else {
+    var ctx = contextual[0];
+    status = ctx.status; assertion = ctx.assertion; temporality = ctx.temporality;
+  }
+
+  var evidenceTypes = [];
+  events.forEach(function (e) { if (evidenceTypes.indexOf(e.evidence_type) === -1) evidenceTypes.push(e.evidence_type); });
+
+  var strong = events.some(function (e) {
+    return (e.kind === 'explicit' || e.kind === 'indication') && e.confidence === 'high';
+  });
+  var certainty;
+  if (contradiction) certainty = 'low';
+  else if (status === 'suspected' || status === 'unknown') certainty = 'low';
+  else if (strong) certainty = 'high';
+  else certainty = 'medium';
+
+  /* Dates — each keeps its own meaning. */
+  var onsetEvents = explicit.filter(function (e) { return e.status === 'active' && e.date && e.date.semantics === 'documented_onset'; });
+  var documentedOnset = earliestDate(onsetEvents.map(function (e) { return e.date; }));
+  var presenceDates = explicit.filter(function (e) { return e.status === 'active' && e.date; }).map(function (e) { return e.date; })
+    .concat(activeIndications.map(function (e) { return e.date; }));
+  var firstActiveDate = earliestDate(presenceDates);
+
+  var relatedMedications = [];
+  indications.concat(contextual).forEach(function (e) {
+    if (!e.drug) return;
+    if (relatedMedications.some(function (r) { return r.drug === e.drug && r.relation === e.evidence_type; })) return;
+    relatedMedications.push({
+      drug: e.drug, active_ingredients: e.drug_canonicals || [], relation: e.evidence_type,
+      active: !!e.drug_active, start_date: e.date ? e.date.raw : null,
+      start_date_precision: e.date ? (e.date.precision || (e.date.month ? 'month' : 'year')) : null,
+      evidence_span: e.evidence_span
+    });
+  });
+
+  var originalTexts = [];
+  events.forEach(function (e) { if (e.text && originalTexts.indexOf(e.text) === -1 && e.kind !== 'contextual') originalTexts.push(e.text); });
+  var matchTypes = [];
+  events.forEach(function (e) { if (matchTypes.indexOf(e.match_type) === -1) matchTypes.push(e.match_type); });
+  var relationNotes = events.map(function (e) { return e.relation_note_es; }).filter(Boolean)
+    .filter(function (v, i, a) { return a.indexOf(v) === i; });
+
+  var labelEs = concept ? concept.preferred_es : originalTexts[0];
+  var labelEn = concept ? concept.preferred_en : originalTexts[0];
+  var id = concept ? problemIdForConcept(concept)
+    : 'FREE_' + foldText(originalTexts[0] || 'problem').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').toUpperCase().slice(0, 60);
+
+  var displayEvidence = uniqueStrings(events.filter(function (e) {
+    return e.status === 'active' || e.status === 'resolved' || e.status === 'suspected' || e.status === 'unknown';
+  }).map(function (e) { return e.evidence_span; }));
+  var displayNegated = uniqueStrings(explicit.filter(function (e) { return e.status === 'absent'; }).map(function (e) { return e.evidence_span; }));
+  var primary = reconciled || events[0];
+  var recognizedSynonyms = concept && concept.origin === 'terminology'
+    ? uniqueStrings([concept.preferred_es].concat(concept.terms_es || [], concept.abbreviations || []).slice(0, 12)) : [];
+
+  return {
+    _order: events[0].index,
+    id: id,
+    concept_id: concept ? concept.id : null,
+    concept_es: labelEs,
+    concept_en: labelEn,
+    category: concept ? (concept.category || '') : 'uncoded',
+    status: status,
+    assertion: assertion,
+    temporality: temporality,
+    contradiction: contradiction,
+    resolved_by: resolvedBy,
+    matched_keyword: primary.matched_keyword || (events[0] && events[0].text) || '',
+    is_chronic_phrasing: explicit.some(function (e) { return e.is_chronic_phrasing; }),
+    evidence_span: (reconciled && reconciled.evidence_span) || events[0].evidence_span,
+    source: (explicit.length || indications.length) ? 'explicit' : 'inferred',
+    evidence_types: evidenceTypes,
+    evidence_type_labels: evidenceTypes.map(function (t) { return (EVIDENCE_TYPE_LABELS[t] || {})[lang] || t; }),
+    certainty_level: certainty,
+    confidence: certainty === 'high' ? 'high' : (certainty === 'medium' ? 'medium' : 'low'),
+    normalization: {
+      status: concept ? (matchTypes.indexOf('approximate') !== -1 && matchTypes.length === 1 ? 'approximate' : 'resolved') : 'unresolved',
+      original_texts: originalTexts,
+      match_types: matchTypes,
+      recognized_synonyms: recognizedSynonyms,
+      relation_notes_es: relationNotes,
+      concept_note_es: concept && concept.note_es ? concept.note_es : ''
+    },
+    code: concept && concept.code ? concept.code : null,
+    validation_status: 'pending_professional_validation',
+    documented_onset: documentedOnset ? { raw: documentedOnset.raw, value: documentedOnset.value, precision: documentedOnset.month ? 'month' : 'year', semantics: 'documented_onset' } : null,
+    first_active_date: firstActiveDate,
+    related_medications: relatedMedications,
+    attributes: group.attributes || {},
+    symptom_ids: concept ? (index.conceptSymptoms[concept.id] || []).slice() : [],
+    /* Step 3 / legacy display fields. */
+    problem: lang === 'en' ? labelEn : labelEs,
+    category_label: problemCategoryLabel(concept ? concept.category : '', lang),
+    certainty: problemCertaintyForDisplay(status),
+    evidence: displayEvidence,
+    negatedFindings: displayNegated,
+    measurement_type: catalogEntry ? (catalogEntry.measurement_type || null) : null,
+    diagnostic_note_es: catalogEntry ? (catalogEntry.diagnostic_note_es || '') : '',
+    diagnostic_note_en: catalogEntry ? (catalogEntry.diagnostic_note_en || '') : '',
+    alternative_indication_for_drug_examples: catalogEntry ? (catalogEntry.alternative_indication_for_drug_examples || []) : [],
+    source_cascade_ids: catalogEntry ? (catalogEntry.source_cascade_ids || []) : [],
+    references: catalogEntry ? (catalogEntry.references || []) : [],
+    /* Full evidence history — never discarded. */
+    events: events.map(function (e) {
+      return {
+        type: e.evidence_type, originalText: e.text, matched_term: e.matched_keyword || null, match_type: e.match_type,
+        assertion: e.assertion, temporality: e.temporality, status: e.status,
+        evidenceSpan: e.evidence_span, drug: e.drug || null,
+        date: e.date ? e.date.raw : null, date_semantics: e.date ? e.date.semantics : null,
+        startDate: e.date ? e.date.value : null,
+        source: e.kind === 'contextual' ? 'inferred' : 'explicit',
+        confidence: e.confidence, merged_from_broader: e.merged_from_broader || null,
+        rationale_es: e.rationale_es || null
+      };
+    })
+  };
 }
 
 /** Ported as-is from the pre-audit app.js: anchor + support term combination
@@ -1191,11 +1617,12 @@ function detectUrologicRenalProblem(noteText, lang, resolver) {
   };
 }
 
-function detectActiveProblems(noteText, kb, lang, resolver) {
+function detectActiveProblems(noteText, kb, lang, resolver, classifiedMentions) {
   if (!noteText || !noteText.trim()) return [];
   var corrected = normalizeClinicalText(noteText);
-  var problems = detectGenericActiveProblems(corrected, kb, lang);
-  var urologic = detectUrologicRenalProblem(corrected, lang || 'es', resolver || buildDrugResolver(kb));
+  resolver = resolver || buildDrugResolver(kb || {});
+  var problems = extractClinicalProblems(corrected, kb || {}, lang, resolver, classifiedMentions);
+  var urologic = detectUrologicRenalProblem(corrected, lang || 'es', resolver);
   if (urologic) problems.push(urologic);
   return problems;
 }
@@ -1446,38 +1873,71 @@ function applyPatientLevelModifiers(signal, patientLevelModifiers) {
   return upgraded;
 }
 
-function buildGlobalMedicationAlerts(noteText, kb, mentions) {
+function buildGlobalMedicationAlerts(noteText, kb, mentions, context) {
+  context = context || {};
   var matched = detectClinicalContextModifiers(noteText, kb);
   var split = classifyMatchedModifiers(matched);
+  var alerts = [];
 
-  /* CM007 (CNS-depressant burden): drugs_involved is restricted to the
-     mentions that actually matched one of the modifier's own trigger
-     keywords — not the full drug list — the same class of bug already
-     fixed for the retired CM006 keyword-trigger path. */
-  var alerts = split.globalAlerts.map(function (mod) {
-    var drugsInvolved = (mentions || []).filter(function (m) {
+  /* CM007 (CNS-depressant / sedative burden). Previously fired on any single
+     keyword of the note (contradicting its own "≥2 depressants" message)
+     and missed agents not literally listed (lormetazepam, trazodone). Now:
+     contributors are the ACTIVE medicines that either carry the dictionary
+     property "sedative" (independent of the therapeutic class label — e.g.
+     trazodone is an antidepressant with sedative properties) or match one of
+     the modifier's own keywords; the alert requires >=2 distinct agents. */
+  var cm007 = split.globalAlerts.find(function (mod) { return mod.id === 'CM007'; }) ||
+    ((kb.clinicalModifiers && kb.clinicalModifiers.clinical_modifiers) || []).find(function (mod) { return mod.id === 'CM007'; });
+  if (cm007) {
+    var keywords = [].concat((cm007.trigger_context && cm007.trigger_context.keywords_en) || [],
+      (cm007.trigger_context && cm007.trigger_context.keywords_es) || []).map(normalizeDrugText).filter(Boolean);
+    var byCanonical = {};
+    (mentions || []).forEach(function (m) {
       var mCanon = normalizeDrugText(m.canonical || '');
       var mText = normalizeDrugText(m.mention || m.canonical || '');
-      return (mod.matched_keywords || []).some(function (kw) {
-        var nkw = normalizeDrugText(kw);
-        if (!nkw) return false;
-        return mCanon.indexOf(nkw) !== -1 || nkw.indexOf(mCanon) !== -1 ||
-               mText.indexOf(nkw) !== -1 || nkw.indexOf(mText) !== -1;
+      var sedative = (m.pharmacological_properties || []).indexOf('sedative') !== -1;
+      var keyword = keywords.some(function (k) { return mCanon === k || mText === k; });
+      if (!sedative && !keyword) return;
+      if (byCanonical[mCanon]) return;
+      var pos = mentionPosition(m);
+      var date = pos ? extractMedicationStartDate(noteText, pos.index, pos.length) : null;
+      byCanonical[mCanon] = { canonical: m.canonical, drug_class: m.drug_class || '', start_date: date ? date.raw : null,
+        start_value: date ? date.value : null, basis: sedative ? 'pharmacological_property' : 'keyword' };
+    });
+    var contributors = Object.keys(byCanonical).map(function (k) { return byCanonical[k]; });
+    if (contributors.length >= 2) {
+      contributors.sort(function (a, b) {
+        if (a.start_value == null) return 1;
+        if (b.start_value == null) return -1;
+        return a.start_value - b.start_value;
       });
-    }).map(function (m) { return m.canonical; });
-
-    return {
-      id: mod.id,
-      type: 'drug_burden',
-      name_es: mod.name_es,
-      name_en: mod.name_en,
-      message_es: mod.message_es,
-      message_en: mod.message_en,
-      drugs_involved: drugsInvolved,
-      references: mod.references || [],
-      rule_id: mod.id
-    };
-  });
+      var sharedIndications = (context.activeProblems || []).filter(function (p) {
+        var ingredients = [];
+        (p.related_medications || []).forEach(function (r) {
+          if (r.relation === 'documented_indication') ingredients = ingredients.concat((r.active_ingredients || []).map(normalizeDrugText));
+        });
+        return contributors.filter(function (c) { return ingredients.indexOf(normalizeDrugText(c.canonical)) !== -1; }).length >= 2;
+      }).map(function (p) { return p.problem || p.concept_es; });
+      var chronoEs = contributors.map(function (c) { return c.canonical + ' (' + (c.start_date || 'fecha de inicio no documentada') + ')'; }).join(', ');
+      var chronoEn = contributors.map(function (c) { return c.canonical + ' (' + (c.start_date || 'start date not documented') + ')'; }).join(', ');
+      var sharedEs = sharedIndications.length
+        ? ' Comparten la indicación documentada «' + sharedIndications.join('», «') + '»: la incorporación sucesiva de fármacos para la misma indicación es una asociación temporal; no establece por sí sola relación causal ni constituye una cascada de prescripción sin una regla específica y evidencia que la respalden. Revisar eficacia, duplicidad funcional y posibilidad de desprescripción.'
+        : '';
+      var sharedEn = sharedIndications.length
+        ? ' They share the documented indication "' + sharedIndications.join('", "') + '": adding drugs sequentially for the same indication is a temporal association; on its own it establishes no causal relationship and is not a prescribing cascade without a specific rule and supporting evidence. Review efficacy, functional duplication and deprescribing options.'
+        : '';
+      alerts.push({
+        id: cm007.id, type: 'drug_burden', finding_category: 'pharmacotherapy_safety',
+        name_es: cm007.name_es, name_en: cm007.name_en,
+        message_es: cm007.message_es + ' Fármacos con efecto depresor/sedante del SNC (cronología documentada): ' + chronoEs + '.' + sharedEs,
+        message_en: cm007.message_en + ' Drugs with CNS-depressant/sedative effect (documented chronology): ' + chronoEn + '.' + sharedEn,
+        drugs_involved: contributors.map(function (c) { return c.canonical; }),
+        contributors: contributors, shared_documented_indications: sharedIndications,
+        temporal_association_only: true,
+        references: cm007.references || [], rule_id: cm007.id
+      });
+    }
+  }
 
   /* Fase 6 — real ACB-scale anticholinergic burden alert, replacing the
      retired CM006 keyword trigger. Wording never claims a "cumulative"/
@@ -1874,110 +2334,533 @@ function verifyIntermediateProblem(noteText, cascade, kb, activeProblems) {
   }
 
   var atmEntry = findAdeTreatmentEntry(cascade, kb);
-  if (!atmEntry) return { checked: false, status: 'unknown', evidence_span: '', source: 'none', linked_problem_id: null };
+  var targets = ruleAdeTextConcepts(cascade, kb);
+  if (atmEntry) adeTargetConcepts(atmEntry, kb).forEach(function (c) { if (targets.indexOf(c) === -1) targets.push(c); });
+  if (!targets.length) return { checked: false, status: 'unknown', evidence_span: '', source: 'none', linked_problem_id: null };
+  atmEntry = atmEntry || { ade_es: cascade.ade_es || '', ade_en: cascade.ade_en || '' };
 
-  var synonyms = [].concat(atmEntry.ade_synonyms_es || [], atmEntry.ade_synonyms_en || []);
-  var normalized = normalizeSymptomText(noteText);
-  for (var i = 0; i < synonyms.length; i++) {
-    var normKw = normalizeSymptomText(synonyms[i]);
-    var occurrences = findAllTermOccurrences(normalized, normKw);
-    if (occurrences.length) {
-      var events = occurrences.map(function (pos) {
-        var cls = classifyMention(normalized, pos.index, pos.length);
-        return {
-          status: cls.status, temporality: cls.temporality, assertion: cls.assertion,
-          evidence_span: extractSentenceSnippet(noteText, pos.index, pos.length),
-          date: extractDateNear(noteText, pos.index, pos.length)
-        };
+  /* The intermediate ADE is looked up in the SAME problem list the clinician
+     reviews (extracted, or the confirmed professional review) — never by
+     re-scanning the raw note. Re-scanning let the cascade engine "see"
+     problems that were absent from, or excluded in, the review form. */
+  var match = findProblemForConcepts(activeProblems, targets, kb);
+  if (match) {
+    return {
+      checked: true, status: match.status, temporality: match.temporality,
+      contradiction: !!match.contradiction, first_active_date: match.first_active_date || null,
+      evidence_span: match.evidence_span || '',
+      source: 'active_problem_list', linked_problem_id: match.id,
+      concept_es: match.concept_es || match.problem || '', concept_en: match.concept_en || match.problem || '',
+      problem_evidence_types: match.evidence_types || [],
+      ade_es: atmEntry.ade_es || '', ade_en: atmEntry.ade_en || ''
+    };
+  }
+  return { checked: true, status: 'none', evidence_span: '', source: 'active_problem_list', linked_problem_id: null,
+    ade_es: atmEntry.ade_es || '', ade_en: atmEntry.ade_en || '' };
+}
+
+function adeEntryKey(entry, kb) {
+  var entries = (kb.adeTreatmentMap && kb.adeTreatmentMap.ade_treatment_map) || [];
+  return entry.ade_id || ('ADE_' + (entries.indexOf(entry) + 1));
+}
+
+function adeTargetConcepts(entry, kb) {
+  var index = getTerminologyIndex(kb);
+  return (index.adeConcepts[adeEntryKey(entry, kb)] || []).slice();
+}
+
+/** Terminology concept of a problem record: its own concept_id, or (for
+ * manual / renamed reviewed problems) the concept its text resolves to. */
+function problemConceptId(problem, kb) {
+  if (!problem) return null;
+  if (problem.concept_id) return problem.concept_id;
+  var index = getTerminologyIndex(kb);
+  if (problem.id && index.catalogConcept[problem.id]) return index.catalogConcept[problem.id];
+  var resolved = resolveClinicalConcept(problem.problem || problem.concept_es || problem.concept_en || '', kb);
+  return resolved ? resolved.concept_id : null;
+}
+
+/** Active problem whose concept equals (or is narrower than) one of the
+ * targets; an active match is preferred over a negated/resolved one. */
+function findProblemForConcepts(problems, targets, kb) {
+  if (!targets || !targets.length) return null;
+  var index = getTerminologyIndex(kb);
+  var matches = (problems || []).filter(function (p) {
+    var cid = problemConceptId(p, kb);
+    return cid && targets.some(function (t) { return conceptWithin(index, cid, t); });
+  });
+  if (!matches.length) return null;
+  var rank = { active: 0, suspected: 1, unknown: 2, resolved: 3, absent: 4 };
+  return matches.sort(function (a, b) { return (rank[a.status] || 9) - (rank[b.status] || 9); })[0];
+}
+
+/** Terminology concepts that represent a rule's intermediate problem. */
+function ruleIntermediateConcepts(cascade, kb) {
+  var index = getTerminologyIndex(kb);
+  var targets = [];
+  var catalogEntry = findClinicalProblemForCascade(cascade, kb);
+  if (catalogEntry && index.catalogConcept[catalogEntry.id]) targets.push(index.catalogConcept[catalogEntry.id]);
+  var atm = findAdeTreatmentEntry(cascade, kb);
+  if (atm) adeTargetConcepts(atm, kb).forEach(function (c) { if (targets.indexOf(c) === -1) targets.push(c); });
+  ruleAdeTextConcepts(cascade, kb).forEach(function (c) { if (targets.indexOf(c) === -1) targets.push(c); });
+  return targets;
+}
+
+/** Concepts named by the rule's own adverse-effect description (ade_es /
+ * ade_en), resolved through the central terminology without approximate
+ * matching. Lets every rule verify its intermediate problem against the
+ * reviewed problem list, not only the few linked to clinical_problems.json
+ * or ade_treatment_map.json. */
+function ruleAdeTextConcepts(cascade, kb) {
+  var found = [];
+  [cascade.ade_es, cascade.ade_en].forEach(function (text) {
+    resolveClinicalConcepts(text || '', kb, { approximate: false }).forEach(function (hit) {
+      if (found.indexOf(hit.concept_id) === -1) found.push(hit.concept_id);
+    });
+  });
+  return found;
+}
+
+/** Does an explicit indication name the rule's intermediate problem? */
+function indicationMatchesRule(indication, cascade, kb) {
+  if (!indication || !indication.found) return false;
+  var index = getTerminologyIndex(kb);
+  var targets = ruleIntermediateConcepts(cascade, kb);
+  var linked = findClinicalProblemForCascade(cascade, kb);
+  return (indication.reasons || [{ problem_id: indication.concept_id, concept: null }]).some(function (r) {
+    if (linked && r.problem_id === linked.id) return true;
+    var cid = r.concept ? r.concept.id : null;
+    return !!cid && targets.some(function (t) { return conceptWithin(index, cid, t); });
+  });
+}
+
+/* ============================================================
+   7b. Central clinical terminology (kb/clinical_terminology.json)
+   ------------------------------------------------------------
+   ONE normalization layer for every free-text clinical concept the engine
+   reads: problems stated in the note, medication indications, ADE synonyms
+   (ade_treatment_map.json) and symptom synonyms (kb_symptoms.json). Before
+   this layer each of those sources carried its own vocabulary, so the
+   problem list (6 catalog concepts), the symptom chips and the cascade
+   engine's raw-text ADE scan could each "see" a different set of problems
+   for the same note. The index is built once per KB object and cached.
+   ============================================================ */
+
+/** Lower-case + strip diacritics WITHOUT changing string length, so a match
+ * index in the folded copy is a valid index in the original text. */
+function foldText(text) {
+  var src = text || '';
+  var out = '';
+  for (var i = 0; i < src.length; i++) {
+    var c = src.charAt(i);
+    var d = c.normalize ? c.normalize('NFD').replace(/[̀-ͯ]/g, '') : c;
+    d = d.toLowerCase();
+    if (d.length !== 1) d = c.toLowerCase().length === 1 ? c.toLowerCase() : c;
+    out += d;
+  }
+  return out;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function termRegExp(folded) {
+  var body = folded.split(/\s+/).map(escapeRegExp).join('\\s+');
+  return new RegExp('(^|[^a-z0-9])(' + body + ')(?=[^a-z0-9]|$)', 'g');
+}
+
+/** Optimal-string-alignment edit distance, bounded (returns limit+1 early). */
+function boundedEditDistance(a, b, limit) {
+  if (Math.abs(a.length - b.length) > limit) return limit + 1;
+  var prevPrev = null, prev = [], cur;
+  for (var j = 0; j <= b.length; j++) prev[j] = j;
+  for (var i = 1; i <= a.length; i++) {
+    cur = [i];
+    var rowMin = i;
+    for (var k = 1; k <= b.length; k++) {
+      var cost = a.charAt(i - 1) === b.charAt(k - 1) ? 0 : 1;
+      var v = Math.min(prev[k] + 1, cur[k - 1] + 1, prev[k - 1] + cost);
+      if (prevPrev && i > 1 && k > 1 && a.charAt(i - 1) === b.charAt(k - 2) && a.charAt(i - 2) === b.charAt(k - 1)) {
+        v = Math.min(v, prevPrev[k - 2] + 1);
+      }
+      cur[k] = v;
+      if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > limit) return limit + 1;
+    prevPrev = prev; prev = cur;
+  }
+  return prev[b.length];
+}
+
+var TERMINOLOGY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
+var MATCH_CONFIDENCE = {
+  preferred: 'high', synonym: 'high', abbreviation: 'high', catalog_keyword: 'high', catalog_chronic_keyword: 'high',
+  lay_synonym: 'medium', ade_synonym: 'medium', symptom_synonym: 'medium',
+  related_not_equivalent: 'medium', approximate: 'low', unresolved: 'low'
+};
+
+function getTerminologyIndex(kb) {
+  kb = kb || {};
+  var sources = [kb.clinicalTerminology, kb.clinicalProblems, kb.adeTreatmentMap, kb.symptomDictionary];
+  if (TERMINOLOGY_CACHE) {
+    var cached = TERMINOLOGY_CACHE.get(kb);
+    if (cached && cached.sources.every(function (s, i) { return s === sources[i]; })) return cached;
+  }
+
+  var concepts = {};
+  var order = [];
+  var terms = [];
+  var termByFolded = {};
+
+  function addConcept(concept) {
+    if (!concept || !concept.id || concepts[concept.id]) return;
+    concepts[concept.id] = concept;
+    order.push(concept.id);
+  }
+  function addTerm(raw, conceptId, matchType, extra) {
+    var folded = foldText(String(raw || '')).replace(/\s+/g, ' ').trim();
+    if (!folded || folded.length < 2 || !concepts[conceptId]) return;
+    var existing = termByFolded[folded];
+    if (existing) {
+      if (extra && extra.chronic) existing.chronic = true;
+      return;
+    }
+    var entry = Object.assign({
+      folded: folded, raw: raw, concept_id: conceptId, match_type: matchType,
+      confidence: MATCH_CONFIDENCE[matchType] || 'medium', chronic: false,
+      single_token: folded.indexOf(' ') === -1 && /^[a-z]+$/.test(folded)
+    }, extra || {});
+    entry.re = termRegExp(folded);
+    termByFolded[folded] = entry;
+    terms.push(entry);
+  }
+
+  var terminology = (kb.clinicalTerminology && kb.clinicalTerminology.concepts) || [];
+  var catalog = (kb.clinicalProblems && kb.clinicalProblems.problems) || [];
+  var catalogById = {};
+  catalog.forEach(function (entry) { catalogById[entry.id] = entry; });
+
+  terminology.forEach(function (c) { addConcept(Object.assign({ origin: 'terminology' }, c)); });
+  /* Catalog problems not linked from the terminology still need a concept
+     (their keyword lists remain authoritative for cascade reasoning). */
+  var linkedCatalog = {};
+  terminology.forEach(function (c) { if (c.catalog_problem_id) linkedCatalog[c.catalog_problem_id] = c.id; });
+  catalog.forEach(function (entry) {
+    if (linkedCatalog[entry.id]) return;
+    linkedCatalog[entry.id] = 'CAT:' + entry.id;
+    addConcept({ id: 'CAT:' + entry.id, origin: 'catalog', preferred_es: entry.concept_es, preferred_en: entry.concept_en,
+      category: entry.category || '', catalog_problem_id: entry.id, code: null });
+  });
+
+  terminology.forEach(function (c) {
+    addTerm(c.preferred_es, c.id, 'preferred');
+    addTerm(c.preferred_en, c.id, 'preferred');
+    (c.terms_es || []).concat(c.terms_en || []).forEach(function (t) { addTerm(t, c.id, 'synonym'); });
+    (c.abbreviations || []).forEach(function (t) { addTerm(t, c.id, 'abbreviation'); });
+    (c.lay_terms_es || []).concat(c.lay_terms_en || []).forEach(function (t) { addTerm(t, c.id, 'lay_synonym'); });
+  });
+  terminology.forEach(function (c) {
+    (c.related_not_equivalent || []).forEach(function (rel) {
+      if (rel.resolves_to && concepts[rel.resolves_to]) {
+        addTerm(rel.term, rel.resolves_to, 'related_not_equivalent', { relation_note_es: rel.note_es || '', related_to: c.id });
+      }
+    });
+  });
+  catalog.forEach(function (entry) {
+    var cid = linkedCatalog[entry.id];
+    (entry.chronic_keywords_es || []).concat(entry.chronic_keywords_en || []).forEach(function (t) {
+      addTerm(t, cid, 'catalog_chronic_keyword', { chronic: true });
+    });
+    [entry.concept_es, entry.concept_en].concat(entry.keywords_es || [], entry.keywords_en || []).forEach(function (t) {
+      addTerm(t, cid, 'catalog_keyword');
+    });
+  });
+
+  /* Sort before the resolution passes below so longest terms win. */
+  function sortTerms() { terms.sort(function (a, b) { return b.folded.length - a.folded.length; }); }
+  sortTerms();
+  var partial = { concepts: concepts, terms: terms };
+
+  function conceptsIn(texts) {
+    var found = [];
+    texts.forEach(function (t) {
+      scanTerminology(foldText(t || ''), partial, { approximate: false }).forEach(function (hit) {
+        if (found.indexOf(hit.term.concept_id) === -1) found.push(hit.term.concept_id);
       });
-      var reconciled = reconcileProblemEvents(events);
-      return {
-        checked: true, status: reconciled.status, temporality: reconciled.temporality,
-        contradiction: !!reconciled.contradiction, first_active_date: reconciled.first_active_date,
-        evidence_span: reconciled.evidence_span,
-        source: 'ade_treatment_map', linked_problem_id: null
-      };
+    });
+    return found;
+  }
+
+  /* ADE and symptom vocabularies are resolved THROUGH the terminology (never
+     as parallel dictionaries). Their extra synonyms become additional,
+     medium-confidence terms of the concept the entry resolves to; an entry
+     that resolves to nothing gets a traceable pseudo-concept instead of
+     being silently dropped. */
+  var adeEntries = (kb.adeTreatmentMap && kb.adeTreatmentMap.ade_treatment_map) || [];
+  var adeConcepts = {};
+  adeEntries.forEach(function (e, i) {
+    var adeKey = e.ade_id || ('ADE_' + (i + 1));
+    var resolved = conceptsIn([e.ade_es, e.ade_en].concat(e.ade_synonyms_es || [], e.ade_synonyms_en || []));
+    if (!resolved.length) {
+      addConcept({ id: 'ADE:' + adeKey, origin: 'ade_treatment_map', preferred_es: e.ade_es, preferred_en: e.ade_en, category: 'adverse_effect', code: null });
+      resolved = ['ADE:' + adeKey];
+    }
+    adeConcepts[adeKey] = resolved;
+    var primary = conceptsIn([e.ade_es, e.ade_en])[0] || resolved[0];
+    (e.ade_synonyms_es || []).concat(e.ade_synonyms_en || []).forEach(function (t) { addTerm(t, primary, 'ade_synonym', { ade_id: adeKey }); });
+  });
+  var symptomEntries = (kb.symptomDictionary && kb.symptomDictionary.symptoms) || [];
+  var symptomConcepts = {};
+  symptomEntries.forEach(function (sym) {
+    var resolved = conceptsIn([sym.term]);
+    if (!resolved.length) resolved = conceptsIn(sym.synonyms || []).slice(0, 1);
+    if (!resolved.length) {
+      addConcept({ id: 'SYM:' + sym.id, origin: 'kb_symptoms', preferred_es: sym.term, preferred_en: sym.term, category: sym.category || 'symptom', code: null });
+      resolved = ['SYM:' + sym.id];
+    }
+    (sym.synonyms || []).forEach(function (t) { addTerm(t, resolved[0], 'symptom_synonym', { symptom_id: sym.id }); });
+    symptomConcepts[sym.id] = conceptsIn([sym.term].concat(sym.synonyms || []));
+    if (!symptomConcepts[sym.id].length) symptomConcepts[sym.id] = resolved;
+  });
+  sortTerms();
+
+  var conceptSymptoms = {};
+  Object.keys(symptomConcepts).forEach(function (symId) {
+    symptomConcepts[symId].forEach(function (cid) {
+      (conceptSymptoms[cid] = conceptSymptoms[cid] || []).push(symId);
+    });
+  });
+
+  var index = {
+    sources: sources, concepts: concepts, order: order, terms: terms,
+    catalogById: catalogById, catalogConcept: linkedCatalog,
+    adeConcepts: adeConcepts, symptomConcepts: symptomConcepts, conceptSymptoms: conceptSymptoms
+  };
+  if (TERMINOLOGY_CACHE) TERMINOLOGY_CACHE.set(kb, index);
+  return index;
+}
+
+/** All non-overlapping terminology matches in an already-folded text,
+ * longest term first. Approximate (edit distance 1) matching only for
+ * single-word terms of >=8 letters, never for abbreviations. */
+function scanTerminology(folded, index, options) {
+  options = options || {};
+  var taken = [];
+  var hits = [];
+  function free(start, end) {
+    return !taken.some(function (t) { return start < t[1] && end > t[0]; });
+  }
+  index.terms.forEach(function (term) {
+    term.re.lastIndex = 0;
+    var m;
+    while ((m = term.re.exec(folded)) !== null) {
+      var start = m.index + m[1].length;
+      var end = start + m[2].length;
+      if (free(start, end)) {
+        taken.push([start, end]);
+        hits.push({ index: start, length: end - start, term: term, match_type: term.match_type, confidence: term.confidence });
+      }
+      if (m[0].length === 0) term.re.lastIndex++;
+    }
+  });
+  if (options.approximate !== false) {
+    var candidates = index.terms.filter(function (t) {
+      return t.single_token && t.folded.length >= 8 && t.match_type !== 'abbreviation';
+    });
+    var tokenRe = /[a-z]{8,}/g;
+    var tk;
+    while ((tk = tokenRe.exec(folded)) !== null) {
+      var s = tk.index, e = s + tk[0].length;
+      if (!free(s, e)) continue;
+      for (var i = 0; i < candidates.length; i++) {
+        if (boundedEditDistance(tk[0], candidates[i].folded, 1) <= 1) {
+          taken.push([s, e]);
+          hits.push({ index: s, length: e - s, term: candidates[i], match_type: 'approximate', confidence: 'low' });
+          break;
+        }
+      }
     }
   }
-  return { checked: true, status: 'none', evidence_span: '', source: 'ade_treatment_map', linked_problem_id: null };
+  hits.sort(function (a, b) { return a.index - b.index; });
+  return hits;
+}
+
+/** Problem identity used across the engine: the cascade-catalog id when the
+ * concept is linked to clinical_problems.json (keeps every rule lookup
+ * stable), otherwise the terminology concept id. */
+function problemIdForConcept(concept) {
+  if (!concept) return null;
+  return concept.catalog_problem_id || concept.id;
+}
+
+function conceptLabel(concept, lang) {
+  if (!concept) return '';
+  return lang === 'en' ? (concept.preferred_en || concept.preferred_es) : (concept.preferred_es || concept.preferred_en);
+}
+
+/** Every concept mentioned in a short free text (e.g. an indication). */
+function resolveClinicalConcepts(text, kb, options) {
+  var index = getTerminologyIndex(kb);
+  var src = String(text || '');
+  return scanTerminology(foldText(src), index, options).map(function (hit) {
+    var concept = index.concepts[hit.term.concept_id];
+    return {
+      concept_id: concept.id, problem_id: problemIdForConcept(concept), concept: concept,
+      matched_text: src.substr(hit.index, hit.length), matched_term: hit.term.raw,
+      match_type: hit.match_type, confidence: hit.confidence,
+      relation_note_es: hit.term.relation_note_es || '', index: hit.index, length: hit.length
+    };
+  });
+}
+
+/** Best single concept for a short text: an exact full-text match wins,
+ * otherwise the longest/first concept found inside it. null when nothing
+ * resolves — the caller keeps the literal text as an uncoded problem. */
+function resolveClinicalConcept(text, kb) {
+  var hits = resolveClinicalConcepts(text, kb);
+  if (!hits.length) return null;
+  var folded = foldText(String(text || '')).replace(/\s+/g, ' ').trim();
+  var exact = hits.find(function (h) { return foldText(h.matched_text).replace(/\s+/g, ' ').trim() === folded; });
+  if (exact) return exact;
+  return hits.slice().sort(function (a, b) { return b.length - a.length; })[0];
+}
+
+/** True when concept `cid` equals `target` or is narrower than it. */
+function conceptWithin(index, cid, target) {
+  var seen = {};
+  while (cid && !seen[cid]) {
+    if (cid === target) return true;
+    seen[cid] = true;
+    var c = index.concepts[cid];
+    cid = c && c.broader;
+  }
+  return false;
 }
 
 /**
  * Match free-text indication wording (e.g. "dolor articular") to a
- * kb/clinical_problems.json concept via its own keyword lists. Returns the
- * matching entry, or null when the reason text doesn't correspond to any
- * cataloged concept (still useful as raw evidence — see
- * extractExplicitIndicationForMedication — just without a concept_id).
+ * kb/clinical_problems.json catalog entry, now through the central
+ * terminology (synonyms, abbreviations, accent/typo tolerance). Returns the
+ * catalog entry or null — kept for backward compatibility.
  */
 function matchReasonToClinicalProblem(reasonText, kb) {
-  var normReason = normalizeSymptomText(reasonText);
-  if (!normReason) return null;
-  var problems = (kb.clinicalProblems && kb.clinicalProblems.problems) || [];
-  for (var i = 0; i < problems.length; i++) {
-    var p = problems[i];
-    var kws = [].concat(p.keywords_es || [], p.keywords_en || [], p.chronic_keywords_es || [], p.chronic_keywords_en || []);
-    for (var j = 0; j < kws.length; j++) {
-      var nk = normalizeSymptomText(kws[j]);
-      if (nk && normReason.indexOf(nk) !== -1) return p;
-    }
+  var index = getTerminologyIndex(kb);
+  var hits = resolveClinicalConcepts(reasonText, kb);
+  for (var i = 0; i < hits.length; i++) {
+    var catalogId = hits[i].concept.catalog_problem_id;
+    if (catalogId && index.catalogById[catalogId]) return index.catalogById[catalogId];
   }
   return null;
 }
 
+/* Words after "por/para" that describe schedule, route or quantity, not a
+ * clinical indication ("por la noche", "por vía oral", "por kg"). */
+var NON_INDICATION_REASON = /^(?:la\s+|el\s+|los\s+|las\s+)?(?:noche|noches|ma[ñn]ana|ma[ñn]anas|tarde|tardes|d[ií]a|semana|mes|v[ií]a(?:\s+\w+)?|orden\s+m[eé]dica|prescripci[oó]n(?:\s+m[eé]dica)?|kg|kilo|toma|tomas|dosis|cada|si\s+precisa|precisa|lo\s+que|tanto|ello|eso|esto|otra\s+parte|su\s+cuenta|cuenta\s+propia|el\s+momento|ahora|encima|debajo|lo\s+menos|ciento|100)\b/i;
+/* Where an indication phrase ends inside its clause. */
+var INDICATION_REASON_STOP = /\s+(?:desde|hace|durante|actualmente|con\s+(?:buen|mal|adecuad|correct)\w*|sin\s+|que\s+|aunque|pero|tras|seg[uú]n|cada|a\s+dosis|y\s+(?:se|recibe|inicia|pauta|presenta|refiere|acude|consulta|toma)|en\s+(?:\d|ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic))\b/i;
+var REASON_HEDGE = /^(?:posible|probable|sospecha\s+de|presunt[oa]|a\s+descartar)\s+/i;
+
 /**
  * Fase 3 — medicación↔indicación: general, pattern-based extraction of a
- * medication's EXPLICIT indication from its own sentence. Two patterns,
- * neither tied to any specific drug or diagnosis name:
- *   1. "se diagnostica <problema> ... se inicia/pauta/prescribe <fármaco>"
- *      (diagnosis immediately followed by prescription of THIS drug).
- *   2. "<fármaco> ... por/para/debido a <razón>" (connector right after the
- *      drug mention, in the same sentence).
+ * medication's EXPLICIT indication(s). Two patterns, neither tied to any
+ * specific drug or diagnosis:
+ *   1. reason → prescription: "se diagnostica / consulta por / acude por
+ *      <problema> ... (y) se inicia / pauta / prescribe / recibe ... <fármaco>".
+ *   2. connector: "<fármaco> [dosis, pauta, fecha...] por / para / debido a
+ *      <razón>", scoped to the medication's OWN clause (it stops at the next,
+ *      different medication of the sentence; components of one product joined
+ *      by "/" share the clause).
+ * The reason may name several problems ("por HTA y DM2"): each one that the
+ * terminology resolves is returned; an unresolvable reason is kept literally
+ * (concept_id null) — it is still documented evidence, just uncoded.
  * Returns { found:false } when neither pattern matches — callers must never
  * invent an indication when this returns nothing.
+ *
+ * @param {Array<{start:number,end:number}>} [medicationSpans] spans of every
+ *   medication mention in the note (to bound the clause).
  */
-function extractExplicitIndicationForMedication(noteText, mentionPos, kb) {
+function extractExplicitIndicationForMedication(noteText, mentionPos, kb, medicationSpans) {
   if (!mentionPos) return { found: false };
-  var sentStart = mentionPos.index;
-  while (sentStart > 0 && !/[.\n]/.test(noteText.charAt(sentStart - 1))) sentStart--;
-  var sentEnd = mentionPos.index + mentionPos.length;
-  while (sentEnd < noteText.length && !/[.\n]/.test(noteText.charAt(sentEnd))) sentEnd++;
-  var sentence = noteText.slice(sentStart, sentEnd);
-  var relPos = mentionPos.index - sentStart;
+  var bounds = sentenceBounds(noteText, mentionPos.index, mentionPos.length);
+  var sentence = noteText.slice(bounds.start, bounds.end);
+  var relPos = mentionPos.index - bounds.start;
 
-  var reDiag = /se\s+diagnostica\s+([^,;.]{3,80}?)\s*(?:,|\by\b|por lo que)?\s*(?:se\s+(?:inicia|pauta|prescribe|a[ñn]ade))\b/i;
+  function buildResult(reasonRaw, reasonAbs, evidenceSpan, pattern) {
+    var hedged = REASON_HEDGE.exec(reasonRaw);
+    var text = reasonRaw;
+    var offset = 0;
+    if (hedged) { offset = hedged[0].length; text = reasonRaw.slice(offset); }
+    var absIndex = reasonAbs + offset;
+    var reasons = [];
+    var splitHits = resolveClinicalConcepts(text, kb);
+    if (splitHits.length > 1) {
+      /* Several distinct resolved concepts in one reason: one entry each. */
+      splitHits.forEach(function (h) {
+        if (reasons.some(function (r) { return r.concept && r.concept.id === h.concept.id; })) return;
+        reasons.push({ text: h.matched_text, index: absIndex + h.index, length: h.length,
+          concept: h.concept, problem_id: h.problem_id, match_type: h.match_type, confidence: h.confidence,
+          relation_note_es: h.relation_note_es });
+      });
+    } else {
+      var single = resolveClinicalConcept(text, kb);
+      reasons.push({ text: text.trim(), index: absIndex, length: text.trim().length,
+        concept: single ? single.concept : null, problem_id: single ? single.problem_id : null,
+        match_type: single ? single.match_type : 'unresolved', confidence: single ? single.confidence : 'low',
+        relation_note_es: single ? single.relation_note_es : '' });
+    }
+    var first = reasons[0];
+    return {
+      found: true, reason_text: text.trim(), hedged: !!hedged, reasons: reasons,
+      concept_id: first.problem_id,
+      terminology_concept_id: first.concept ? first.concept.id : null,
+      concept_es: first.concept ? first.concept.preferred_es : first.text,
+      concept_en: first.concept ? first.concept.preferred_en : first.text,
+      evidence_span: evidenceSpan.replace(/\s+/g, ' ').trim(), source: 'explicit', pattern: pattern
+    };
+  }
+
+  var reDiag = /(?:se\s+(?:le\s+)?diagnostica(?:n)?(?:\s+de)?|diagnosticad[oa]\s+de|consulta(?:ndo)?\s+por|acude\s+por|ingresa\s+por)\s+([^,;:]{3,80}?)\s*(?:,\s*)?(?:y\s+|por\s+lo\s+que\s+)?(?:se\s+(?:le\s+)?(?:inicia|pauta|prescribe|a[ñn]ade|indica|receta)|recibe|inicia|comienza)\b/i;
   var dm = reDiag.exec(sentence);
   if (dm) {
     var verbEnd = dm.index + dm[0].length;
-    if (relPos >= verbEnd - 5 && relPos <= verbEnd + 30) {
-      var reasonText1 = dm[1].trim();
-      var concept1 = matchReasonToClinicalProblem(reasonText1, kb);
-      return {
-        found: true, reason_text: reasonText1,
-        concept_id: concept1 ? concept1.id : null,
-        concept_es: concept1 ? concept1.concept_es : reasonText1,
-        concept_en: concept1 ? concept1.concept_en : reasonText1,
-        evidence_span: dm[0].trim(), source: 'explicit', pattern: 'diagnosis_then_prescription'
-      };
+    if (relPos >= verbEnd - 5) {
+      var reasonStart1 = dm.index + dm[0].indexOf(dm[1]);
+      return buildResult(dm[1].trim(), bounds.start + reasonStart1, dm[0], 'reason_then_prescription');
     }
   }
 
-  var afterDrug = sentence.slice(relPos + mentionPos.length);
-  var reConn = /^[^,.;]{0,40}?\b(?:por|para|debido a|a causa de)\s+([^,;.]{3,60})/i;
-  var cm = reConn.exec(afterDrug);
-  /* "por la noche/mañana/tarde", "por vía oral" etc. are dosing-schedule or
-     route wording caught by the same "por X" connector, not a clinical
-     indication — must not be fabricated into one. */
-  var NON_INDICATION_REASON = /^(?:la\s+)?(?:noche|ma[ñn]ana|tarde|v[ií]a\s+\w+|orden\s+m[eé]dica|prescripci[oó]n\s+m[eé]dica)\b/i;
-  if (cm && !NON_INDICATION_REASON.test(cm[1].trim())) {
-    var reasonText2 = cm[1].trim();
-    var concept2 = matchReasonToClinicalProblem(reasonText2, kb);
-    return {
-      found: true, reason_text: reasonText2,
-      concept_id: concept2 ? concept2.id : null,
-      concept_es: concept2 ? concept2.concept_es : reasonText2,
-      concept_en: concept2 ? concept2.concept_en : reasonText2,
-      evidence_span: cm[0].trim(), source: 'explicit', pattern: 'connector'
-    };
+  /* Clause of THIS medication: from the mention to the next different
+     medication in the sentence. */
+  var clauseStart = relPos + mentionPos.length;
+  var clauseEnd = sentence.length;
+  var spans = (medicationSpans || []).map(function (s) {
+    return { start: s.start - bounds.start, end: s.end - bounds.start };
+  }).filter(function (s) { return s.start >= clauseStart && s.start < sentence.length; })
+    .sort(function (a, b) { return a.start - b.start; });
+  var cursor = clauseStart;
+  for (var si = 0; si < spans.length; si++) {
+    var gap = sentence.slice(cursor, spans[si].start);
+    if (/\/\s*$/.test(gap)) { cursor = Math.max(cursor, spans[si].end); continue; }
+    clauseEnd = spans[si].start;
+    break;
+  }
+  var clause = sentence.slice(clauseStart, clauseEnd);
+  var reConn = /\b(?:por|para|debido\s+a|a\s+causa\s+de|como\s+tratamiento\s+(?:de|del|para)|indicad[oa]\s+(?:en|para|por))\s+/gi;
+  var cm;
+  while ((cm = reConn.exec(clause)) !== null) {
+    var restStart = cm.index + cm[0].length;
+    var rest = clause.slice(restStart);
+    var cut = rest.search(/[,;:()]/);
+    if (cut !== -1) rest = rest.slice(0, cut);
+    var stop = rest.search(INDICATION_REASON_STOP);
+    if (stop !== -1) rest = rest.slice(0, stop);
+    rest = rest.replace(/\s+$/, '');
+    if (rest.trim().length < 2 || NON_INDICATION_REASON.test(rest.trim())) continue;
+    var leading = rest.length - rest.replace(/^\s+/, '').length;
+    var absReason = bounds.start + clauseStart + restStart + leading;
+    var evidence = sentence.slice(relPos, clauseStart + restStart + leading + rest.trim().length);
+    return buildResult(rest.trim(), absReason, evidence, 'connector');
   }
 
   return { found: false };
@@ -2003,10 +2886,10 @@ function detectDrugPairTemporality(noteText, indexMeta, cascadeMeta, problemChec
      here made repeated medications share the wrong date/assertion. */
   var idxIndex = indexMeta && (indexMeta.actual_start_index != null ? indexMeta.actual_start_index : indexMeta.start_index);
   var casIndex = cascadeMeta && (cascadeMeta.actual_start_index != null ? cascadeMeta.actual_start_index : cascadeMeta.start_index);
-  var idxPos = idxIndex != null ? { index: idxIndex, length: (indexMeta.mention || '').length } : null;
-  var casPos = casIndex != null ? { index: casIndex, length: (cascadeMeta.mention || '').length } : null;
-  var idxDate = idxPos ? extractDateNear(noteText, idxPos.index, idxPos.length) : null;
-  var casDate = casPos ? extractDateNear(noteText, casPos.index, casPos.length) : null;
+  var idxPos = idxIndex != null ? { index: idxIndex, length: mentionLength(indexMeta) } : null;
+  var casPos = casIndex != null ? { index: casIndex, length: mentionLength(cascadeMeta) } : null;
+  var idxDate = idxPos ? extractMedicationStartDate(noteText, idxPos.index, idxPos.length) : null;
+  var casDate = casPos ? extractMedicationStartDate(noteText, casPos.index, casPos.length) : null;
   var problemDate = problemCheck && problemCheck.first_active_date ? problemCheck.first_active_date : null;
 
   if (idxDate && casDate && casDate.value < idxDate.value) {
@@ -2020,8 +2903,11 @@ function detectDrugPairTemporality(noteText, indexMeta, cascadeMeta, problemChec
   }
 
   if (!idxPos && !casPos) return { status: 'unknown' };
-  var idxCue = idxPos ? detectTimeCues(noteText, idxPos.index) : {};
-  var casCue = casPos ? detectTimeCues(noteText, casPos.index) : {};
+  /* Date phrases were already evaluated explicitly above (and a date that
+     belongs to another event, e.g. "control virológico desde 2021", was
+     rejected for the drug): the text-cue fallback must not re-admit it. */
+  var idxCue = idxPos ? detectTimeCues(noteText, idxPos.index, { ignoreDates: true }) : {};
+  var casCue = casPos ? detectTimeCues(noteText, casPos.index, { ignoreDates: true }) : {};
   var supportive = !!(idxCue.drugStartHint || casCue.treatmentAddedHint || idxCue.treatmentAddedHint);
   var chronic = !!(idxCue.chronicHint || casCue.chronicHint);
   if (supportive) return { status: 'supportive' };
@@ -2242,24 +3128,33 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
     var cascadeIndex = foundCascadeMeta.actual_start_index != null
       ? foundCascadeMeta.actual_start_index : foundCascadeMeta.start_index;
     var cascadePosition = cascadeIndex != null ? {
-      index: cascadeIndex, length: (foundCascadeMeta.mention || '').length
+      index: cascadeIndex, length: mentionLength(foundCascadeMeta)
     } : null;
     var cascadeIndication = cascadePosition
-      ? extractExplicitIndicationForMedication(noteText, cascadePosition, kb)
+      ? extractExplicitIndicationForMedication(noteText, cascadePosition, kb, medicationSpansFrom(mentions))
       : { found: false };
     if (!cascadeIndication.found) cascadeIndication = indicationByCanonical[normalizeDrugText(foundCascade)];
     var linkedProblemEntry = findClinicalProblemForCascade(cascade, kb);
     var indicationMismatch = false;
     var explicitIndicationCompatible = false;
-    if (cascadeIndication && cascadeIndication.found && problemCheck.status !== 'active') {
-      var matchesThisRule = linkedProblemEntry && cascadeIndication.concept_id === linkedProblemEntry.id;
-      if (!matchesThisRule) indicationMismatch = true;
+    var indicationCompatible = indicationMatchesRule(cascadeIndication, cascade, kb);
+    if (cascadeIndication && cascadeIndication.found && problemCheck.status !== 'active' && !indicationCompatible) {
+      indicationMismatch = true;
     }
-    if (cascadeIndication && cascadeIndication.found && linkedProblemEntry) {
-      explicitIndicationCompatible = cascadeIndication.concept_id === linkedProblemEntry.id;
+    if (cascadeIndication && cascadeIndication.found) {
+      explicitIndicationCompatible = indicationCompatible;
     }
+    void linkedProblemEntry;
 
     var decision = classifyCascadeSignal(problemCheck, altIndication, temporality, measDiscordance.discordant, indicationMismatch);
+    /* A rule may group active ingredients whose evidence for THIS adverse
+       effect differs (e.g. boosted PIs vs INSTIs for dyslipidaemia). The KB
+       states that per ingredient; an indirect mechanism can never yield a
+       "supported" cascade on temporal coincidence alone. */
+    var ingredientEvidence = (cascade.index_drug_evidence || {})[normalizeDrugText(foundIndex)] || null;
+    if (ingredientEvidence && ingredientEvidence.mechanism === 'indirect' && decision.classification === 'supported_possible_cascade') {
+      decision = { classification: 'possible_but_incomplete', reason_code: 'index_drug_indirect_mechanism' };
+    }
     var candidateExplanation = buildCandidateExplanation(decision, foundIndex, foundCascade, problemCheck);
 
     var adeDisplay = { es: cascade.ade_es || '', en: cascade.ade_en || '' };
@@ -2295,7 +3190,8 @@ function evaluateDrugDrugCascades(noteText, kb, mentions, activeProblems, measur
       index_drug: foundIndex,
       cascade_drug: foundCascade,
       drug_resolution: { index: foundIndexMeta, cascade: foundCascadeMeta },
-      confidence: cascade.confidence || cascade.plausibility || 'low',
+      confidence: (ingredientEvidence && ingredientEvidence.plausibility) || cascade.confidence || cascade.plausibility || 'low',
+      index_drug_evidence: ingredientEvidence ? cloneJson(ingredientEvidence) : null,
       risk_focus: cascade.risk_focus || [],
       ade_es: adeDisplay.es,
       ade_en: adeDisplay.en,
@@ -2376,11 +3272,12 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
            which is an offset into the resolver's internally-normalized
            (whitespace/punctuation-collapsed) copy and therefore not a valid
            offset into `noteText` — see clinical-engine.js history/CHANGELOG. */
-        causePos = findTermInNote(noteText, foundCauseMeta.mention);
+        causePos = mentionPosition(foundCauseMeta) || findTermInNote(noteText, foundCauseMeta.mention);
         break;
       }
-      var cp = findTermInNote(noteText, causedBy[ci]);
-      if (cp) { foundCause = causedBy[ci]; causePos = cp; break; }
+      /* No raw-text fallback: a cause drug must be an ACTIVE resolved
+         medication. Searching the note text directly matched negated,
+         discontinued or hypothetical mentions ("no toma fluoxetina"). */
     }
     var foundTreatment = null, treatPos = null, foundTreatmentMeta = null;
     for (var ti = 0; ti < treatedBy.length; ti++) {
@@ -2388,11 +3285,9 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
       var tHit = mentionByCanonical[tKey];
       if (tHit && tHit.length) {
         foundTreatment = treatedBy[ti]; foundTreatmentMeta = tHit[0];
-        treatPos = findTermInNote(noteText, foundTreatmentMeta.mention);
+        treatPos = mentionPosition(foundTreatmentMeta) || findTermInNote(noteText, foundTreatmentMeta.mention);
         break;
       }
-      var tp = findTermInNote(noteText, treatedBy[ti]);
-      if (tp) { foundTreatment = treatedBy[ti]; treatPos = tp; break; }
     }
     if (!foundCause || !foundTreatment) return;
 
@@ -2400,8 +3295,8 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
     var timeCause = causePos ? detectTimeCues(noteText, causePos.index) : {};
     var timeTreat = treatPos ? detectTimeCues(noteText, treatPos.index) : {};
     var symptomDate = typeof ds.startIndex === 'number' ? extractDateNear(noteText, ds.startIndex, (ds.matched_term || ds.term).length) : null;
-    var causeDate = causePos ? extractDateNear(noteText, causePos.index, causePos.length) : null;
-    var treatmentDate = treatPos ? extractDateNear(noteText, treatPos.index, treatPos.length) : null;
+    var causeDate = causePos ? extractMedicationStartDate(noteText, causePos.index, causePos.length) : null;
+    var treatmentDate = treatPos ? extractMedicationStartDate(noteText, treatPos.index, treatPos.length) : null;
 
     var explicitDatesCompatible = !!(causeDate && symptomDate && treatmentDate &&
       causeDate.value <= symptomDate.value && symptomDate.value <= treatmentDate.value);
@@ -2484,6 +3379,72 @@ function evaluateSymptomBridgeCascades(noteText, kb, mentionByCanonical, symptom
  * @param {string} [options.lang='es']
  * @returns {object} CaseModel
  */
+/* Distinct finding categories, never merged into one score or alert:
+ * potential cascade / insufficient evidence / discarded (cascade signals),
+ * pharmacotherapy safety and therapeutic duplication (global alerts),
+ * undocumented indication (missing information). */
+var FINDING_CATEGORY_BY_CLASSIFICATION = {
+  supported_possible_cascade: 'potential_prescribing_cascade',
+  possible_but_incomplete: 'insufficient_evidence',
+  pharmacological_match_only: 'insufficient_evidence',
+  not_evaluable: 'insufficient_evidence',
+  discarded: 'discarded'
+};
+
+/** Reviewed problems (manual or renamed) carry no extraction metadata:
+ * resolve their concept through the central terminology so downstream
+ * modules (ADE verification, symptom bridge) read them like extracted ones. */
+function annotateReviewedProblem(problem, kb) {
+  var p = Object.assign({}, problem);
+  if (!p.concept_id) p.concept_id = problemConceptId(p, kb);
+  var index = getTerminologyIndex(kb);
+  if (!Array.isArray(p.symptom_ids) || !p.symptom_ids.length) {
+    p.symptom_ids = p.concept_id ? (index.conceptSymptoms[p.concept_id] || []).slice() : [];
+  }
+  if (!Array.isArray(p.evidence_types)) p.evidence_types = p.source === 'professional_manual' ? ['manual_entry'] : [];
+  return p;
+}
+
+/** kb_symptoms entries currently active according to the problem list. */
+function symptomsFromProblems(problems, kb, rawSymptoms) {
+  var entries = (kb.symptomDictionary && kb.symptomDictionary.symptoms) || [];
+  var result = [];
+  entries.forEach(function (sym) {
+    var problem = (problems || []).find(function (p) {
+      return Array.isArray(p.symptom_ids) && p.symptom_ids.indexOf(sym.id) !== -1;
+    });
+    if (!problem) return;
+    var raw = (rawSymptoms || []).find(function (r) { return r.id === sym.id; });
+    var active = problem.status === 'active' && problem.temporality !== 'historical';
+    result.push({
+      id: sym.id, term: sym.term, matched_term: raw ? raw.matched_term : (problem.problem || sym.term),
+      category: sym.category || '', cascade_relevance: sym.cascade_relevance || '',
+      active: active, status: problem.status, reason: 'problem_list:' + problem.id,
+      startIndex: raw && active ? raw.startIndex : undefined, problem_id: problem.id
+    });
+  });
+  return result;
+}
+
+/** Active medicines whose indication is neither written in the note nor
+ * covered by a documented contextual rule (e.g. antiretrovirals → HIV). */
+function medicationsWithoutDocumentedIndication(activeMentions, indicationByCanonical, problems) {
+  var covered = {};
+  (problems || []).forEach(function (p) {
+    (p.related_medications || []).forEach(function (r) {
+      (r.active_ingredients || []).forEach(function (c) { covered[normalizeDrugText(c)] = true; });
+    });
+  });
+  var out = [];
+  (activeMentions || []).forEach(function (m) {
+    var key = normalizeDrugText(m.canonical);
+    var ind = indicationByCanonical[key];
+    if ((ind && ind.found) || covered[key]) return;
+    if (out.indexOf(m.canonical) === -1) out.push(m.canonical);
+  });
+  return out;
+}
+
 function buildCaseModel(noteText, kb, options) {
   options = options || {};
   var lang = options.lang || 'es';
@@ -2502,21 +3463,7 @@ function buildCaseModel(noteText, kb, options) {
 
   var corrected = normalizeClinicalText(noteText);
   var resolver = buildDrugResolver(kb);
-  var mentions = resolveDrugMentions(corrected, resolver);
-  mentions.forEach(function (m) {
-    var escaped = (m.mention || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    var candidates = [], hit, re = new RegExp(escaped, 'gi');
-    while ((hit = re.exec(corrected)) !== null) candidates.push(hit.index);
-    m.actual_start_index = candidates.reduce(function (best, candidate) {
-      var distance = Math.abs(normalizeDrugText(corrected.slice(0, candidate)).length - m.start_index);
-      return !best || distance < best.distance ? { index: candidate, distance: distance } : best;
-    }, null);
-    m.actual_start_index = m.actual_start_index ? m.actual_start_index.index : m.start_index;
-  });
-  mentions.forEach(function (m) {
-    var state = classifyMedicationMention(corrected, m);
-    m.assertion = state.assertion; m.status = state.status; m.temporality = state.temporality;
-  });
+  var mentions = resolveClassifiedMentions(corrected, resolver);
   var extractedActiveMentions = mentions.filter(function (m) {
     return isActiveMedication({ assertion: m.assertion, status: m.status });
   });
@@ -2562,9 +3509,9 @@ function buildCaseModel(noteText, kb, options) {
     mentionByCanonical[key].push(m);
   });
 
-  var extractedActiveProblems = detectActiveProblems(corrected, kb, lang, resolver);
+  var extractedActiveProblems = detectActiveProblems(corrected, kb, lang, resolver, mentions);
   var activeProblems = reviewedInput && Array.isArray(reviewedInput.activeProblems)
-    ? cloneJson(reviewedInput.activeProblems)
+    ? cloneJson(reviewedInput.activeProblems).map(function (p) { return annotateReviewedProblem(p, kb); })
     : extractedActiveProblems;
   var measurements = extractClinicalMeasurements(corrected);
   var symptomsDetected = extractSymptoms(corrected, kb);
@@ -2580,18 +3527,23 @@ function buildCaseModel(noteText, kb, options) {
     .filter(function (v, i, a) { return a.indexOf(v) === i; });
   var positionByCanonical = {};
   var indicationByCanonical = {};
+  var medicationSpans = medicationSpansFrom(mentions);
   reconciledDrugCanonicals.forEach(function (canonical) {
     var m = activeMentions.find(function (x) { return x.canonical === canonical; });
     var mentionIndex = m.actual_start_index != null ? m.actual_start_index : m.start_index;
-    var pos = mentionIndex != null ? { index: mentionIndex, length: (m.mention || '').length } : null;
+    var pos = mentionIndex != null ? { index: mentionIndex, length: mentionLength(m) } : null;
     positionByCanonical[canonical] = pos;
     indicationByCanonical[normalizeDrugText(canonical)] = pos
-      ? extractExplicitIndicationForMedication(corrected, pos, kb)
+      ? extractExplicitIndicationForMedication(corrected, pos, kb, medicationSpans)
       : { found: false };
   });
 
   var drugDrug = evaluateDrugDrugCascades(corrected, kb, activeMentions, activeProblems, measurements, indicationByCanonical);
-  var symptomBridge = evaluateSymptomBridgeCascades(corrected, kb, mentionByCanonical, symptomsDetected);
+  /* Symptom-bridge reasoning reads the SAME problem list as everything else
+     (so a symptom excluded in the professional review stops driving
+     signals); symptomsDetected stays as the raw extraction trace. */
+  var symptomsForReasoning = symptomsFromProblems(activeProblems, kb, symptomsDetected);
+  var symptomBridge = evaluateSymptomBridgeCascades(corrected, kb, mentionByCanonical, symptomsForReasoning);
 
   var allSignals = drugDrug.signals.concat(symptomBridge);
 
@@ -2602,7 +3554,7 @@ function buildCaseModel(noteText, kb, options) {
   allSignals = suppressDuplicateSignals(allSignals);
   allSignals = prioritizeCascadeCandidates(allSignals);
 
-  var globalAlertsResult = buildGlobalMedicationAlerts(corrected, kb, activeMentions);
+  var globalAlertsResult = buildGlobalMedicationAlerts(corrected, kb, activeMentions, { activeProblems: activeProblems });
 
   /* NSAID/COX-inhibitor concurrent-exposure duplicity — a distinct "other
      finding", never a cascade (no intermediate problem, no third drug). */
@@ -2658,7 +3610,7 @@ function buildCaseModel(noteText, kb, options) {
     m = m || activeMention;
     var pos = positionByCanonical[canonical];
     var posology = pos ? extractDosePosology(corrected, pos.index, pos.length) : { dose: null, frequency: null, prn: false };
-    var startDate = pos ? extractDateNear(corrected, pos.index, pos.length) : null;
+    var startDate = pos ? extractMedicationStartDate(corrected, pos.index, pos.length) : null;
     var indication = indicationByCanonical[normalizeDrugText(canonical)];
     return {
       original_text: m.mention,
@@ -2667,6 +3619,7 @@ function buildCaseModel(noteText, kb, options) {
       brand: m.brand || null,
       active_ingredients: m.brand_ingredients || [canonical],
       drug_class: m.drug_class || '',
+      pharmacological_properties: (m.pharmacological_properties || []).slice(),
       dose: posology.dose, frequency: posology.frequency, route: null,
       start_date: startDate ? startDate.raw : null,
       prn: posology.prn,
@@ -2691,8 +3644,8 @@ function buildCaseModel(noteText, kb, options) {
   medications.forEach(function (m) { if (m.drug_class && uniqueClasses.indexOf(m.drug_class) === -1) uniqueClasses.push(m.drug_class); });
 
   var allMedicationMentions = mentions.map(function (m) {
-    var pos = { index: m.actual_start_index, length: (m.mention || '').length };
-    var date = extractDateNear(corrected, pos.index, pos.length);
+    var pos = { index: m.actual_start_index, length: mentionLength(m) };
+    var date = extractMedicationStartDate(corrected, pos.index, pos.length);
     return {
       original_text: m.mention, normalized_name: m.canonical,
       ingredient_id: normalizeDrugText(m.canonical).replace(/\s+/g, '-'), brand: m.brand || null,
@@ -2728,7 +3681,24 @@ function buildCaseModel(noteText, kb, options) {
   var inactiveOrNegatedMedications = allMedicationMentions.filter(function (m) { return !isActiveMedication(m); });
   var currentInteractions = evaluateCurrentInteractions(kb, medications);
 
+  var undocumented = medicationsWithoutDocumentedIndication(activeMentions, indicationByCanonical, activeProblems);
+  if (undocumented.length) {
+    missingInformation.push({
+      type: 'undocumented_indication',
+      finding_category: 'undocumented_indication',
+      drugs: undocumented,
+      message_es: 'Medicamentos activos sin indicación documentada en la nota: ' + undocumented.join(', ') +
+        '. No se infiere ningún diagnóstico a partir del medicamento; conviene documentar la indicación.',
+      message_en: 'Active medicines without a documented indication in the note: ' + undocumented.join(', ') +
+        '. No diagnosis is inferred from the medicine; documenting the indication is advisable.'
+    });
+  }
+  globalAlertsResult.alerts.forEach(function (alert) {
+    if (!alert.finding_category) alert.finding_category = alert.type === 'therapeutic_duplicity' ? 'therapeutic_duplication' : 'pharmacotherapy_safety';
+  });
+
   allSignals.forEach(function (signal) {
+    signal.finding_category = FINDING_CATEGORY_BY_CLASSIFICATION[signal.classification] || 'insufficient_evidence';
     signal.recommendation_presentation = getRecommendationPresentation(signal.classification, findCascadeEntryForSignal(signal, kb));
   });
 
@@ -2762,6 +3732,7 @@ return {
   getLocalizedField: getLocalizedField,
   normalizeClinicalText: normalizeClinicalText,
   normalizeDrugText: normalizeDrugText,
+  normalizeDrugTextWithMap: normalizeDrugTextWithMap,
   normalizeSymptomText: normalizeSymptomText,
   buildDrugResolver: buildDrugResolver,
   resolveDrugMentions: resolveDrugMentions,
@@ -2777,6 +3748,12 @@ return {
   detectTimeCues: detectTimeCues,
   extractSymptoms: extractSymptoms,
   detectActiveProblems: detectActiveProblems,
+  extractClinicalProblems: extractClinicalProblems,
+  resolveClassifiedMentions: resolveClassifiedMentions,
+  getTerminologyIndex: getTerminologyIndex,
+  resolveClinicalConcept: resolveClinicalConcept,
+  resolveClinicalConcepts: resolveClinicalConcepts,
+  foldText: foldText,
   detectUrologicRenalProblem: detectUrologicRenalProblem,
   extractClinicalMeasurements: extractClinicalMeasurements,
   detectAlternativeIndication: detectAlternativeIndication,
@@ -2794,6 +3771,8 @@ return {
   classifyCascadeSignal: classifyCascadeSignal,
   findAllTermOccurrences: findAllTermOccurrences,
   extractDateNear: extractDateNear,
+  extractMedicationStartDate: extractMedicationStartDate,
+  sentenceBounds: sentenceBounds,
   reconcileProblemEvents: reconcileProblemEvents,
   extractExplicitIndicationForMedication: extractExplicitIndicationForMedication,
   matchReasonToClinicalProblem: matchReasonToClinicalProblem,

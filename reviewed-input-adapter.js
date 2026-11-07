@@ -224,6 +224,19 @@
     result.source_cascade_ids = definition ? clone(definition.source_cascade_ids || []) : clone(result.source_cascade_ids || []);
     result.references = definition ? clone(definition.references || []) : clone(result.references || []);
     result.source = item.source === 'manual' ? 'professional_manual' : (changed ? 'professional_correction' : result.source);
+    /* A renamed or manual problem must not keep the extraction's terminology
+       concept (nor the symptoms linked to it): the engine re-resolves the
+       reviewed wording through the central terminology. */
+    if (conceptChanged || item.source === 'manual' || !sourceProblem) {
+      result.concept_id = null;
+      result.symptom_ids = [];
+      result.code = null;
+    }
+    if (item.source === 'manual') result.evidence_types = ['manual_entry'];
+    else if (Array.isArray(result.evidence_types) && changed && result.evidence_types.indexOf('manual_entry') === -1) {
+      result.evidence_types = result.evidence_types.concat(['manual_entry']);
+    }
+    result.validation_status = item.status === 'suspected' ? 'professionally_kept_as_suspected' : 'professionally_validated';
     result.review_provenance = {
       review_item_id: item.id,
       source: item.source,
