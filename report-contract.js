@@ -8,7 +8,7 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.ReportContract = api;
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  var VERSION = 2;
+  var VERSION = 3; /* 3: drug_interactions (screen, text, JSON, CSV) — Fase 0 */
   var CSV_COLUMNS = [
     'report_schema_version', 'software_version', 'language',
     'patient_id', 'generated_at', 'kb_version', 'kb_mode',
@@ -18,8 +18,42 @@
     'potential_clinical_relevance', 'knowledge_validation_status',
     'automated_classification', 'professional_validation',
     'classification_reason', 'temporal_support', 'clinical_recommendation',
-    'input_provenance_json', 'clinical_problems_json', 'limitations_json'
+    'input_provenance_json', 'clinical_problems_json', 'drug_interactions_json', 'limitations_json'
   ];
+
+  var SEVERITY_LABELS = {
+    CONTRAINDICATED: { es: 'Contraindicada', en: 'Contraindicated' },
+    MAJOR: { es: 'Grave', en: 'Major' },
+    MODERATE: { es: 'Moderada', en: 'Moderate' },
+    MINOR: { es: 'Leve', en: 'Minor' }
+  };
+
+  /* Stated wherever interactions are listed, including when none fired: the
+     absence of an alert only means no KB rule matched the medicines that
+     were recognised. */
+  var INTERACTION_SCOPE_NOTE = {
+    es: 'Solo se evalúan las reglas de interacción incluidas en la base de conocimiento y los medicamentos reconocidos. La ausencia de alerta no descarta otras interacciones: verifique en una fuente de referencia actualizada.',
+    en: 'Only the interaction rules included in the knowledge base and the recognised medicines are evaluated. The absence of an alert does not rule out other interactions: check an up-to-date reference source.'
+  };
+
+  /* Presentation-only view of one activated ddi_watchlist rule. */
+  function interactionView(rule, lang) {
+    var en = lang === 'en';
+    var pick = function (field) { return (en ? rule[field + '_en'] : rule[field + '_es']) || rule[field + '_es'] || rule[field + '_en'] || ''; };
+    var severity = rule.severity || 'UNKNOWN';
+    return {
+      id: rule.id,
+      severity: severity,
+      severity_label: (SEVERITY_LABELS[severity] || { es: severity, en: severity })[en ? 'en' : 'es'],
+      drugs_a: list(rule.active_participants_a),
+      drugs_b: list(rule.active_participants_b),
+      drugs_involved: list(rule.active_participants),
+      mechanism: pick('mechanism'),
+      consequence: pick('consequence'),
+      management: pick('management'),
+      applicability_note: pick('applicability_note')
+    };
+  }
 
   /* Compact, presentation-only view of the EFFECTIVE problem list (the
      confirmed professional review when applied, otherwise the extraction):
@@ -145,6 +179,13 @@
       problem_review: reviewState(report, 'problem')
     };
     report.clinical_problems = list(report.activeProblems).map(function (problem) { return clinicalProblemSummary(problem, lang); });
+    report.drug_interactions = list(report.current_interactions).map(function (rule) { return interactionView(rule, lang); });
+    report.interaction_summary = {
+      total: report.drug_interactions.length,
+      contraindicated: report.drug_interactions.filter(function (i) { return i.severity === 'CONTRAINDICATED'; }).length,
+      major: report.drug_interactions.filter(function (i) { return i.severity === 'MAJOR'; }).length,
+      scope_note: INTERACTION_SCOPE_NOTE[lang]
+    };
     report.professional_changes = {
       medications: { counts: auditCounts(medicationAudit), items: clone(medicationAudit || { changed: [], added: [], excluded: [] }) },
       problems: { counts: auditCounts(problemAudit), items: clone(problemAudit || { changed: [], added: [], excluded: [] }) }
@@ -221,7 +262,7 @@
         candidate.temporal_support, candidate.clinical_recommendation,
         JSON.stringify(candidate.input_provenance || {})
       ] : ['', '', '', '', '', '', '', '', '', '', '', '', '', ''];
-      rows.push(common.concat(specific, [JSON.stringify(report.clinical_problems || []), JSON.stringify(report.limitations || [])]).map(csvCell).join(','));
+      rows.push(common.concat(specific, [JSON.stringify(report.clinical_problems || []), JSON.stringify(report.drug_interactions || []), JSON.stringify(report.limitations || [])]).map(csvCell).join(','));
     });
     return rows.join('\r\n');
   }
@@ -245,6 +286,9 @@
     lines.push((en ? '- Pending professional review: ' : '- Pendientes de revisión profesional: ') + (summary.unreviewed || 0));
     lines.push((en ? '- Professionally discarded: ' : '- Descartados profesionalmente: ') + (summary.professionally_discarded || 0));
     lines.push((en ? '- Effective medications: ' : '- Medicación efectiva: ') + (list(report.drugs_detected).join(', ') || (en ? 'None' : 'Ninguna')));
+    var interactionSummary = report.interaction_summary || { total: 0, contraindicated: 0 };
+    lines.push((en ? '- Drug-drug interaction alerts: ' : '- Alertas de interacción: ') + interactionSummary.total +
+      (en ? ' (contraindicated: ' : ' (contraindicadas: ') + interactionSummary.contraindicated + ')');
     lines.push((en ? '- Medication review applied: ' : '- Revisión de medicamentos aplicada: ') + ((provenance.medication_review && provenance.medication_review.applied) ? (en ? 'Yes' : 'Sí') : 'No'));
     lines.push((en ? '- Problem review applied: ' : '- Revisión de problemas aplicada: ') + ((provenance.problem_review && provenance.problem_review.applied) ? (en ? 'Yes' : 'Sí') : 'No'));
     lines.push('');
@@ -263,6 +307,20 @@
           (p.first_documented.semantics === 'treatment_start' ? (en ? ' (treatment start)' : ' (inicio de tratamiento)') : '') : '') +
         (meds ? (en ? ' — medicines: ' : ' — medicamentos: ') + meds : ''));
     });
+    lines.push('');
+
+    lines.push(en ? 'DRUG-DRUG INTERACTIONS (knowledge-base rules)' : 'INTERACCIONES FÁRMACO-FÁRMACO (reglas de la base de conocimiento)');
+    if (!list(report.drug_interactions).length) {
+      lines.push(en ? 'No interaction rule was activated.' : 'No se ha activado ninguna regla de interacción.');
+    }
+    list(report.drug_interactions).forEach(function (ddi, index) {
+      lines.push((index + 1) + '. [' + ddi.severity_label.toUpperCase() + '] ' + ddi.drugs_a.join(', ') + ' + ' + ddi.drugs_b.join(', ') + ' [' + ddi.id + ']');
+      if (ddi.consequence) lines.push((en ? '   Consequence: ' : '   Consecuencia: ') + ddi.consequence);
+      if (ddi.mechanism) lines.push((en ? '   Mechanism: ' : '   Mecanismo: ') + ddi.mechanism);
+      if (ddi.management) lines.push((en ? '   Management: ' : '   Manejo: ') + ddi.management);
+      if (ddi.applicability_note) lines.push((en ? '   Applicability: ' : '   Aplicabilidad: ') + ddi.applicability_note);
+    });
+    lines.push(INTERACTION_SCOPE_NOTE[lang]);
     lines.push('');
 
     lines.push(en ? 'CLINICAL FINDINGS' : 'HALLAZGOS CLÍNICOS');
@@ -305,5 +363,6 @@
     return lines.join('\n');
   }
 
-  return { VERSION: VERSION, CSV_COLUMNS: CSV_COLUMNS.slice(), enrich: enrich, toCsv: toCsv, toClinicalText: toClinicalText };
+  return { VERSION: VERSION, CSV_COLUMNS: CSV_COLUMNS.slice(), SEVERITY_LABELS: SEVERITY_LABELS, INTERACTION_SCOPE_NOTE: INTERACTION_SCOPE_NOTE,
+    interactionView: interactionView, enrich: enrich, toCsv: toCsv, toClinicalText: toClinicalText };
 }));

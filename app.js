@@ -410,6 +410,13 @@ const UI_STRINGS = {
 
     /* Global medication alerts / missing information (Fase 6) */
     section_global_alerts: 'Otros hallazgos relevantes de la medicación',
+    section_interactions:  'Interacciones fármaco-fármaco',
+    no_interactions:       'No se ha activado ninguna regla de interacción con los medicamentos reconocidos.',
+    interactions_count:    function (n, c) { return n + ' alerta' + (n === 1 ? '' : 's') + ' de interacción' + (c ? ' &middot; ' + c + ' contraindicada' + (c === 1 ? '' : 's') : ''); },
+    ddi_consequence_lbl:   'Consecuencia',
+    ddi_mechanism_lbl:     'Mecanismo',
+    ddi_management_lbl:    'Manejo',
+    ddi_applicability_lbl: 'Aplicabilidad',
     no_global_alerts:      'Sin otros hallazgos relevantes de la medicación en esta nota.',
     missing_information_lbl: 'Información ausente que limita la valoración:',
 
@@ -888,6 +895,13 @@ const UI_STRINGS = {
     evidence_merged_rule:             function (ids) { return 'Rule consolidated in KB audit (merged with: ' + ids + ').'; },
 
     section_global_alerts: 'Other relevant medication findings',
+    section_interactions:  'Drug-drug interactions',
+    no_interactions:       'No interaction rule was activated by the recognised medicines.',
+    interactions_count:    function (n, c) { return n + ' interaction alert' + (n === 1 ? '' : 's') + (c ? ' &middot; ' + c + ' contraindicated' : ''); },
+    ddi_consequence_lbl:   'Consequence',
+    ddi_mechanism_lbl:     'Mechanism',
+    ddi_management_lbl:    'Management',
+    ddi_applicability_lbl: 'Applicability',
     no_global_alerts:      'No other relevant medication findings in this note.',
     missing_information_lbl: 'Missing information that limits assessment:',
 
@@ -2279,10 +2293,18 @@ const STEP_CONTENT = {
         '</section>'
       );
       var missingInfoHtml = renderMissingInformationSection(model.missingInformation);
+      /* Interactions are independent of cascade detection and always shown —
+         before this section existed they were computed but never displayed. */
+      var ddiHtml = (
+        '<section class="content-block" id="ddi-section">' +
+          '<h3 class="section-title">' + tUI('section_interactions') + '</h3>' +
+          renderInteractionsSection(interactionViewsFromModel(model)) +
+        '</section>'
+      );
 
       if (detected.length === 0) {
         return (
-          kbInfo +
+          kbInfo + ddiHtml +
           '<div class="callout callout-success">' +
             '<strong>' + tUI('no_cascades_title') + '</strong> ' +
             tUI('no_cascades_detail') +
@@ -2305,7 +2327,7 @@ const STEP_CONTENT = {
       }).join('');
 
       return (
-        kbInfo +
+        kbInfo + ddiHtml +
         '<section class="content-block">' +
           '<div class="results-head">' +
             '<h3 class="section-title">' + tUI('cascade_count', detected.length) + '</h3>' +
@@ -2620,6 +2642,8 @@ const STEP_CONTENT = {
           section(tUI('section_problems', (r.clinical_problems || []).length), renderReportProblemsHtml(r)) +
 
           section(tUI('section_findings', r.cascade_count), cascadeContent) +
+
+          section(tUI('section_interactions'), renderInteractionsSection(r.drug_interactions)) +
 
           section(tUI('section_global_alerts'), renderGlobalAlertsSection(r.globalMedicationAlerts)) +
 
@@ -3293,6 +3317,46 @@ function renderGlobalAlertsSection(alerts) {
       '</div>'
     );
   }).join('');
+}
+
+/* Drug-drug interactions (ddi_watchlist rules activated by the CaseModel).
+ * Takes ReportContract.interactionView() objects so the screen, the clinical
+ * text and the exports present exactly the same content. Contraindications
+ * come first (the engine orders by severity) and use the danger treatment. */
+function interactionViewsFromModel(model) {
+  if (!ReportContract) return [];
+  return (model.currentInteractions || []).map(function (rule) { return ReportContract.interactionView(rule, currentLanguage); });
+}
+
+function renderInteractionsSection(views) {
+  var scope = ReportContract ? ReportContract.INTERACTION_SCOPE_NOTE[currentLanguage === 'en' ? 'en' : 'es'] : '';
+  var scopeHtml = scope ? '<p class="text-muted ddi-scope">' + escHtml(scope) + '</p>' : '';
+  if (!views || !views.length) {
+    return '<p class="text-muted">' + tUI('no_interactions') + '</p>' + scopeHtml;
+  }
+  var contraindicated = views.filter(function (v) { return v.severity === 'CONTRAINDICATED'; }).length;
+  var row = function (label, value) {
+    return value ? '<div class="ddi-card__row"><dt>' + tUI(label) + '</dt><dd>' + escHtml(value) + '</dd></div>' : '';
+  };
+  var cards = views.map(function (v) {
+    var severityClass = 'ddi-card--' + String(v.severity || 'unknown').toLowerCase();
+    return (
+      '<article class="ddi-card ' + severityClass + '" aria-label="' + escHtml(v.severity_label + ': ' + v.drugs_involved.join(' + ')) + '">' +
+        '<header class="ddi-card__head">' +
+          '<span class="ddi-card__severity">' + escHtml(v.severity_label) + '</span>' +
+          '<span class="ddi-card__drugs">' + escHtml(v.drugs_a.join(', ') + ' + ' + v.drugs_b.join(', ')) + '</span>' +
+          '<span class="ddi-card__id">' + escHtml(v.id) + '</span>' +
+        '</header>' +
+        '<dl class="ddi-card__body">' +
+          row('ddi_consequence_lbl', v.consequence) +
+          row('ddi_mechanism_lbl', v.mechanism) +
+          row('ddi_management_lbl', v.management) +
+          row('ddi_applicability_lbl', v.applicability_note) +
+        '</dl>' +
+      '</article>'
+    );
+  }).join('');
+  return '<p class="ddi-summary"><strong>' + tUI('interactions_count', views.length, contraindicated) + '</strong></p>' + cards + scopeHtml;
 }
 
 function renderMissingInformationSection(missing) {

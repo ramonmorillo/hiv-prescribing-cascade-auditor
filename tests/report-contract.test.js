@@ -75,7 +75,7 @@ function run() {
     professionalVerdicts: { kept: 'confirmed', discarded: 'not_cascade' }
   });
 
-  assert('report contract is explicitly versioned', report.report_schema_version === 2);
+  assert('report contract is explicitly versioned', report.report_schema_version === 3);
   assert('software, KB and language metadata are explicit',
     report.software_version === '1.0.0' && report.kb_version === '2.0.0' && report.language === 'es');
   assertEqual('source and effective medication lists remain separate',

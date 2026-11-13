@@ -31,6 +31,7 @@ const suites = [
   './reviewed-input-edge-cases.test.js',
   './report-contract.test.js',
   './report-wiring.test.js',
+  './ddi-display.test.js',
   './site-redesign.test.js',
   './unified-problem-extraction.test.js'
 ];
