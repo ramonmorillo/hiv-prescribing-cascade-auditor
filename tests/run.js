@@ -18,6 +18,7 @@ const suites = [
   './kb-ddi-coverage.test.js',
   './kb-validation-presentation.test.js',
   './medication-status-interactions.test.js',
+  './discontinuation-scope.test.js',
   './multi-candidate-cascades.test.js',
   './final-adjustments.test.js',
   './static-i18n.test.js',

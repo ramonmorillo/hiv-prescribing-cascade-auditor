@@ -536,11 +536,74 @@ function classifyMedicationMention(noteText, mention) {
   } else if (/\bsi\s+(desarrolla|presenta|aparece|ocurre|desarrollara|desarrollar[aá])\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea|se plantearia|se plantear[ií]a)\b/.test(sentence)) {
     assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
     status = 'conditional_future'; temporality = 'future';
-  } else if (/\b(se )?(suspendio|suspendi[oó]|suspendido|suspendida|retirado|retirada|interrumpio|interrumpi[oó])\b/.test(sentence) ||
+  } else if (/\bsin(?:\s+tratamiento\s+(?:con|de))?$/.test(clauseBefore) ||
+             /\bno\s+longer\s+(?:taking|takes|on|receiving)$/.test(clauseBefore) ||
+             /\bya\s+no\s+(?:lo|la|los|las)\s+(?:toma|tomaba|recibe|usa|utiliza)\b/.test(afterMentionClause(text, index, mention))) {
+    /* "Sin amlodipino actualmente", "no longer taking X", "X: ya no lo toma" */
+    assertion = 'negated'; status = 'not_taking'; temporality = 'current';
+  } else if (isGovernedDiscontinuation(clauseBefore, afterMentionClause(text, index, mention), afterMentionSentence(text, index, mention)) ||
              /\b(tomo|tom[oó]|recibio|recibi[oó])\b/.test(clauseBefore) && /\bhasta\b/.test(sentence)) {
     assertion = 'affirmed'; status = 'discontinued'; temporality = 'historical';
   }
   return { assertion: assertion, status: status, temporality: temporality };
+}
+
+/* Text after the mention, normalized, up to the end of its own clause. */
+function afterMentionClause(text, index, mention) {
+  var after = text.slice(index + mentionLength(mention));
+  var end = after.search(/[.;\n]|\s+y\s+(?:se\s+)?(?:inicia|inici[oó]|pauta|paut[oó]|cambia|cambi[oó]|contin[uú]a|mantiene|a[nñ]ade|añadi[oó])|\s+and\s+(?:started|continues|switched)|\bpero\b|\bbut\b/i);
+  return normalizeDrugText(end < 0 ? after : after.slice(0, end));
+}
+
+/* Text after the mention up to the sentence end (crosses "pero"), capped
+ * so a back-reference cannot reach a distant clause. */
+function afterMentionSentence(text, index, mention) {
+  var after = text.slice(index + mentionLength(mention));
+  var end = after.search(/[.;\n]/);
+  return normalizeDrugText((end < 0 ? after : after.slice(0, end)).slice(0, 90));
+}
+
+/* HAL-01 (Fase 0): discontinuation must GOVERN this mention, not merely
+ * occur somewhere in the sentence. The previous sentence-wide test missed
+ * common phrasings ("dejó de tomar X", "se retiró X", "X previo") and, worse,
+ * deactivated the NEW drug in "se suspendió X y se inició Y". A trigger
+ * counts only when it ends immediately before the mention (clauseBefore is
+ * already cut at sentence/adversative boundaries) or starts right after it,
+ * allowing a dose in between ("amlodipino 5 mg suspendido en 2024"). */
+var DISCONTINUATION_BEFORE = new RegExp('(?:' + [
+  '\\b(?:dejo|deja|dejaba|ha\\s+dejado|habia\\s+dejado|dejado|dejar)\\s+de\\s+(?:tomar|usar|recibir|utilizar)(?:\\s+(?:el|la|los|las))?',
+  '\\b(?:dejo|ha\\s+dejado)\\s+(?:el|la|los|las)',
+  '\\b(?:se\\s+)?(?:ha\\s+)?(?:suspendio|suspende|suspendido|suspendimos|suspendemos|retiro|retira|retirado|retiramos|retiran|interrumpio|interrumpe|interrumpido|interrumpimos|discontinua|discontinuo)(?:\\s+(?:el|la|los|las|tratamiento\\s+con))?',
+  '\\b(?:tar|tratamiento|pauta|regimen|terapia)?\\s*(?:previo|previa|anterior|antiguo|antigua)\\s*:?(?:\\s+con)?',
+  '\\b(?:previamente|anteriormente|antes)\\s+(?:con|tomaba|recibia|en\\s+tratamiento\\s+con)',
+  '\\b(?:stopped|discontinued|ceased|withdrew)(?:\\s+taking)?(?:\\s+the)?',
+  '\\b(?:previously|formerly)\\s+on',
+  '\\b(?:prior|previous|former)\\s+(?:art|regimen|treatment|therapy)?\\s*:?(?:\\s+with)?'
+].join('|') + ')\\s*$');
+
+var DISCONTINUATION_AFTER = new RegExp('^\\s*[:(,\\-]?\\s*(?:[0-9][^a-z]*(?:mg|mcg|g|ml|ui|comp\\w*)?\\b[^a-z]*)?(?:' + [
+  '(?:(?:fue|fueron|ha|han|habia|habian|hubo|sido|se|esta|estaba|queda|quedo|qued[oó])\\s+){0,3}(?:suspendido|suspendida|suspendidos|retirado|retirada|retirados|interrumpido|interrumpida|discontinuado|discontinuada|suspendio|retiro)\\b',
+  '(?:lo|la|los|las)\\s+(?:dejo|ha\\s+dejado|suspendio|suspendimos|retiro|retiramos)\\b',
+  '(?:en\\s+el\\s+pasado|previamente)\\b',
+  '(?:was\\s+|has\\s+been\\s+)?(?:discontinued|stopped|withdrawn)\\b',
+  '(?:previously|in\\s+the\\s+past)\\b'
+].join('|') + ')');
+
+/* "Efavirenz previo." / "efavirenz (previo)" — but not "amlodipino, previo
+ * control de TA", where "previo" opens an unrelated phrase. */
+var PREVIOUS_AFTER = /^\s*\(?\s*(?:previo|previa|anterior)\s*\)?\s*(?:$|[,(]|\d|desde|hasta|en\s+\d)/;
+
+/* "Tomó X durante 2022, pero fue suspendida…": a passive participle with no
+ * new subject after an adversative refers back to the same medicine. */
+var PASSIVE_BACK_REFERENCE = /^[^.;]*?\b(?:pero|aunque|but|although)\s+(?:fue|ha\s+sido|se\s+ha|se|was|has\s+been)\s+(?:suspendid[oa]s?|retirad[oa]s?|interrumpid[oa]s?|suspendio|retiro|interrumpio|discontinued|stopped|withdrawn)\s*(?:$|,|\(|(?:en|el|a|hace|desde|tras|por|in|on|after|due)\b|\d)/;
+/* "Tomó X durante 2022": past simple bounded in time. */
+var PAST_BOUNDED_INTAKE_BEFORE = /\b(?:tomo|recibio|took|received)$/;
+var PAST_BOUNDED_INTAKE_AFTER = /^\s*(?:[0-9][^a-z]*(?:mg|mcg|g|ml)?\b[^a-z]*)?(?:durante|entre|between|for\s+\d|during)\b/;
+
+function isGovernedDiscontinuation(clauseBefore, afterClause, afterSentence) {
+  return DISCONTINUATION_BEFORE.test(clauseBefore || '') || DISCONTINUATION_AFTER.test(afterClause || '') ||
+    PREVIOUS_AFTER.test(afterClause || '') || PASSIVE_BACK_REFERENCE.test(afterSentence || '') ||
+    (PAST_BOUNDED_INTAKE_BEFORE.test(clauseBefore || '') && PAST_BOUNDED_INTAKE_AFTER.test(afterClause || ''));
 }
 
 function medicationExclusionReason(m) {
