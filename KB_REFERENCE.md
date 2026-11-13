@@ -157,9 +157,9 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
 
 ## Fichero 3 — `ddi_watchlist.json`
 
-**Descripción:** Interacciones fármaco-fármaco (IFF) de relevancia clínica para las cascadas en PVVIH. Se muestran en la interfaz de forma independiente a la confirmación de la cascada y nunca se suprimen.
+**Descripción:** Interacciones fármaco-fármaco (IFF) de relevancia clínica en PVVIH. Se evalúan de forma independiente a las cascadas, se muestran en una sección propia (pasos 4 y 6, texto clínico, CSV) ordenadas por gravedad y nunca se suprimen.
 
-**Versión:** 1.1.0 · **Actualizado:** 2025-01-01 · **Entradas PROD:** 10 interacciones
+**Versión:** 1.4.0 · **Actualizado:** 2026-11-13 · **Entradas PROD:** 60 interacciones (15 CONTRAINDICATED · 27 MAJOR · 18 MODERATE)
 
 ### Estructura de cada entrada
 
@@ -170,16 +170,25 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
   "drug_a_class": "CYP3A4 inhibitor",
   "drug_b": "Simvastatin / Lovastatin",
   "drug_b_class": "Statin (CYP3A4 substrate)",
+  "participants_a": ["ritonavir", "cobicistat"],
+  "participants_b": ["simvastatin", "lovastatin"],
   "severity": "CONTRAINDICATED",
-  "mechanism_es": "Inhibición de CYP3A4 por RTV/COBI → aumento masivo de niveles de estatina → riesgo de rabdomiólisis",
-  "mechanism_en": "CYP3A4 inhibition by RTV/COBI → massive increase in statin levels → rhabdomyolysis risk",
-  "clinical_consequence_es": "...",
-  "clinical_consequence_en": "...",
-  "management_es": "...",
-  "management_en": "...",
-  "references": ["..."]
+  "mechanism_es": "…", "mechanism_en": "…",
+  "consequence_es": "…", "consequence_en": "…",
+  "management_es": "…", "management_en": "…",
+  "cascade_relevance_es": "…", "cascade_relevance_en": "…",
+  "applicability_note_es": "(opcional)", "applicability_note_en": "(opcional)"
 }
 ```
+
+| Campo | Uso |
+|---|---|
+| `drug_a`, `drug_b`, `*_class` | Etiquetas legibles. **No intervienen en la detección.** |
+| `participants_a`, `participants_b` | **Obligatorios.** Nombres canónicos de `drug_dictionary.json`. La regla se activa cuando hay al menos un medicamento activo de cada lado, y deben ser medicamentos distintos. Se generan con `kb/dev/ddi_participants.js`; no se editan a mano. |
+| `applicability_note_*` | Condición de dosis, vía o duración que la nota no permite verificar; se muestra junto a la alerta. Bilingüe o ausente. |
+| `severity` | Uno de los niveles siguientes; determina el orden y el estilo de presentación. |
+
+**Invariante verificado en CI** (`tests/kb-ddi-coverage.test.js`): cada participante es un canónico del diccionario y activa su regla de extremo a extremo con notas en español y en inglés. Una regla nueva cuyo participante no se resuelva hace fallar la suite. Antes de esta invariante, 27 de 60 reglas no podían activarse nunca.
 
 ### Niveles de severidad
 
@@ -190,16 +199,7 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
 | `MODERATE` | Puede empeorar la condición del paciente; puede requerir ajuste de dosis o monitorización. |
 | `MINOR` | Significancia clínica mínima; tener en cuenta. |
 
-### Interacciones incluidas (selección)
-
-| ID | Fármaco A | Fármaco B | Severidad |
-|----|-----------|-----------|-----------|
-| DDI001 | Ritonavir / Cobicistat | Simvastatina / Lovastatina | CONTRAINDICADA |
-| DDI002 | Ritonavir / Cobicistat | Midazolam / Triazolam | CONTRAINDICADA |
-| DDI003 | Rifampicina | ARVs (múltiples) | MAYOR |
-| DDI004 | Cobicistat | Colchicina | MAYOR |
-| DDI005 | Dolutegravir | Metformina (dosis altas) | MODERADA |
-| … | *(5 interacciones adicionales)* | | |
+El listado completo de reglas con sus participantes está en [`docs/validation/fase0-ddi-participants.md`](docs/validation/fase0-ddi-participants.md) §4, generado a partir del propio fichero.
 
 ---
 

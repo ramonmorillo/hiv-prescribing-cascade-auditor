@@ -12,64 +12,36 @@ The HIV Prescribing Cascade Auditor is a **local-first** web application. All pr
 Key architectural principles:
 
 - **No external API calls.** The knowledge base (KB) is loaded as static JSON files served alongside the application. No LLM or cloud service is contacted at runtime.
-- **Browser-only storage.** Patient state is persisted exclusively in the browser (localStorage / IndexedDB). Data never leaves the device.
+- **Browser-only storage.** Case state is persisted exclusively in the browser (`localStorage`). Data never leaves the device.
 - **Static deployment.** The application consists of plain HTML, CSS, and JavaScript files and can be served from any static file host (GitHub Pages, local HTTP server, etc.).
 - **Offline capable.** After the initial page load the application functions fully offline.
 
 ---
 
-## 2. Five-Agent Workflow
+## 2. Processing Pipeline (as implemented)
 
-The pipeline is structured as a sequential six-step wizard, driven by five conceptual agents. Each agent corresponds to one processing step between data entry and final report.
+**Corrected 2026-11-13 (Fase 0, HAL-08).** Earlier versions of this section described a workflow of "five conceptual agents" (Extractor, Normaliser, Detector, Planner, Verifier) and stated that steps 2–5 were placeholders awaiting LLM integration. Neither was true of the implementation: there are no agents and no language model. The pipeline is a single deterministic function, `ClinicalEngine.buildCaseModel()` (`clinical-engine.js`), whose output (the `CaseModel`) is rendered by `app.js` and serialized by `report-contract.js`. The same note and the same KB always produce the same result.
 
-### Step 1 — Input (Human)
-The clinician provides:
-- Patient identifier (pseudonymised)
-- Free-text clinical note (copied from the EHR)
-- Optional: dispensing/medication CSV export
+| Stage | Implementation | Output in `CaseModel` |
+|---|---|---|
+| 1. Input | Clinician pastes a pseudonymised free-text note (step 1). | — |
+| 2. Medication extraction | `buildDrugResolver()` (dictionary, fixed-dose combinations, cascade-rule labels) and `resolveClassifiedMentions()`; each mention is classified as active / negated / discontinued / never started / conditional, scoped to the mention it governs. | `medications`, `allMedicationMentions`, `inactiveOrNegatedMedications` |
+| 3. Problems and measurements | `detectActiveProblems()` through the central terminology (`kb/clinical_terminology.json`). | `activeProblems`, `clinicalMeasurements` |
+| 4. Cascade evaluation | `evaluateDrugDrugCascades()` and `evaluateSymptomBridgeCascades()`; each candidate classified by `classifyCascadeSignal()` (§4). | `possibleCascades` |
+| 5. Interactions | `evaluateCurrentInteractions()` over `ddi_watchlist.json` explicit participants, ordered by severity. | `currentInteractions` |
+| 6. Global medication alerts | `buildGlobalMedicationAlerts()` (anticholinergic burden, CNS-depressant burden, NSAID duplication). | `globalMedicationAlerts` |
+| 7. Coverage and missing data | `detectUnrecognizedMedicationCandidates()` (prescription-like text no medicine resolved) and missing-information rules. | `missingInformation`, `unrecognizedMedicationCandidates` |
+| 8. Professional review | Optional confirmed medication / problem review (step 2) re-runs the same pipeline on the reviewed input; per-finding verdict in step 5. | `reviewedInputApplication`, `reviewAudit` |
+| 9. Report | `report-contract.js` builds one report for screen, clinical text, JSON and CSV. | — |
 
-No agent processing occurs at this step.
+### Verification layers
 
-### Step 2 — Agent 1: Extractor
-**Role:** Structured extraction from the unstructured clinical note.
+Planning and verification are **not** performed by a model. Instead the engine and the repository enforce explicit, testable checks:
 
-Outputs:
-- List of active medications (drug name, dose, start date where available)
-- Identified adverse drug events (ADEs) or symptoms mentioned
-- Relevant comorbidities and diagnoses
-
-### Step 3 — Agent 2: Normaliser
-**Role:** Temporal ordering and classification of the extracted medication list.
-
-Each drug is assigned a temporal grade (see Section 3). The normaliser produces a chronologically ordered medication timeline and flags candidate index drug / ADE / cascade drug triplets.
-
-### Step 4 — Agent 3: Detector
-**Role:** Pattern matching against the knowledge base.
-
-The detector compares candidate triplets to entries in:
-- `kb_core_cascades.json` — general prescribing cascade patterns
-- `kb_vih_modifiers.json` — ARV-specific cascade patterns
-- `ddi_watchlist.json` — critical drug–drug interactions
-
-Each candidate is assigned a plausibility rating (high / medium / low) and flagged DDIs are surfaced alongside the cascade finding.
-
-### Step 5 — Agent 4: Planner
-**Role:** Generation of a structured clinical action plan.
-
-For each confirmed or probable cascade, the planner proposes:
-- Medication review priorities
-- Suggested clinical questions for the prescribing encounter
-- Relevant monitoring parameters
-
-### Step 5b — Agent 5: Verifier
-**Role:** Internal consistency check and safety review.
-
-The verifier cross-checks the planner output against the KB, flags any contradictions, and ensures that CONTRAINDICATED combinations are prominently highlighted before the report is rendered.
-
-### Step 6 — Report (Output)
-A bilingual (English / Spanish) structured report is rendered in the browser. The clinician can export the report as JSON for record-keeping. No data is sent externally.
-
----
+- **Input coverage (runtime).** Prescription-like text that resolves to no medicine is reported as incomplete coverage in steps 2, 4, 5 and the report; no screen shows a reassuring result while coverage is incomplete.
+- **Output completeness (runtime).** Every computed interaction is rendered on screen, in the clinical text and in the CSV (`tests/ddi-display.test.js`).
+- **KB reachability (CI).** Every interaction participant must resolve to a dictionary medicine and fire its rule end to end in Spanish and English (`tests/kb-ddi-coverage.test.js`); cascade-rule drug names unknown to the dictionary are held to a shrink-only baseline.
+- **Behavioural regression (CI).** The full suite (`npm test`) must pass on every pull request to `main`.
 
 ## 3. Temporal Grading Definition
 
@@ -107,12 +79,12 @@ Additional rules:
 
 ---
 
-## 5. Known Limitations (v1.0)
+## 5. Known Limitations
 
-1. **Limited KB coverage.** Version 0.1 of the knowledge base includes a curated but intentionally small set of well-evidenced cascade patterns. Many clinically relevant cascades are not yet represented.
-2. **No real LLM integration.** In the current baseline, steps 2–5 (Agents 1–5) display placeholder interfaces. Full agent integration is planned for a future version.
-3. **Free-text extraction accuracy.** When agent integration is added, extraction quality will depend on the quality and completeness of the clinical note provided.
-4. **English and Spanish only.** The KB and UI support English and Spanish. Other languages are not supported.
-5. **No structured data import validation.** Dispensing CSV import accepts any well-formed CSV; field mapping is not validated against a fixed schema.
-6. **Temporal grading is heuristic.** Start dates inferred from free text are approximate; the TX grade will be common in real-world use.
-7. **Not a medical device.** This tool is for informational and educational purposes only. It has not been validated in a clinical trial or registered as a medical device. Clinical decisions must not be based solely on its output.
+1. **Limited KB coverage.** The knowledge base is a curated subset of cascade and interaction patterns; many clinically relevant patterns are not represented. Interaction alerts cover only `ddi_watchlist.json` rules and recognised medicines: the absence of an alert does not rule out an interaction.
+2. **Term-based extraction, no language model.** Medicines, problems and their status are recognised by dictionary and pattern matching. Spelling variants, abbreviations and brands not in the dictionary are not recognised; when they carry a dose or frequency they are reported as incomplete coverage, otherwise they may be missed silently.
+3. **Unverifiable conditions.** Dose, route and duration conditions of an interaction rule (e.g. oral vs intramuscular, pulmonary-hypertension dose) are not verified from the note; they are shown as an applicability note with the alert.
+4. **Chronology is heuristic.** Dates inferred from free text are approximate; undetermined chronology is common in real notes.
+5. **English and Spanish only.**
+6. **No clinical validation yet.** Sensitivity and positive predictive value have not been measured against an annotated corpus. Fase 0 knowledge-base additions are pending clinical validation (`docs/validation/fase0-ddi-participants.md`).
+7. **Regulatory status under evaluation.** The tool has not completed regulatory assessment and does not bear CE marking; its qualification and classification under Regulation (EU) 2017/745 must be established from its intended purpose before open clinical deployment. Outputs must be reviewed by a qualified professional.
