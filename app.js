@@ -280,7 +280,9 @@ const UI_STRINGS = {
     btn_discard:           'Descartar',
     review_warning:        'Revise cada se&ntilde;al y clasif&iacute;quela. Para uso farmac&eacute;utico y cl&iacute;nico exclusivamente.',
     no_cascades_step5:        'Sin se&ntilde;ales de cascada.',
-    no_cascades_step5_detail: 'No se identificaron patrones de cascada terap&eacute;utica &mdash; no se requiere plan de actuaci&oacute;n.',
+    no_cascades_step5_detail: 'No se identificaron patrones de cascada de la base de conocimiento: no hay hallazgos de cascada que planificar. Revise igualmente las interacciones y los dem&aacute;s hallazgos de medicaci&oacute;n.',
+    coverage_title:           'Cobertura incompleta.',
+    no_cascades_partial_title: 'Sin se&ntilde;ales de cascada entre los medicamentos reconocidos.',
 
     /* Step 6 — report display */
     report_title:           'Informe de Auditor&iacute;a de Cascadas Terap&eacute;uticas',
@@ -773,7 +775,9 @@ const UI_STRINGS = {
     btn_discard:           'Discard',
     review_warning:        'Review and classify each signal. For pharmaceutical and clinical use only.',
     no_cascades_step5:        'No cascade signals.',
-    no_cascades_step5_detail: 'No therapeutic cascade patterns identified &mdash; no action plan required.',
+    no_cascades_step5_detail: 'No knowledge-base cascade patterns were identified: there are no cascade findings to plan. Still review interactions and the other medication findings.',
+    coverage_title:           'Incomplete coverage.',
+    no_cascades_partial_title: 'No cascade signals among the recognised medicines.',
 
     /* Step 6 — report display */
     report_title:           'Therapeutic Cascade Audit Report',
@@ -2030,7 +2034,7 @@ const STEP_CONTENT = {
       var drugSection;
       if (drugs.length === 0) {
         drugSection = (
-          '<div class="callout callout-success">' +
+          '<div class="callout callout-warning">' +
             '<strong>' + tUI('no_drugs_title') + '</strong> ' +
             tUI('no_drugs_detail') +
           '</div>'
@@ -2043,6 +2047,7 @@ const STEP_CONTENT = {
         );
       }
 
+      drugSection += renderCoverageWarning(medicationModel);
       drugSection += renderMedicationReview(extractedMedications);
 
       var inactiveRows = medicationModel.inactiveOrNegatedMedications || [];
@@ -2292,7 +2297,8 @@ const STEP_CONTENT = {
           renderGlobalAlertsSection(model.globalMedicationAlerts) +
         '</section>'
       );
-      var missingInfoHtml = renderMissingInformationSection(model.missingInformation);
+      var missingInfoHtml = renderMissingInformationSection(model.missingInformation, { excludeCoverage: true });
+      var coverageHtml = renderCoverageWarning(model);
       /* Interactions are independent of cascade detection and always shown —
          before this section existed they were computed but never displayed. */
       var ddiHtml = (
@@ -2305,10 +2311,12 @@ const STEP_CONTENT = {
       if (detected.length === 0) {
         return (
           kbInfo + ddiHtml +
-          '<div class="callout callout-success">' +
-            '<strong>' + tUI('no_cascades_title') + '</strong> ' +
-            tUI('no_cascades_detail') +
-          '</div>' +
+          (coverageHtml
+            ? '<div class="callout callout-info"><strong>' + tUI('no_cascades_partial_title') + '</strong></div>' + coverageHtml
+            : '<div class="callout callout-success">' +
+                '<strong>' + tUI('no_cascades_title') + '</strong> ' +
+                tUI('no_cascades_detail') +
+              '</div>') +
           globalAlertsHtml + missingInfoHtml
         );
       }
@@ -2327,7 +2335,7 @@ const STEP_CONTENT = {
       }).join('');
 
       return (
-        kbInfo + ddiHtml +
+        kbInfo + ddiHtml + coverageHtml +
         '<section class="content-block">' +
           '<div class="results-head">' +
             '<h3 class="section-title">' + tUI('cascade_count', detected.length) + '</h3>' +
@@ -2367,11 +2375,12 @@ const STEP_CONTENT = {
       var detected = getDetectedCascades(state.clinicalNote);
 
       if (detected.length === 0) {
+        var step5Coverage = renderCoverageWarning(getCaseModel(state.clinicalNote));
         return (
-          '<div class="callout callout-success">' +
+          '<div class="callout ' + (step5Coverage ? 'callout-info' : 'callout-success') + '">' +
             '<strong>' + tUI('no_cascades_step5') + '</strong> ' +
             tUI('no_cascades_step5_detail') +
-          '</div>'
+          '</div>' + step5Coverage
         );
       }
 
@@ -3359,7 +3368,24 @@ function renderInteractionsSection(views) {
   return '<p class="ddi-summary"><strong>' + tUI('interactions_count', views.length, contraindicated) + '</strong></p>' + cards + scopeHtml;
 }
 
-function renderMissingInformationSection(missing) {
+/* Coverage warning for prescription-like text no medicine resolved
+ * (ClinicalEngine.detectUnrecognizedMedicationCandidates). Shown wherever a
+ * screen could otherwise read as a complete, reassuring result. */
+function coverageItem(model) {
+  return ((model && model.missingInformation) || []).find(function (m) { return m.type === 'unrecognized_medication_candidates'; }) || null;
+}
+
+function renderCoverageWarning(model) {
+  var item = coverageItem(model);
+  if (!item) return '';
+  var msg = (currentLanguage === 'es' ? item.message_es : item.message_en) || item.message_es || '';
+  return '<div class="callout callout-warning" role="status"><strong>' + tUI('coverage_title') + '</strong> ' + escHtml(msg) + '</div>';
+}
+
+function renderMissingInformationSection(missing, options) {
+  if (options && options.excludeCoverage) {
+    missing = (missing || []).filter(function (m) { return m.type !== 'unrecognized_medication_candidates'; });
+  }
   if (!missing || !missing.length) return '';
   var lang = currentLanguage;
   var items = missing.map(function (m) {

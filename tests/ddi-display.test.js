@@ -108,5 +108,5 @@ function run() {
   return r.fail === 0;
 }
 
-module.exports = { run };
+module.exports = { run, loadApp };
 if (require.main === module) process.exit(run() ? 0 : 1);

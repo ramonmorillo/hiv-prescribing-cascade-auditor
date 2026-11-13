@@ -3499,6 +3499,68 @@ function medicationsWithoutDocumentedIndication(activeMentions, indicationByCano
   return out;
 }
 
+/* ------------------------------------------------------------------
+ * Coverage check: prescription-like text that resolved to no medicine.
+ *
+ * Fase 0 audit: "Norvir + sildenafilo 50 mg + metadona 80 mg" returned only
+ * ritonavir and an empty missingInformation, so every downstream surface
+ * looked complete. A word immediately followed by a dose or a dosing
+ * frequency is treated as a probable medication; if no resolved mention
+ * covers it, it is reported — never guessed, never added to the medication
+ * list. Laboratory values are excluded by unit (mg/dL, g/L, mmol/L…) and
+ * by a short list of measurement words.
+ * ------------------------------------------------------------------ */
+var DOSE_PATTERN = /(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:mg|mcg|µg|μg|g|ml|ui|u)\b|\d+(?:[.,]\d+)?\s*(?:comp(?:rimidos?)?|caps?(?:ulas?)?|sobres?|gotas|puffs?|inhalaciones|tablets?)\b)/gi;
+var LAB_UNIT_TAIL = /^\s*\/\s*(?:dl|l|ml|mmol|min|m2|m²|kg\/min|dia\s+de\s+excrecion)\b/i;
+var NOT_A_MEDICATION_WORD = {
+  dosis: 1, maxima: 1, maximo: 1, max: 1, hasta: 1, total: 1, inicial: 1, cada: 1, unos: 1, unas: 1,
+  desde: 1, tras: 1, durante: 1, previa: 1, previo: 1, actual: 1, diaria: 1, diario: 1, ultima: 1,
+  peso: 1, talla: 1, proteinuria: 1, albuminuria: 1, cociente: 1, excrecion: 1, diuresis: 1, ingesta: 1,
+  creatinina: 1, glucosa: 1, glucemia: 1, colesterol: 1, trigliceridos: 1, potasio: 1, sodio: 1,
+  ferritina: 1, hemoglobina: 1, albumina: 1, carga: 1, viral: 1, copias: 1, celulas: 1,
+  toma: 1, tomaba: 1, tomar: 1, recibe: 1, pauta: 1, aumenta: 1, reduce: 1, baja: 1, sube: 1, cambio: 1,
+  dose: 1, daily: 1, twice: 1, once: 1, every: 1, initial: 1, current: 1
+};
+
+function detectUnrecognizedMedicationCandidates(noteText, mentions) {
+  var text = noteText || '';
+  var spans = (mentions || []).filter(function (m) { return m.original_start_index != null; }).map(function (m) {
+    return { start: m.original_start_index, end: m.original_start_index + mentionLength(m) };
+  });
+  var found = [];
+  var seen = {};
+  var match;
+  DOSE_PATTERN.lastIndex = 0;
+  while ((match = DOSE_PATTERN.exec(text)) !== null) {
+    var doseStart = match.index;
+    if (LAB_UNIT_TAIL.test(text.slice(doseStart + match[0].length))) continue;
+    var clauseStart = Math.max(text.lastIndexOf('.', doseStart - 1), text.lastIndexOf(';', doseStart - 1),
+      text.lastIndexOf('\n', doseStart - 1), text.lastIndexOf(',', doseStart - 1), text.lastIndexOf('—', doseStart - 1)) + 1;
+    /* Decimal comma/point inside the number itself is not a clause boundary. */
+    if (clauseStart > 0 && /\d/.test(text.charAt(clauseStart - 2)) && /\d/.test(text.charAt(clauseStart))) {
+      clauseStart = Math.max(text.lastIndexOf('.', clauseStart - 2), text.lastIndexOf('\n', clauseStart - 2), text.lastIndexOf(';', clauseStart - 2)) + 1;
+    }
+    var before = text.slice(clauseStart, doseStart);
+    /* Any resolved medicine ending in this clause before the dose owns it. */
+    var owned = spans.some(function (s) { return s.end <= doseStart && s.end > clauseStart; });
+    if (owned) continue;
+    var words = before.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]*/g) || [];
+    var candidate = null;
+    for (var i = words.length - 1; i >= 0 && i >= words.length - 3; i--) {
+      var norm = normalizeDrugText(words[i]);
+      if (norm.length < 4 || NOT_A_MEDICATION_WORD[norm]) continue;
+      candidate = words[i];
+      break;
+    }
+    if (!candidate) continue;
+    var key = normalizeDrugText(candidate);
+    if (seen[key]) continue;
+    seen[key] = true;
+    found.push({ term: candidate, dose_text: match[0].trim(), evidence_span: (before + match[0]).trim(), start_index: doseStart });
+  }
+  return found;
+}
+
 function buildCaseModel(noteText, kb, options) {
   options = options || {};
   var lang = options.lang || 'es';
@@ -3510,7 +3572,7 @@ function buildCaseModel(noteText, kb, options) {
     return {
       medications: [], activeMedications: [], allMedicationMentions: [], inactiveOrNegatedMedications: [],
       currentInteractions: [], activeProblems: [], clinicalMeasurements: [], events: [],
-      possibleCascades: [], globalMedicationAlerts: [], missingInformation: [],
+      possibleCascades: [], globalMedicationAlerts: [], missingInformation: [], unrecognizedMedicationCandidates: [],
       drug_classes: []
     };
   }
@@ -3735,6 +3797,22 @@ function buildCaseModel(noteText, kb, options) {
   var inactiveOrNegatedMedications = allMedicationMentions.filter(function (m) { return !isActiveMedication(m); });
   var currentInteractions = evaluateCurrentInteractions(kb, medications);
 
+  /* Coverage: prescription-like text no medicine resolved (all mentions,
+     active or not, count as recognised — a negated drug is still known). */
+  var unrecognizedMedicationCandidates = detectUnrecognizedMedicationCandidates(corrected, mentions);
+  if (unrecognizedMedicationCandidates.length) {
+    var unrecognizedTerms = unrecognizedMedicationCandidates.map(function (c) { return c.term; });
+    missingInformation.unshift({
+      type: 'unrecognized_medication_candidates',
+      finding_category: 'incomplete_coverage',
+      terms: unrecognizedTerms,
+      message_es: 'Cobertura incompleta: ' + unrecognizedTerms.length + ' término(s) con pauta posológica no se han reconocido como medicamento (' +
+        unrecognizedTerms.join(', ') + '). No se han evaluado para cascadas ni interacciones; revíselos y, si procede, añádalos en la revisión de medicamentos.',
+      message_en: 'Incomplete coverage: ' + unrecognizedTerms.length + ' term(s) with a dosing pattern were not recognised as a medicine (' +
+        unrecognizedTerms.join(', ') + '). They were not evaluated for cascades or interactions; review them and, if appropriate, add them in the medication review.'
+    });
+  }
+
   var undocumented = medicationsWithoutDocumentedIndication(activeMentions, indicationByCanonical, activeProblems);
   if (undocumented.length) {
     missingInformation.push({
@@ -3769,6 +3847,7 @@ function buildCaseModel(noteText, kb, options) {
     possibleCascades: allSignals,
     globalMedicationAlerts: globalAlertsResult.alerts,
     missingInformation: missingInformation,
+    unrecognizedMedicationCandidates: unrecognizedMedicationCandidates,
     symptomsDetected: symptomsDetected,
     reviewedInputApplication: reviewedInput ? cloneJson(reviewedInput.application || null) : null,
     reviewAudit: reviewedInput ? cloneJson(reviewedInput.audit || null) : null
