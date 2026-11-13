@@ -15,6 +15,7 @@ const suites = [
   './legacy-nlp.test.js',
   './fixed-dose-classification.test.js',
   './kb-audit.test.js',
+  './kb-ddi-coverage.test.js',
   './kb-validation-presentation.test.js',
   './medication-status-interactions.test.js',
   './multi-candidate-cascades.test.js',

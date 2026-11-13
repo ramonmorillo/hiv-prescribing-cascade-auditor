@@ -412,6 +412,27 @@ function buildDrugResolver(kb) {
     });
   });
 
+  /* Slash-composite labels bootstrapped from cascade examples (e.g.
+     "darunavir/ritonavir") must expand to their ingredients, exactly like a
+     combination brand. Left as a canonical of their own they hid the
+     booster from every interaction rule (Fase 0 audit: DRV/r + simvastatin
+     produced no alert) and contradicted the CaseModel contract that stores
+     pharmacologically distinct ingredients. Only composites whose every part
+     is a curated dictionary medicine are expanded. */
+  Object.keys(resolver.byVariant).forEach(function (key) {
+    if (key.indexOf('/') === -1 || resolver.combosByVariant[key]) return;
+    var meta = resolver.byVariant[key];
+    if (meta.match_type !== 'exact' && meta.match_type !== 'combo') return;
+    var ingredients = key.split('/').map(function (part) {
+      var partMeta = resolver.byVariant[part.trim()];
+      return partMeta && partMeta.match_type === 'dict' ? partMeta.canonical : null;
+    });
+    if (ingredients.length < 2 || ingredients.some(function (c) { return !c; })) return;
+    resolver.combosByVariant[key] = {
+      brand: meta.variant, aliases: [key], activeIngredients: ingredients, composite_label: true
+    };
+  });
+
   var escaped = Object.keys(resolver.byVariant)
     .sort(function (a, b) { return b.length - a.length; })
     .map(function (term) { return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
@@ -2050,13 +2071,31 @@ function parseInteractionParticipants(value) {
     .map(function (v) { return normalizeDrugText(v); }).filter(Boolean);
 }
 
+/* Participants of one side of a DDI rule. Explicit canonical lists
+ * (participants_a / participants_b, kb/dev/ddi_participants.js) are
+ * authoritative; parsing the free-text label is only a fallback for rules
+ * that predate them, and tests/kb-ddi-coverage.test.js forbids that fallback
+ * in shipped KBs because class labels ("Proton pump inhibitors") can never
+ * match a medication. */
+function interactionSide(rule, side) {
+  var explicit = rule['participants_' + side];
+  if (Array.isArray(explicit) && explicit.length) {
+    return explicit.map(function (v) { return normalizeDrugText(v); }).filter(Boolean);
+  }
+  return parseInteractionParticipants(rule['drug_' + side]);
+}
+
+var DDI_SEVERITY_RANK = { CONTRAINDICATED: 4, MAJOR: 3, MODERATE: 2, MINOR: 1 };
+
 /* DDI activation is a single, auditable gateway. Ingredient rules require an
  * exact canonical participant on both sides; class matching is only available
- * to rules explicitly marked class_based. */
+ * to rules explicitly marked class_based. Results are ordered by severity so
+ * every surface lists contraindications first. */
 function evaluateCurrentInteractions(kb, activeMedications) {
   var meds = activeMedications || [];
   var names = meds.map(function (m) { return normalizeDrugText(m.normalized_name); });
   var classes = meds.map(function (m) { return normalizeDrugText(m.drug_class); });
+  var present = function (n) { return names.indexOf(n) !== -1; };
   return (((kb || {}).ddiWatchlist || {}).interactions || []).filter(function (rule) {
     var scope = rule.match_scope || 'ingredient_specific';
     if (scope === 'class_based') {
@@ -2064,13 +2103,28 @@ function evaluateCurrentInteractions(kb, activeMedications) {
         classes.indexOf(normalizeDrugText(rule.drug_b_class)) !== -1;
     }
     if (scope === 'regimen_based') return false; // requires a dedicated regimen matcher
-    return parseInteractionParticipants(rule.drug_a).some(function (n) { return names.indexOf(n) !== -1; }) &&
-      parseInteractionParticipants(rule.drug_b).some(function (n) { return names.indexOf(n) !== -1; });
-  }).map(function (rule) {
-    var participants = names.filter(function (n) {
-      return parseInteractionParticipants(rule.drug_a).concat(parseInteractionParticipants(rule.drug_b)).indexOf(n) !== -1;
+    var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');
+    /* Both sides must be satisfied by DIFFERENT medicines: a drug listed on
+       both sides (e.g. ritonavir as booster and as "any ARV") never
+       interacts with itself. */
+    return a.some(function (na) {
+      return present(na) && b.some(function (nb) { return nb !== na && present(nb); });
     });
-    return Object.assign({}, rule, { match_scope: rule.match_scope || 'ingredient_specific', active_participants: participants });
+  }).map(function (rule) {
+    var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');
+    var participantsA = names.filter(function (n, i) { return a.indexOf(n) !== -1 && names.indexOf(n) === i; });
+    var participantsB = names.filter(function (n, i) { return b.indexOf(n) !== -1 && names.indexOf(n) === i; });
+    var participants = names.filter(function (n, i) {
+      return (a.indexOf(n) !== -1 || b.indexOf(n) !== -1) && names.indexOf(n) === i;
+    });
+    return Object.assign({}, rule, {
+      match_scope: rule.match_scope || 'ingredient_specific',
+      active_participants: participants,
+      active_participants_a: participantsA,
+      active_participants_b: participantsB
+    });
+  }).sort(function (x, y) {
+    return (DDI_SEVERITY_RANK[y.severity] || 0) - (DDI_SEVERITY_RANK[x.severity] || 0);
   });
 }
 
