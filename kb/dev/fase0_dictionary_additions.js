@@ -84,7 +84,10 @@ var NEW_ENTRIES = [
   ['bedaquiline', 'Antitubercular', ['bedaquilina', 'sirturo']],
   ['riluzole', 'Neuroprotective / ALS', ['riluzol', 'rilutek']],
   ['saquinavir', 'Antiretroviral / PI', ['invirase']],
-  ['maraviroc', 'Antiretroviral / CCR5 Antagonist', ['celsentri']]
+  ['maraviroc', 'Antiretroviral / CCR5 Antagonist', ['celsentri']],
+  /* D10 (reviewer, 2026-11-13): acenocoumarol is a different medicine from
+     warfarin; it used to be a variant of the warfarin entry. */
+  ['acenocoumarol', 'Anticoagulant / Vitamin K Antagonist', ['acenocumarol', 'acenocumarolo', 'sintrom']]
 ];
 
 /* Variants to add to EXISTING entries. */
@@ -98,6 +101,7 @@ var EXTRA_VARIANTS = {
  * Odefsey to rilpivirine only. Same defect class as Dovato/Truvada (kb 1.1.0). */
 var REMOVE_VARIANTS = {
   'elvitegravir': ['genvoya', 'stribild'],
+  'warfarin': ['acenocoumarol', 'acenocumarol', 'acenocumarolo', 'sintrom'],
   'rilpivirine': ['odefsey']
 };
 

@@ -2277,7 +2277,7 @@ const STEP_CONTENT = {
       var isActiveRule = function (entry) { return entry && entry.status !== 'merged'; };
       var cCount = (state.kb.coreCascades.cascades || []).filter(isActiveRule).length;
       var vCount = (state.kb.vihModifiers.art_related_cascades || []).filter(isActiveRule).length;
-      var dCount = (state.kb.ddiWatchlist.interactions || []).length;
+      var dCount = (state.kb.ddiWatchlist.interactions || []).filter(isActiveRule).length;
 
       var kbInfo = (
         '<div class="callout callout-info">' +

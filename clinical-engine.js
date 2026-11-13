@@ -2148,6 +2148,13 @@ function interactionSide(rule, side) {
   return parseInteractionParticipants(rule['drug_' + side]);
 }
 
+function isExcludedInteractionPair(rule, a, b) {
+  return (rule.excluded_pairs || []).some(function (pair) {
+    var x = normalizeDrugText(pair[0]), y = normalizeDrugText(pair[1]);
+    return (x === a && y === b) || (x === b && y === a);
+  });
+}
+
 var DDI_SEVERITY_RANK = { CONTRAINDICATED: 4, MAJOR: 3, MODERATE: 2, MINOR: 1 };
 
 /* DDI activation is a single, auditable gateway. Ingredient rules require an
@@ -2160,6 +2167,8 @@ function evaluateCurrentInteractions(kb, activeMedications) {
   var classes = meds.map(function (m) { return normalizeDrugText(m.drug_class); });
   var present = function (n) { return names.indexOf(n) !== -1; };
   return (((kb || {}).ddiWatchlist || {}).interactions || []).filter(function (rule) {
+    /* Retired duplicates stay in the file for traceability, never fire. */
+    if (rule.status === 'merged') return false;
     var scope = rule.match_scope || 'ingredient_specific';
     if (scope === 'class_based') {
       return classes.indexOf(normalizeDrugText(rule.drug_a_class)) !== -1 &&
@@ -2169,9 +2178,12 @@ function evaluateCurrentInteractions(kb, activeMedications) {
     var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');
     /* Both sides must be satisfied by DIFFERENT medicines: a drug listed on
        both sides (e.g. ritonavir as booster and as "any ARV") never
-       interacts with itself. */
+       interacts with itself. A pair listed in excluded_pairs is handled by
+       a more specific rule, so one medicine pair never yields two alerts. */
     return a.some(function (na) {
-      return present(na) && b.some(function (nb) { return nb !== na && present(nb); });
+      return present(na) && b.some(function (nb) {
+        return nb !== na && present(nb) && !isExcludedInteractionPair(rule, na, nb);
+      });
     });
   }).map(function (rule) {
     var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');

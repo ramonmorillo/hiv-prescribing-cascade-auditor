@@ -2,7 +2,7 @@
 
 **Auditor de Cascadas de Prescripción en VIH**
 
-Versión de software: **1.0.0** · Base de conocimiento PROD: cascadas 2.1.0 · VIH 1.3.0 · interacciones 1.4.0
+Versión de software: **1.0.0** · Base de conocimiento PROD: cascadas 2.1.0 · VIH 1.3.0 · interacciones 1.5.0
 Autores: **Ramón Morillo Verdugo y Cecilia Solís Martín** · Licencia: consulte `LICENSE` si existe, o contacte con los autores.
 
 ---
@@ -204,12 +204,12 @@ Resumen de los ficheros principales (recuento verificado contra `kb/prod/` el 20
 |---------|-----------|----------|---------|
 | `kb_core_cascades.json` | Cascadas de prescripción genéricas, aplicables a cualquier paciente polimedicado | 90 (78) | 2.1.0 |
 | `kb_vih_modifiers.json` | Cascadas específicas de la farmacología antirretroviral | 33 (33) | 1.3.0 |
-| `ddi_watchlist.json` | Interacciones fármaco-fármaco en PVVIH, con participantes explícitos por regla | 60 (60) | 1.4.0 |
+| `ddi_watchlist.json` | Interacciones fármaco-fármaco en PVVIH, con participantes explícitos por regla; ningún par de medicamentos activa dos reglas | 61 (59) | 1.5.0 |
 | `kb_symptoms.json` | Diccionario de síntomas/efectos adversos para detección por puente sintomático | 10 (10) | 1.2.0 |
-| `drug_dictionary.json` | Principios activos, DCI en español, marcas y abreviaturas | 319 | 1.3.0 |
+| `drug_dictionary.json` | Principios activos, DCI en español, marcas y abreviaturas | 320 | 1.3.0 |
 | `drug_combinations.json` | Combinaciones a dosis fija y pautas coadministradas (DRV/r, ATV/r) | 20 | 1.3.0 |
 
-Los cambios de la Fase 0 (participantes de interacciones, 67 principios activos y 8 combinaciones nuevas) están **pendientes de validación clínica**: véase [`docs/validation/fase0-ddi-participants.md`](docs/validation/fase0-ddi-participants.md).
+Los cambios de la Fase 0 (participantes de interacciones, 68 principios activos y 8 combinaciones nuevas) están **pendientes de validación clínica**: véase [`docs/validation/fase0-ddi-participants.md`](docs/validation/fase0-ddi-participants.md).
 
 ---
 
@@ -241,7 +241,7 @@ La herramienta no ha completado una evaluación regulatoria formal ni dispone de
 | Parámetro | Valor |
 |-----------|-------|
 | Versión de software | 1.0.0 |
-| Versión KB PROD | 2.1.0 (core) / 1.3.0 (VIH) / 1.4.0 (DDI) / 1.2.0 (síntomas) |
+| Versión KB PROD | 2.1.0 (core) / 1.3.0 (VIH) / 1.5.0 (DDI) / 1.2.0 (síntomas) |
 | Lenguaje | JavaScript ES2020 (vanilla) |
 | Frameworks | Ninguno |
 | Almacenamiento | `localStorage` (clave: `hiv_cascade_state`) |

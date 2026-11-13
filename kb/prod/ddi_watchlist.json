@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Drug-drug interaction watchlist relevant to prescribing cascades in PLHIV",
   "last_updated": "2026-11-13",
   "severity_levels": {
@@ -56,7 +56,9 @@
         "sildenafil",
         "tadalafil",
         "vardenafil"
-      ]
+      ],
+      "applicability_note_es": "Con lopinavir/ritonavir, el sildenafilo a dosis de hipertensión arterial pulmonar (>20 mg) está CONTRAINDICADO (antigua DDI054, fusionada aquí): considerar un TAR sin IP/r o, si no es posible, bosentán o iloprost. La dosis no se verifica en la nota.",
+      "applicability_note_en": "With lopinavir/ritonavir, sildenafil at pulmonary arterial hypertension doses (>20 mg) is CONTRAINDICATED (former DDI054, merged here): consider a PI/r-free ART or, if impossible, bosentan or iloprost. Dose is not verified from the note."
     },
     {
       "id": "DDI003",
@@ -85,7 +87,7 @@
       "id": "DDI004",
       "drug_a": "Efavirenz / Nevirapine / Rifampicin",
       "drug_a_class": "CYP3A4/CYP2B6 inducer",
-      "drug_b": "Warfarin / Direct oral anticoagulants",
+      "drug_b": "Warfarin / Acenocoumarol / Direct oral anticoagulants",
       "drug_b_class": "Anticoagulant",
       "severity": "MAJOR",
       "mechanism_es": "Inducción de CYP3A4/CYP2C9 → reducción de niveles de anticoagulantes → riesgo trombótico o necesidad de ajuste de dosis",
@@ -103,10 +105,21 @@
       ],
       "participants_b": [
         "warfarin",
+        "acenocoumarol",
         "dabigatran",
         "rivaroxaban",
         "apixaban",
         "edoxaban"
+      ],
+      "excluded_pairs": [
+        [
+          "efavirenz",
+          "warfarin"
+        ],
+        [
+          "efavirenz",
+          "acenocoumarol"
+        ]
       ]
     },
     {
@@ -177,7 +190,11 @@
       ],
       "participants_b": [
         "methadone"
-      ]
+      ],
+      "status": "merged",
+      "merged_into": "DDI024",
+      "merge_reason_es": "Duplicada: efavirenz + metadona está incluida en DDI024 con la misma gravedad y manejo.",
+      "merge_reason_en": "Duplicate: efavirenz + methadone is included in DDI024 with the same severity and management."
     },
     {
       "id": "DDI008",
@@ -250,7 +267,6 @@
         "voriconazole",
         "posaconazole",
         "haloperidol",
-        "quetiapine",
         "olanzapine",
         "risperidone",
         "aripiprazole",
@@ -259,7 +275,6 @@
         "amisulpride",
         "paliperidone",
         "clozapine",
-        "pimozide",
         "amitriptyline",
         "nortriptyline",
         "imipramine",
@@ -317,7 +332,7 @@
     },
     {
       "id": "DDI012",
-      "drug_a": "Efavirenz / Nevirapine / Etravirine",
+      "drug_a": "Efavirenz / Etravirine (nevirapine: see DDI039)",
       "drug_a_class": "NNRTI (CYP3A4 inducer)",
       "drug_b": "Oral contraceptives (estrogen/progestogen)",
       "drug_b_class": "Hormonal contraceptive",
@@ -332,7 +347,6 @@
       "cascade_relevance_en": "Contraceptive failure is a direct consequence of the EFV-OCP interaction.",
       "participants_a": [
         "efavirenz",
-        "nevirapine",
         "etravirine"
       ],
       "participants_b": [
@@ -393,7 +407,6 @@
       ],
       "participants_b": [
         "calcium carbonate",
-        "calcium acetate",
         "magnesium hydroxide",
         "magnesium oxide",
         "aluminum hydroxide",
@@ -477,15 +490,15 @@
       "id": "DDI018",
       "drug_a": "Rilpivirine",
       "drug_a_class": "NNRTI (CYP3A4 substrate, pH-dependent absorption)",
-      "drug_b": "Proton pump inhibitors / H2 blockers",
-      "drug_b_class": "Acid-suppressing agents",
+      "drug_b": "Proton pump inhibitors",
+      "drug_b_class": "Proton pump inhibitor",
       "severity": "CONTRAINDICATED",
       "mechanism_es": "Aumento del pH gástrico → reducción de absorción de rilpivirina (pH-dependiente) → niveles subóptimos",
       "mechanism_en": "Raised gastric pH → reduced rilpivirine absorption (pH-dependent) → subtherapeutic levels",
       "consequence_es": "Fracaso virológico, selección de resistencias a NNRTI (K101E, E138A/K/Q, V179L, Y188L, H221Y, F227C, M230I)",
       "consequence_en": "Virological failure, NNRTI resistance selection (K101E, E138A/K/Q, V179L, Y188L, H221Y, F227C, M230I)",
-      "management_es": "Contraindicado con IBP. Los antiH2 deben tomarse ≥12h antes o ≥4h después de RPV. Considerar cambiar a regímen alternativo.",
-      "management_en": "Contraindicated with PPIs. H2 blockers must be taken ≥12h before or ≥4h after RPV. Consider switching to alternative regimen.",
+      "management_es": "Contraindicado con IBP. Considerar cambiar a régimen alternativo. Para anti-H2 véase DDI061.",
+      "management_en": "Contraindicated with PPIs. Consider switching to alternative regimen. For H2 blockers see DDI061.",
       "cascade_relevance_es": "Cascada: RPV → intolerancia GI o indicación de IBP → comprometida eficacia del TAR.",
       "cascade_relevance_en": "Cascade: RPV → GI intolerance or PPI indication → compromised ART efficacy.",
       "participants_a": [
@@ -496,13 +509,10 @@
         "esomeprazole",
         "pantoprazole",
         "lansoprazole",
-        "rabeprazole",
-        "famotidine",
-        "ranitidine",
-        "cimetidine"
+        "rabeprazole"
       ],
-      "applicability_note_es": "Contraindicada con IBP. Con anti-H2 no está contraindicada: separar la toma (anti-H2 ≥12 h antes o ≥4 h después). Aplica a rilpivirina ORAL, no a la intramuscular.",
-      "applicability_note_en": "Contraindicated with PPIs. With H2 blockers it is not contraindicated: separate dosing (H2 blocker ≥12 h before or ≥4 h after). Applies to ORAL rilpivirine, not the intramuscular form."
+      "applicability_note_es": "Aplica a rilpivirina ORAL, no a la intramuscular.",
+      "applicability_note_en": "Applies to ORAL rilpivirine, not the intramuscular form."
     },
     {
       "id": "DDI019",
@@ -789,7 +799,7 @@
       "id": "DDI031",
       "drug_a": "Efavirenz / Etravirine",
       "drug_a_class": "NNRTI (CYP3A4 inducer)",
-      "drug_b": "Warfarin",
+      "drug_b": "Warfarin / Acenocoumarol",
       "drug_b_class": "Anticoagulant (CYP2C9 substrate)",
       "severity": "MAJOR",
       "mechanism_es": "Inducción de CYP2C9 y CYP3A4 → reducción de warfarina → INR imprevisible, riesgo trombótico",
@@ -805,7 +815,8 @@
         "etravirine"
       ],
       "participants_b": [
-        "warfarin"
+        "warfarin",
+        "acenocoumarol"
       ]
     },
     {
@@ -1366,7 +1377,11 @@
         "sildenafil"
       ],
       "applicability_note_es": "Contraindicada solo a dosis de hipertensión arterial pulmonar (>20 mg); la dosis no se verifica. Para uso en disfunción eréctil véase DDI002.",
-      "applicability_note_en": "Contraindicated only at pulmonary arterial hypertension doses (>20 mg); dose is not verified. For erectile dysfunction use see DDI002."
+      "applicability_note_en": "Contraindicated only at pulmonary arterial hypertension doses (>20 mg); dose is not verified. For erectile dysfunction use see DDI002.",
+      "status": "merged",
+      "merged_into": "DDI002",
+      "merge_reason_es": "Duplicada a nivel de pauta con DDI002 (lopinavir/ritonavir + sildenafilo); la contraindicación a dosis de HAP se conserva como nota de aplicabilidad de DDI002.",
+      "merge_reason_en": "Regimen-level duplicate of DDI002 (lopinavir/ritonavir + sildenafil); the PAH-dose contraindication is kept as a DDI002 applicability note."
     },
     {
       "id": "DDI055",
@@ -1508,6 +1523,33 @@
       "participants_b": [
         "digoxin"
       ]
+    },
+    {
+      "id": "DDI061",
+      "drug_a": "Rilpivirine (oral)",
+      "drug_a_class": "NNRTI (pH-dependent absorption)",
+      "drug_b": "H2 blockers (famotidine, ranitidine, cimetidine)",
+      "drug_b_class": "H2 receptor antagonist",
+      "severity": "MODERATE",
+      "mechanism_es": "Aumento del pH gástrico → reducción de absorción de rilpivirina (pH-dependiente) → niveles subóptimos",
+      "mechanism_en": "Raised gastric pH → reduced rilpivirine absorption (pH-dependent) → subtherapeutic levels",
+      "consequence_es": "Riesgo de fracaso virológico y selección de resistencias a INNTI si las tomas no se separan.",
+      "consequence_en": "Risk of virological failure and NNRTI resistance selection if intakes are not separated.",
+      "management_es": "Separar la toma 12 h entre el anti-H2 y la rilpivirina oral.",
+      "management_en": "Separate H2 blocker and oral rilpivirine intake by 12 h.",
+      "cascade_relevance_es": "Cascada: RPV → síntomas dispépticos → anti-H2 → eficacia del TAR comprometida si no se separan las tomas.",
+      "cascade_relevance_en": "Cascade: RPV → dyspeptic symptoms → H2 blocker → compromised ART efficacy if intakes are not separated.",
+      "source": "Clinical reviewer decision D1, 2026-11-13 (split from DDI018)",
+      "participants_a": [
+        "rilpivirine"
+      ],
+      "participants_b": [
+        "famotidine",
+        "ranitidine",
+        "cimetidine"
+      ],
+      "applicability_note_es": "Aplica a rilpivirina ORAL, no a la intramuscular.",
+      "applicability_note_en": "Applies to ORAL rilpivirine, not the intramuscular form."
     }
   ]
 }

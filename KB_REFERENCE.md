@@ -159,7 +159,7 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
 
 **Descripción:** Interacciones fármaco-fármaco (IFF) de relevancia clínica en PVVIH. Se evalúan de forma independiente a las cascadas, se muestran en una sección propia (pasos 4 y 6, texto clínico, CSV) ordenadas por gravedad y nunca se suprimen.
 
-**Versión:** 1.4.0 · **Actualizado:** 2026-11-13 · **Entradas PROD:** 60 interacciones (15 CONTRAINDICATED · 27 MAJOR · 18 MODERATE)
+**Versión:** 1.5.0 · **Actualizado:** 2026-11-13 · **Entradas PROD:** 61 (59 activas: 14 CONTRAINDICATED · 26 MAJOR · 19 MODERATE; 2 retiradas por duplicadas)
 
 ### Estructura de cada entrada
 
@@ -186,9 +186,11 @@ Los patrones con evidencia observacional débil o muy contexto-dependiente se ma
 | `drug_a`, `drug_b`, `*_class` | Etiquetas legibles. **No intervienen en la detección.** |
 | `participants_a`, `participants_b` | **Obligatorios.** Nombres canónicos de `drug_dictionary.json`. La regla se activa cuando hay al menos un medicamento activo de cada lado, y deben ser medicamentos distintos. Se generan con `kb/dev/ddi_participants.js`; no se editan a mano. |
 | `applicability_note_*` | Condición de dosis, vía o duración que la nota no permite verificar; se muestra junto a la alerta. Bilingüe o ausente. |
+| `excluded_pairs` | Pares `[A, B]` que no activan esta regla porque los cubre otra más específica (p. ej. DDI004 excluye efavirenz + warfarina, cubierto por DDI031). |
+| `status: "merged"`, `merged_into`, `merge_reason_*` | Regla retirada por duplicada: se conserva por trazabilidad y nunca se evalúa (misma convención que las cascadas fusionadas). |
 | `severity` | Uno de los niveles siguientes; determina el orden y el estilo de presentación. |
 
-**Invariante verificado en CI** (`tests/kb-ddi-coverage.test.js`): cada participante es un canónico del diccionario y activa su regla de extremo a extremo con notas en español y en inglés. Una regla nueva cuyo participante no se resuelva hace fallar la suite. Antes de esta invariante, 27 de 60 reglas no podían activarse nunca.
+**Invariante verificado en CI** (`tests/kb-ddi-coverage.test.js`): cada participante es un canónico del diccionario y activa su regla de extremo a extremo con notas en español y en inglés. Una regla nueva cuyo participante no se resuelva hace fallar la suite. Antes de esta invariante, 27 de 60 reglas no podían activarse nunca. Además, **ningún par de medicamentos puede activar dos reglas activas**, y las reglas retiradas nunca se disparan.
 
 ### Niveles de severidad
 

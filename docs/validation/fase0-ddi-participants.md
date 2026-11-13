@@ -1,7 +1,7 @@
 # Fase 0 — Validación clínica de los cambios en la base de conocimiento
 
 **Estado:** pendiente de validación clínica · **Revisor clínico:** Ramón Morillo Verdugo · **Fecha de los cambios:** 2026-11-13
-**Rama:** `claude/upbeat-ramanujan-5fo3bt` · **Versiones:** `ddi_watchlist` 1.4.0 · `drug_dictionary` 1.3.0 · `drug_combinations` 1.3.0
+**Rama:** `claude/upbeat-ramanujan-5fo3bt` · **Versiones:** `ddi_watchlist` 1.5.0 · `drug_dictionary` 1.3.0 · `drug_combinations` 1.3.0
 
 Este documento separa lo que se ha cambiado (dato), lo que se ha interpretado al transcribir (interpretación) y las decisiones que quedan abiertas (para el revisor). **Ninguna gravedad, mecanismo, consecuencia ni texto de manejo de las reglas de interacción se ha modificado.** Todas las entradas nuevas del diccionario y de combinaciones llevan `review_status: "pending_clinical_validation"`.
 
@@ -9,7 +9,7 @@ Este documento separa lo que se ha cambiado (dato), lo que se ha interpretado al
 
 | Hallazgo | Evidencia antes del cambio | Después |
 |---|---|---|
-| 27/60 reglas de interacción **no podían activarse nunca** (8 CONTRAINDICADAS); 9 más solo para parte de sus fármacos | Los participantes se obtenían partiendo el texto libre (`"Proton pump inhibitors"`), que no coincide con ningún medicamento | Las 60 reglas tienen `participants_a/b` explícitos; cada participante dispara su regla de extremo a extremo en ES y EN (`tests/kb-ddi-coverage.test.js`) |
+| 27/60 reglas de interacción **no podían activarse nunca** (8 CONTRAINDICADAS); 9 más solo para parte de sus fármacos | Los participantes se obtenían partiendo el texto libre (`"Proton pump inhibitors"`), que no coincide con ningún medicamento | Todas las reglas tienen `participants_a/b` explícitos (61 tras D1; 59 activas tras D3); cada participante dispara su regla de extremo a extremo en ES y EN (`tests/kb-ddi-coverage.test.js`) |
 | Genvoya/Stribild perdían cobicistat; Odefsey quedaba solo en rilpivirina; "darunavir/ritonavir", "DRV/r", "ATV/r" no se separaban | p. ej. Genvoya + simvastatina → 0 alertas | Se expanden a todos sus principios activos |
 | Las interacciones calculadas **no se mostraban** en pantalla ni en el informe clínico | Prezista + Norvir + simvastatina: el motor calculaba DDI001 y el paso 4 mostraba solo "Sin señales de cascada" (verificado renderizando el `app.js` previo) | Sección de interacciones en pasos 4 y 6, texto clínico y CSV, contraindicadas primero |
 | Medicamentos no reconocidos se descartaban en silencio | `missingInformation` vacío; paso 5: "no se requiere plan de actuación" | Aviso de cobertura incompleta en pasos 2, 4, 5 e informe |
@@ -27,83 +27,90 @@ Este documento separa lo que se ha cambiado (dato), lo que se ha interpretado al
 
 Cada punto indica qué dato lo origina y qué cambia según la decisión.
 
-- [ ] **D1 · DDI018 (rilpivirina + IBP/anti-H2) es CONTRAINDICADA para ambos grupos**, pero su propio texto de manejo indica que con anti-H2 basta separar la toma. Hoy famotidina + rilpivirina se muestra como *Contraindicada* (con la nota de aplicabilidad). *Propuesta:* dividir en DDI018 (IBP, CONTRAINDICADA) y una regla nueva para anti-H2 (MODERADA, separar la toma).
+- [x] **D1 · RESUELTA (revisor, 2026-11-13): separar la toma 12 h.** DDI018 queda solo para IBP (CONTRAINDICADA). Nueva regla **DDI061** rilpivirina oral + anti-H2 (famotidina, ranitidina, cimetidina), **MODERATE**, manejo: «Separar la toma 12 h entre el anti-H2 y la rilpivirina oral». *Interpretación a confirmar:* la gravedad MODERATE la he asignado yo (la decisión indica solo el manejo); el texto anterior «≥12 h antes o ≥4 h después» se ha sustituido por la pauta indicada por el revisor.
 - [ ] **D2 · Rekambys (rilpivirina IM) se resuelve como `rilpivirine`.** DDI018 es una interacción de absorción oral y se dispararía con la forma intramuscular (la nota de aplicabilidad lo advierte). *Propuesta:* canónico propio `rilpivirine (long-acting injectable)` excluido de DDI018. Lo mismo aplica a "cabotegravir/rilpivirina IM", ya existente.
-- [ ] **D3 · Reglas solapadas que generan dos tarjetas para el mismo par:** DDI007 y DDI024 (efavirenz + metadona); DDI004 y DDI031 (efavirenz + warfarina); DDI012 y DDI039 (nevirapina + anticonceptivos); DDI002 y DDI054 (lopinavir/r + sildenafilo: GRAVE y CONTRAINDICADA a la vez); DDI009 y DDI019 (lopinavir/r + quetiapina). Fusionar o diferenciar.
+- [x] **D3 · RESUELTA (revisor, 2026-11-13): eliminar las reglas duplicadas.** Una prueba exige ahora que ningún par de medicamentos active dos reglas. Criterio: una regla totalmente redundante se **retira** (se conserva con `status: "merged"` y `merged_into` por trazabilidad, igual que las cascadas fusionadas, y no se ejecuta); en un solapamiento parcial **gana la regla más específica** y el par duplicado se quita de la general.
+  - DDI007 → retirada en DDI024 (mismo par, gravedad y manejo).
+  - DDI054 → retirada en DDI002; la contraindicación de sildenafilo a dosis de HAP con LPV/r se conserva como nota de aplicabilidad de DDI002.
+  - DDI004: excluye efavirenz + warfarina/acenocumarol (lo cubre DDI031).
+  - DDI012: sin nevirapina (lo cubre DDI039).
+  - DDI009: sin quetiapina ni pimozida (lo cubre DDI019).
+  - DDI014: sin acetato cálcico, que es un quelante del fósforo (lo cubre DDI059, MODERATE). *A confirmar:* con este criterio, bictegravir/dolutegravir + acetato cálcico pasa a mostrarse como MODERATE en vez de MAJOR.
 - [ ] **D4 · DDI009 ("cualquier ARV que prolonga el QT"):** el texto incluye "rilpivirina a dosis altas", indetectable en la nota; se ha **excluido** rilpivirina para no alertar con la dosis estándar. Se han enumerado macrólidos, fluoroquinolonas, azoles, antipsicóticos y tricíclicos.
 - [ ] **D5 · DDI024 nombra "NNRTIs":** se ha restringido a efavirenz y nevirapina (más rifampicina, nombrada en la regla). Etravirina, rilpivirina y doravirina quedan fuera.
 - [ ] **D6 · DDI036 (hipérico) "cualquier pauta ARV (IP/r, INSTI, INNTI)":** enumerados IP, potenciadores, INSTI e INNTI. Quedan fuera los INTI (cubiertos por DDI053 para TAF), lenacapavir, maraviroc y fostemsavir.
 - [ ] **D7 · DDI014 (cationes polivalentes):** solo se han incluido los antiácidos y sales nombrados (calcio, magnesio, aluminio). **Hierro y zinc no se incluyen** porque la regla no los nombra.
 - [ ] **D8 · DDI020 (amiodarona/dronedarona) solo nombra ritonavir**, no cobicistat. Transcrito tal cual.
 - [ ] **D9 · DDI042 rotula ketoconazol como "triazol"** (es un imidazol). Posaconazol e isavuconazol no se nombran y no se han incluido.
-- [ ] **D10 · El diccionario mapea acenocumarol (Sintrom) a `warfarin`** (dato previo a esta fase, no modificado): una nota con Sintrom se muestra como "warfarin". *Propuesta:* canónico propio `acenocoumarol`, añadido a DDI004/DDI031.
+- [x] **D10 · RESUELTA (revisor, 2026-11-13): acenocumarol es un fármaco distinto de warfarina.** Nuevo canónico `acenocoumarol` (acenocumarol, Sintrom); retirado de las variantes de warfarina. Añadido a DDI004 y DDI031 (antes se activaban con Sintrom porque se leía como warfarina, así que se conserva la cobertura). *A confirmar:* inclusión de acenocumarol en esas dos reglas.
 - [ ] **D11 · Propiedad `sedative` no añadida** a metadona, alfentanilo, clorpromazina, clozapina, doxepina, imipramina, nortriptilina ni fenobarbital. Añadirla cambia la alerta global de carga depresora del SNC (CM007).
 - [ ] **D12 · Pendiente: 178 nombres en ejemplos de reglas de cascada** no están en el diccionario (`tests/fixtures/unresolved-cascade-names.json`). Mezcla de fármacos sin variante española (p. ej. bumetanida, prednisolona, doxazosina, metilfenidato) y texto que no es un fármaco ("lithotripsy referral", "airway management"). La prueba impide que la lista crezca.
 
-## 4. Participantes por regla de interacción (generado de `kb/prod/ddi_watchlist.json`)
+## 4. Participantes por regla de interacción (generado de `kb/prod/ddi_watchlist.json`, v1.5.0)
 
-| Regla | Gravedad | Lado A (activa si alguno presente) | Lado B | Expansión de clase | Nota de aplicabilidad | Validado |
-|---|---|---|---|---|---|---|
-| DDI001 | CONTRAINDICATED | ritonavir, cobicistat | simvastatin, lovastatin | — | — | ☐ |
-| DDI002 | MAJOR | ritonavir, cobicistat | sildenafil, tadalafil, vardenafil | — | — | ☐ |
-| DDI003 | MODERATE | dolutegravir | metformin | — | — | ☐ |
-| DDI004 | MAJOR | efavirenz, nevirapine, rifampicin | warfarin, dabigatran, rivaroxaban, apixaban, edoxaban | **Sí** | — | ☐ |
-| DDI005 | CONTRAINDICATED | ritonavir, cobicistat | midazolam, triazolam | — | La regla aplica a midazolam/triazolam ORALES; la vía no se verifica en la nota. | ☐ |
-| DDI006 | MAJOR | ritonavir | colchicine | — | — | ☐ |
-| DDI007 | MAJOR | efavirenz | methadone | — | — | ☐ |
-| DDI008 | MODERATE | tenofovir disoproxil fumarate | ibuprofen, naproxen, diclofenac, dexketoprofen, ketoprofen, indomethacin, meloxicam, piroxicam, aceclofenac, celecoxib, etoricoxib, gentamicin, amikacin, tobramycin | **Sí** | Los contrastes yodados no se detectan en la nota: valorar si hay exposición prevista. | ☐ |
-| DDI009 | MAJOR | saquinavir, lopinavir | clarithromycin, erythromycin, azithromycin, levofloxacin, moxifloxacin, ciprofloxacin, ofloxacin, norfloxacin, fluconazole, itraconazole, ketoconazole, voriconazole, posaconazole, haloperidol, quetiapine, olanzapine, risperidone, aripiprazole, ziprasidone, chlorpromazine, amisulpride, paliperidone, clozapine, pimozide, amitriptyline, nortriptyline, imipramine, clomipramine, doxepin | **Sí** | Rilpivirina solo prolonga el QT a dosis supraterapéuticas: no se incluye como desencadenante. Revisar ECG y electrolitos. | ☐ |
-| DDI010 | MAJOR | cobicistat | fluticasone, budesonide | — | — | ☐ |
-| DDI011 | MODERATE | ritonavir, cobicistat | atorvastatin | — | — | ☐ |
-| DDI012 | MAJOR | efavirenz, nevirapine, etravirine | ethinylestradiol, levonorgestrel, desogestrel, norethisterone, drospirenone, norgestimate, gestodene, dienogest | **Sí** | — | ☐ |
-| DDI013 | MAJOR | ritonavir, cobicistat | tacrolimus, cyclosporine, sirolimus | — | — | ☐ |
-| DDI014 | MAJOR | dolutegravir, bictegravir, raltegravir | calcium carbonate, calcium acetate, magnesium hydroxide, magnesium oxide, aluminum hydroxide, almagate, magaldrate | **Sí** | — | ☐ |
-| DDI015 | CONTRAINDICATED | ritonavir, cobicistat | rifampicin | — | — | ☐ |
-| DDI016 | CONTRAINDICATED | elvitegravir | rifampicin, rifabutin | — | — | ☐ |
-| DDI017 | MAJOR | atazanavir | omeprazole, esomeprazole, pantoprazole, lansoprazole, rabeprazole | **Sí** | — | ☐ |
-| DDI018 | CONTRAINDICATED | rilpivirine | omeprazole, esomeprazole, pantoprazole, lansoprazole, rabeprazole, famotidine, ranitidine, cimetidine | **Sí** | Contraindicada con IBP. Con anti-H2 no está contraindicada: separar la toma (anti-H2 ≥12 h antes o ≥4 h después). Aplica a rilpivirina ORAL, no a la intramuscular. | ☐ |
-| DDI019 | CONTRAINDICATED | ritonavir, cobicistat | quetiapine, pimozide, lurasidone | — | — | ☐ |
-| DDI020 | CONTRAINDICATED | ritonavir | amiodarone, dronedarone | — | — | ☐ |
-| DDI021 | MAJOR | ritonavir, cobicistat | salmeterol | — | — | ☐ |
-| DDI022 | CONTRAINDICATED | efavirenz, nevirapine | voriconazole | — | — | ☐ |
-| DDI023 | MAJOR | ritonavir, cobicistat | carbamazepine, phenytoin, phenobarbital | — | — | ☐ |
-| DDI024 | MAJOR | efavirenz, nevirapine, rifampicin | methadone | **Sí** | — | ☐ |
-| DDI025 | MAJOR | dolutegravir | rifampicin | — | — | ☐ |
-| DDI026 | CONTRAINDICATED | bictegravir | rifampicin, rifabutin | — | — | ☐ |
-| DDI027 | MODERATE | ritonavir, cobicistat | clarithromycin | — | — | ☐ |
-| DDI028 | MODERATE | lopinavir | rosuvastatin | — | — | ☐ |
-| DDI029 | MAJOR | ritonavir, cobicistat | trazodone | — | — | ☐ |
-| DDI030 | MODERATE | ritonavir, cobicistat | amlodipine, felodipine, nifedipine | — | — | ☐ |
-| DDI031 | MAJOR | efavirenz, etravirine | warfarin | — | — | ☐ |
-| DDI032 | MAJOR | ritonavir, cobicistat | fentanyl, alfentanil, buprenorphine | — | La regla se refiere a vía parenteral/transdérmica; la vía no se verifica en la nota. | ☐ |
-| DDI033 | MODERATE | lopinavir | lamotrigine | — | — | ☐ |
-| DDI034 | MODERATE | efavirenz | clopidogrel | — | — | ☐ |
-| DDI035 | MAJOR | ritonavir, cobicistat | dexamethasone, methylprednisolone | — | La regla se refiere a uso sistémico prolongado; la duración no se verifica en la nota. | ☐ |
-| DDI036 | CONTRAINDICATED | darunavir, atazanavir, lopinavir, ritonavir, cobicistat, dolutegravir, raltegravir, bictegravir, elvitegravir, cabotegravir, efavirenz, rilpivirine, nevirapine, doravirine, etravirine | hypericum | **Sí** | — | ☐ |
-| DDI037 | MODERATE | ritonavir, cobicistat | alprazolam, clonazepam, diazepam | — | — | ☐ |
-| DDI038 | MAJOR | atazanavir | irinotecan | — | — | ☐ |
-| DDI039 | MAJOR | nevirapine | ethinylestradiol, levonorgestrel, desogestrel, norethisterone, drospirenone, norgestimate, gestodene, dienogest, etonogestrel | **Sí** | — | ☐ |
-| DDI040 | MAJOR | ritonavir, cobicistat | ibrutinib | — | — | ☐ |
-| DDI041 | MODERATE | atazanavir | tenofovir disoproxil fumarate | — | — | ☐ |
-| DDI042 | MAJOR | ritonavir, cobicistat | itraconazole, ketoconazole, voriconazole | — | — | ☐ |
-| DDI043 | MAJOR | raltegravir | rifampicin | — | — | ☐ |
-| DDI044 | MODERATE | cobicistat | ethinylestradiol, norgestimate | **Sí** | — | ☐ |
-| DDI045 | MODERATE | ritonavir, cobicistat | dabigatran | — | — | ☐ |
-| DDI046 | MAJOR | ritonavir, cobicistat | rivaroxaban, apixaban | — | — | ☐ |
-| DDI047 | CONTRAINDICATED | dolutegravir | dofetilide | — | — | ☐ |
-| DDI048 | MODERATE | efavirenz | etoposide, cyclophosphamide | — | — | ☐ |
-| DDI049 | CONTRAINDICATED | ritonavir, cobicistat | ergotamine, dihydroergotamine | — | — | ☐ |
-| DDI050 | MODERATE | efavirenz, nevirapine | sertraline, citalopram, escitalopram | — | — | ☐ |
-| DDI051 | CONTRAINDICATED | ritonavir, cobicistat | alfuzosin | — | — | ☐ |
-| DDI052 | MODERATE | ritonavir, cobicistat | rifabutin | — | — | ☐ |
-| DDI053 | MAJOR | tenofovir alafenamide | rifampicin, carbamazepine, hypericum | — | — | ☐ |
-| DDI054 | CONTRAINDICATED | lopinavir | sildenafil | — | Contraindicada solo a dosis de hipertensión arterial pulmonar (>20 mg); la dosis no se verifica. Para uso en disfunción eréctil véase DDI002. | ☐ |
-| DDI055 | MODERATE | dolutegravir | riluzole | — | — | ☐ |
-| DDI056 | CONTRAINDICATED | ritonavir, cobicistat | venetoclax | — | — | ☐ |
-| DDI057 | MAJOR | efavirenz, etravirine | imatinib, dasatinib, nilotinib | — | — | ☐ |
-| DDI058 | MAJOR | ritonavir, cobicistat | bedaquiline | — | — | ☐ |
-| DDI059 | MODERATE | dolutegravir, bictegravir | sevelamer, calcium acetate, lanthanum | — | — | ☐ |
-| DDI060 | MODERATE | ritonavir, cobicistat | digoxin | — | — | ☐ |
+| Regla | Estado | Gravedad | Lado A (activa si alguno presente) | Lado B | Pares excluidos (los cubre otra regla) | Expansión de clase | Nota de aplicabilidad | Validado |
+|---|---|---|---|---|---|---|---|---|
+| DDI001 | Activa | CONTRAINDICATED | ritonavir, cobicistat | simvastatin, lovastatin | — | — | — | ☐ |
+| DDI002 | Activa | MAJOR | ritonavir, cobicistat | sildenafil, tadalafil, vardenafil | — | — | Con lopinavir/ritonavir, el sildenafilo a dosis de hipertensión arterial pulmonar (>20 mg) está CONTRAINDICADO (antigua DDI054, fusionada aquí): considerar un TAR sin IP/r o, si no es posible, bosentán o iloprost. La dosis no se verifica en la nota. | ☐ |
+| DDI003 | Activa | MODERATE | dolutegravir | metformin | — | — | — | ☐ |
+| DDI004 | Activa | MAJOR | efavirenz, nevirapine, rifampicin | warfarin, acenocoumarol, dabigatran, rivaroxaban, apixaban, edoxaban | efavirenz + warfarin; efavirenz + acenocoumarol | **Sí** | — | ☐ |
+| DDI005 | Activa | CONTRAINDICATED | ritonavir, cobicistat | midazolam, triazolam | — | — | La regla aplica a midazolam/triazolam ORALES; la vía no se verifica en la nota. | ☐ |
+| DDI006 | Activa | MAJOR | ritonavir | colchicine | — | — | — | ☐ |
+| DDI007 | **Retirada → DDI024** | MAJOR | efavirenz | methadone | — | — | — | ☐ |
+| DDI008 | Activa | MODERATE | tenofovir disoproxil fumarate | ibuprofen, naproxen, diclofenac, dexketoprofen, ketoprofen, indomethacin, meloxicam, piroxicam, aceclofenac, celecoxib, etoricoxib, gentamicin, amikacin, tobramycin | — | **Sí** | Los contrastes yodados no se detectan en la nota: valorar si hay exposición prevista. | ☐ |
+| DDI009 | Activa | MAJOR | saquinavir, lopinavir | clarithromycin, erythromycin, azithromycin, levofloxacin, moxifloxacin, ciprofloxacin, ofloxacin, norfloxacin, fluconazole, itraconazole, ketoconazole, voriconazole, posaconazole, haloperidol, olanzapine, risperidone, aripiprazole, ziprasidone, chlorpromazine, amisulpride, paliperidone, clozapine, amitriptyline, nortriptyline, imipramine, clomipramine, doxepin | — | **Sí** | Rilpivirina solo prolonga el QT a dosis supraterapéuticas: no se incluye como desencadenante. Revisar ECG y electrolitos. | ☐ |
+| DDI010 | Activa | MAJOR | cobicistat | fluticasone, budesonide | — | — | — | ☐ |
+| DDI011 | Activa | MODERATE | ritonavir, cobicistat | atorvastatin | — | — | — | ☐ |
+| DDI012 | Activa | MAJOR | efavirenz, etravirine | ethinylestradiol, levonorgestrel, desogestrel, norethisterone, drospirenone, norgestimate, gestodene, dienogest | — | **Sí** | — | ☐ |
+| DDI013 | Activa | MAJOR | ritonavir, cobicistat | tacrolimus, cyclosporine, sirolimus | — | — | — | ☐ |
+| DDI014 | Activa | MAJOR | dolutegravir, bictegravir, raltegravir | calcium carbonate, magnesium hydroxide, magnesium oxide, aluminum hydroxide, almagate, magaldrate | — | **Sí** | — | ☐ |
+| DDI015 | Activa | CONTRAINDICATED | ritonavir, cobicistat | rifampicin | — | — | — | ☐ |
+| DDI016 | Activa | CONTRAINDICATED | elvitegravir | rifampicin, rifabutin | — | — | — | ☐ |
+| DDI017 | Activa | MAJOR | atazanavir | omeprazole, esomeprazole, pantoprazole, lansoprazole, rabeprazole | — | **Sí** | — | ☐ |
+| DDI018 | Activa | CONTRAINDICATED | rilpivirine | omeprazole, esomeprazole, pantoprazole, lansoprazole, rabeprazole | — | **Sí** | Aplica a rilpivirina ORAL, no a la intramuscular. | ☐ |
+| DDI019 | Activa | CONTRAINDICATED | ritonavir, cobicistat | quetiapine, pimozide, lurasidone | — | — | — | ☐ |
+| DDI020 | Activa | CONTRAINDICATED | ritonavir | amiodarone, dronedarone | — | — | — | ☐ |
+| DDI021 | Activa | MAJOR | ritonavir, cobicistat | salmeterol | — | — | — | ☐ |
+| DDI022 | Activa | CONTRAINDICATED | efavirenz, nevirapine | voriconazole | — | — | — | ☐ |
+| DDI023 | Activa | MAJOR | ritonavir, cobicistat | carbamazepine, phenytoin, phenobarbital | — | — | — | ☐ |
+| DDI024 | Activa | MAJOR | efavirenz, nevirapine, rifampicin | methadone | — | **Sí** | — | ☐ |
+| DDI025 | Activa | MAJOR | dolutegravir | rifampicin | — | — | — | ☐ |
+| DDI026 | Activa | CONTRAINDICATED | bictegravir | rifampicin, rifabutin | — | — | — | ☐ |
+| DDI027 | Activa | MODERATE | ritonavir, cobicistat | clarithromycin | — | — | — | ☐ |
+| DDI028 | Activa | MODERATE | lopinavir | rosuvastatin | — | — | — | ☐ |
+| DDI029 | Activa | MAJOR | ritonavir, cobicistat | trazodone | — | — | — | ☐ |
+| DDI030 | Activa | MODERATE | ritonavir, cobicistat | amlodipine, felodipine, nifedipine | — | — | — | ☐ |
+| DDI031 | Activa | MAJOR | efavirenz, etravirine | warfarin, acenocoumarol | — | — | — | ☐ |
+| DDI032 | Activa | MAJOR | ritonavir, cobicistat | fentanyl, alfentanil, buprenorphine | — | — | La regla se refiere a vía parenteral/transdérmica; la vía no se verifica en la nota. | ☐ |
+| DDI033 | Activa | MODERATE | lopinavir | lamotrigine | — | — | — | ☐ |
+| DDI034 | Activa | MODERATE | efavirenz | clopidogrel | — | — | — | ☐ |
+| DDI035 | Activa | MAJOR | ritonavir, cobicistat | dexamethasone, methylprednisolone | — | — | La regla se refiere a uso sistémico prolongado; la duración no se verifica en la nota. | ☐ |
+| DDI036 | Activa | CONTRAINDICATED | darunavir, atazanavir, lopinavir, ritonavir, cobicistat, dolutegravir, raltegravir, bictegravir, elvitegravir, cabotegravir, efavirenz, rilpivirine, nevirapine, doravirine, etravirine | hypericum | — | **Sí** | — | ☐ |
+| DDI037 | Activa | MODERATE | ritonavir, cobicistat | alprazolam, clonazepam, diazepam | — | — | — | ☐ |
+| DDI038 | Activa | MAJOR | atazanavir | irinotecan | — | — | — | ☐ |
+| DDI039 | Activa | MAJOR | nevirapine | ethinylestradiol, levonorgestrel, desogestrel, norethisterone, drospirenone, norgestimate, gestodene, dienogest, etonogestrel | — | **Sí** | — | ☐ |
+| DDI040 | Activa | MAJOR | ritonavir, cobicistat | ibrutinib | — | — | — | ☐ |
+| DDI041 | Activa | MODERATE | atazanavir | tenofovir disoproxil fumarate | — | — | — | ☐ |
+| DDI042 | Activa | MAJOR | ritonavir, cobicistat | itraconazole, ketoconazole, voriconazole | — | — | — | ☐ |
+| DDI043 | Activa | MAJOR | raltegravir | rifampicin | — | — | — | ☐ |
+| DDI044 | Activa | MODERATE | cobicistat | ethinylestradiol, norgestimate | — | **Sí** | — | ☐ |
+| DDI045 | Activa | MODERATE | ritonavir, cobicistat | dabigatran | — | — | — | ☐ |
+| DDI046 | Activa | MAJOR | ritonavir, cobicistat | rivaroxaban, apixaban | — | — | — | ☐ |
+| DDI047 | Activa | CONTRAINDICATED | dolutegravir | dofetilide | — | — | — | ☐ |
+| DDI048 | Activa | MODERATE | efavirenz | etoposide, cyclophosphamide | — | — | — | ☐ |
+| DDI049 | Activa | CONTRAINDICATED | ritonavir, cobicistat | ergotamine, dihydroergotamine | — | — | — | ☐ |
+| DDI050 | Activa | MODERATE | efavirenz, nevirapine | sertraline, citalopram, escitalopram | — | — | — | ☐ |
+| DDI051 | Activa | CONTRAINDICATED | ritonavir, cobicistat | alfuzosin | — | — | — | ☐ |
+| DDI052 | Activa | MODERATE | ritonavir, cobicistat | rifabutin | — | — | — | ☐ |
+| DDI053 | Activa | MAJOR | tenofovir alafenamide | rifampicin, carbamazepine, hypericum | — | — | — | ☐ |
+| DDI054 | **Retirada → DDI002** | CONTRAINDICATED | lopinavir | sildenafil | — | — | Contraindicada solo a dosis de hipertensión arterial pulmonar (>20 mg); la dosis no se verifica. Para uso en disfunción eréctil véase DDI002. | ☐ |
+| DDI055 | Activa | MODERATE | dolutegravir | riluzole | — | — | — | ☐ |
+| DDI056 | Activa | CONTRAINDICATED | ritonavir, cobicistat | venetoclax | — | — | — | ☐ |
+| DDI057 | Activa | MAJOR | efavirenz, etravirine | imatinib, dasatinib, nilotinib | — | — | — | ☐ |
+| DDI058 | Activa | MAJOR | ritonavir, cobicistat | bedaquiline | — | — | — | ☐ |
+| DDI059 | Activa | MODERATE | dolutegravir, bictegravir | sevelamer, calcium acetate, lanthanum | — | — | — | ☐ |
+| DDI060 | Activa | MODERATE | ritonavir, cobicistat | digoxin | — | — | — | ☐ |
+| DDI061 | Activa | MODERATE | rilpivirine | famotidine, ranitidine, cimetidine | — | **Sí** | Aplica a rilpivirina ORAL, no a la intramuscular. | ☐ |
 
 ## 5. Principios activos añadidos al diccionario (`kb/drug_dictionary.json`)
 
@@ -199,7 +206,7 @@ Alias añadido: Rezolsta ← "prezcobix".
 
 ## 7. Cómo revisar y cerrar
 
-1. Marque ☐ → ☑ en las tablas y resuelva D1–D12 (basta con una línea de decisión por punto).
+1. Marque ☐ → ☑ en las tablas y resuelva las decisiones abiertas (D2, D4–D9, D11, D12) (basta con una línea de decisión por punto).
 2. Los cambios se aplican editando `kb/dev/ddi_participants.js` y `kb/dev/fase0_dictionary_additions.js` y ejecutando ambos scripts. Así la KB se regenera de forma reproducible y nunca se edita a mano.
 3. `npm test` verifica que cada participante sigue resolviéndose y activando su regla.
 4. Cuando todo esté validado, sustituya `review_status: "pending_clinical_validation"` por `"clinically_validated"` con fecha y revisor, y registre la validación en `kb/CHANGELOG.md`.

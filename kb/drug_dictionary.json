@@ -1694,11 +1694,7 @@
       "drug_class": "Anticoagulant / Vitamin K Antagonist",
       "variants": [
         "warfarina",
-        "acenocoumarol",
-        "acenocumarol",
-        "sintrom",
-        "coumadin",
-        "acenocumarolo"
+        "coumadin"
       ]
     },
     {
@@ -3182,6 +3178,16 @@
       "drug_class": "Antiretroviral / CCR5 Antagonist",
       "variants": [
         "celsentri"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "acenocoumarol",
+      "drug_class": "Anticoagulant / Vitamin K Antagonist",
+      "variants": [
+        "acenocumarol",
+        "acenocumarolo",
+        "sintrom"
       ],
       "review_status": "pending_clinical_validation"
     }

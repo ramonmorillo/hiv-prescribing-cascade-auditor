@@ -56,26 +56,76 @@ function run() {
         !!r.applicability_note_es === !!r.applicability_note_en);
     });
 
-    /* 2. Behavioural: every participant activates its rule end to end. Each
-       side is exercised against the first member of the other side. */
-    rules.forEach((r) => {
+    /* 2. Behavioural: every participant of every ACTIVE rule activates it end
+       to end, paired with the first counterpart that is not an excluded pair
+       (excluded pairs belong to a more specific rule). */
+    const active = rules.filter((r) => r.status !== 'merged');
+    const excluded = (r, x, y) => (r.excluded_pairs || []).some(([p, q]) =>
+      (N(p) === N(x) && N(q) === N(y)) || (N(p) === N(y) && N(q) === N(x)));
+    active.forEach((r) => {
       if (!Array.isArray(r.participants_a) || !Array.isArray(r.participants_b)) return;
-      const firstA = dict[N(r.participants_a[0])], firstB = dict[N(r.participants_b[0])];
-      if (!firstA || !firstB) return;
+      const counterpart = (name, side) => side.find((o) => o !== name && !excluded(r, name, o));
       r.participants_a.forEach((name) => {
-        const e = dict[N(name)]; if (!e) return;
-        assert(`[${track}] ${r.id} fires for ${name} (ES) + ${firstB.canonical}`,
-          fires(kb, note(spanishForm(e), spanishForm(firstB)), r.id));
+        const e = dict[N(name)], other = dict[N(counterpart(name, r.participants_b) || '')]; if (!e || !other) return;
+        assert(`[${track}] ${r.id} fires for ${name} (ES) + ${other.canonical}`,
+          fires(kb, note(spanishForm(e), spanishForm(other)), r.id));
       });
       r.participants_b.forEach((name) => {
-        const e = dict[N(name)]; if (!e) return;
-        assert(`[${track}] ${r.id} fires for ${firstA.canonical} + ${name} (ES)`,
-          fires(kb, note(spanishForm(firstA), spanishForm(e)), r.id));
+        const e = dict[N(name)], other = dict[N(counterpart(name, r.participants_a) || '')]; if (!e || !other) return;
+        assert(`[${track}] ${r.id} fires for ${other.canonical} + ${name} (ES)`,
+          fires(kb, note(spanishForm(other), spanishForm(e)), r.id));
       });
+      const a0 = r.participants_a[0], b0 = counterpart(a0, r.participants_b);
       assert(`[${track}] ${r.id} fires for English canonical names`,
-        fires(kb, 'Current medication: ' + firstA.canonical + ' once daily. ' + firstB.canonical + ' once daily.', r.id, 'en'));
+        fires(kb, 'Current medication: ' + a0 + ' once daily. ' + b0 + ' once daily.', r.id, 'en'));
+      (r.excluded_pairs || []).forEach(([x, y]) => {
+        assert(`[${track}] ${r.id} does NOT fire for its excluded pair ${x} + ${y}`,
+          !fires(kb, note(spanishForm(dict[N(x)]), spanishForm(dict[N(y)])), r.id));
+      });
+    });
+
+    /* 2b. D3 — no medicine pair activates two active rules. */
+    const owners = new Map();
+    active.forEach((r) => r.participants_a.forEach((x) => r.participants_b.forEach((y) => {
+      if (x === y || excluded(r, x, y)) return;
+      const key = [N(x), N(y)].sort().join(' + ');
+      owners.set(key, (owners.get(key) || []).concat(r.id));
+    })));
+    const shared = [...owners].filter(([, ids]) => new Set(ids).size > 1).map(([k, ids]) => k + ' (' + ids.join(', ') + ')');
+    assert(`[${track}] no medicine pair activates two interaction rules: ${shared.join('; ')}`, shared.length === 0);
+
+    /* 2c. Retired duplicates are traceable and never fire. */
+    rules.filter((r) => r.status === 'merged').forEach((r) => {
+      const target = active.find((x) => x.id === r.merged_into);
+      assert(`[${track}] retired ${r.id} points to an active rule (${r.merged_into}) with a bilingual reason`,
+        !!target && !!r.merge_reason_es && !!r.merge_reason_en);
+      assert(`[${track}] retired ${r.id} never fires`,
+        !fires(kb, note(spanishForm(dict[N(r.participants_a[0])]), spanishForm(dict[N(r.participants_b[0])])), r.id));
     });
   });
+
+  /* 2d. Reviewer decisions D1, D3, D10 (2026-11-13). */
+  {
+    const kb = loadKB('prod');
+    const ids = (text) => CE.buildCaseModel(text, kb, { lang: 'es' }).currentInteractions.map((i) => i.id + '/' + i.severity);
+    const has = (text, expected) => JSON.stringify(ids(text).sort()) === JSON.stringify(expected.slice().sort());
+    assert('D1: rilpivirine + PPI → only DDI018 CONTRAINDICATED', has('Odefsey. Omeprazol 20 mg.', ['DDI018/CONTRAINDICATED']));
+    assert('D1: rilpivirine + H2 blocker → only DDI061 MODERATE (separate 12 h)',
+      has('Rilpivirina 25 mg. Famotidina 20 mg.', ['DDI061/MODERATE']) &&
+      /12 h/.test(kb.ddiWatchlist.interactions.find((r) => r.id === 'DDI061').management_es));
+    assert('D3: efavirenz + methadone → one alert (DDI024)', has('Efavirenz 600 mg. Metadona 80 mg.', ['DDI024/MAJOR']));
+    assert('D3: Kaletra + sildenafil → one alert (DDI002) carrying the PAH contraindication note',
+      has('Kaletra. Sildenafilo 20 mg/8h.', ['DDI002/MAJOR']) &&
+      /CONTRAINDICADO/.test(kb.ddiWatchlist.interactions.find((r) => r.id === 'DDI002').applicability_note_es));
+    assert('D3: Kaletra + quetiapine → DDI019 only (QT rule no longer duplicates it)', has('Kaletra. Quetiapina 100 mg.', ['DDI019/CONTRAINDICATED']));
+    assert('D3: nevirapine + oral contraceptive → DDI039 only', has('Nevirapina 200 mg. Etinilestradiol/levonorgestrel.', ['DDI039/MAJOR']));
+    assert('D3: efavirenz + warfarin → DDI031 only', has('Efavirenz 600 mg. Warfarina 5 mg.', ['DDI031/MAJOR']));
+    assert('D3: dolutegravir + calcium acetate → DDI059 only', has('Dolutegravir 50 mg. Acetato cálcico 500 mg.', ['DDI059/MODERATE']));
+    const sintrom = CE.buildCaseModel('Sintrom 4 mg según INR.', kb, { lang: 'es' }).activeMedications.map((m) => m.normalized_name);
+    assert('D10: Sintrom resolves to acenocoumarol, never to warfarin', sintrom.includes('acenocoumarol') && !sintrom.includes('warfarin'));
+    assert('D10: efavirenz + acenocoumarol → DDI031; nevirapine + acenocoumarol → DDI004',
+      has('Efavirenz 600 mg. Acenocumarol 4 mg.', ['DDI031/MAJOR']) && has('Nevirapina 200 mg. Acenocumarol 4 mg.', ['DDI004/MAJOR']));
+  }
 
   /* 3. Fixed-dose combinations must expose every ingredient — a regimen that
      loses its booster silently loses every booster interaction. */
@@ -112,8 +162,9 @@ function run() {
     ['Darunavir/ritonavir. Quetiapina 100 mg.', 'DDI019'],
     ['Odefsey. Omeprazol 20 mg por pirosis.', 'DDI018'],
     ['Edurant 25 mg. Pantoprazol 40 mg.', 'DDI018'],
+    ['Rilpivirina 25 mg. Ranitidina 150 mg.', 'DDI061'],
     ['Norvir 100 mg. Sildenafilo 50 mg a demanda.', 'DDI002'],
-    ['Efavirenz 600 mg. Metadona 80 mg/día.', 'DDI007'],
+    ['Efavirenz 600 mg. Metadona 80 mg/día.', 'DDI024'],
     ['Kaletra. Pimozida.', 'DDI019'],
     ['Dolutegravir 50 mg. Dofetilida.', 'DDI047'],
     ['Biktarvy. Hipérico (hierba de San Juan) como suplemento.', 'DDI036'],
