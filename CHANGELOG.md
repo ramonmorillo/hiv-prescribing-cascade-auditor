@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — Fase 0: seguridad previa a la publicación
+
+Impacto clínico: **sí** (motor y base de conocimiento). Todos los cambios de KB están pendientes de validación clínica (`docs/validation/fase0-ddi-participants.md`).
+
+- **Interacciones que nunca se disparaban.** 27 de 60 reglas (8 contraindicadas) eran inalcanzables porque sus participantes se deducían del texto libre (nombres de clase o fármacos ausentes del diccionario). Ahora cada regla declara participantes explícitos, y una prueba exige que cada uno se resuelva y active su regla en español e inglés.
+- **Pautas potenciadas.** Genvoya y Stribild ya no pierden cobicistat; Odefsey, Eviplera, Atripla, Delstrigo, Prezcobix, «darunavir/ritonavir», «DRV/r» y «ATV/r» se expanden a todos sus principios activos. 68 principios activos nuevos con DCI española y marcas (incluido acenocumarol).
+- **Las interacciones calculadas no se mostraban.** Ahora aparecen en el paso 4 (antes que las cascadas), en el informe del paso 6, en el texto clínico y en el CSV (columna `drug_interactions_json`; esquema de informe v3), ordenadas por gravedad y con su nota de aplicabilidad.
+- **Cobertura incompleta.** El texto con pauta posológica que no se reconoce como medicamento se señala en los pasos 2, 4 y 5 y en las limitaciones del informe. Ninguna pantalla muestra un resultado verde ni «no se requiere plan de actuación» mientras haya términos sin reconocer, y «sin medicamentos identificados» pasa a ser un aviso.
+- **HAL-01.** Se reconocen «dejó de tomar X», «X: ya no lo toma», «se retiró X», «sin X actualmente», «X previo», «stopped X», etc. La suspensión se aplica solo al fármaco al que se refiere: «se suspendió atorvastatina y se inició rosuvastatina» ya no desactiva la rosuvastatina.
+- **HAL-08.** `methodology/pipeline_spec_v1.0.md` describe el pipeline determinista real; se retira la arquitectura ficticia de «5 agentes» y las limitaciones sobre funciones inexistentes (IndexedDB, importación CSV).
+- **Decisiones del revisor clínico (2026-11-13).** D1: rilpivirina + anti-H2 sale de DDI018 (que queda solo para IBP, contraindicada) y pasa a la nueva DDI061 (moderada, «separar la toma 12 h»). D3: se eliminan las reglas duplicadas; DDI007 y DDI054 se retiran y se quitan los pares duplicados de DDI004, DDI009, DDI012 y DDI014; una prueba impide que un par de medicamentos active dos reglas. D10: acenocumarol (Sintrom) es un medicamento propio y ya no se muestra como warfarina.
+- Pruebas nuevas: `kb-ddi-coverage`, `ddi-display` (renderiza el `app.js` real), `coverage-warning`, `discontinuation-scope`. No cambia ninguna salida del caso demo ni de la nota de ejemplo, comparadas con el commit previo.
+
 ## Unreleased — extracción unificada de problemas clínicos y motor de cascadas coherente
 
 - Una única lista de problemas (`CaseModel.activeProblems`) alimenta la revisión del paso 2, el motor de cascadas, el puente de síntomas, las alertas y todos los informes. Desaparecen las etiquetas de síntomas no editables.
