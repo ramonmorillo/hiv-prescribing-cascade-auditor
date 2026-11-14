@@ -27,7 +27,7 @@ Este documento separa lo que se ha cambiado (dato), lo que se ha interpretado al
 
 Cada punto indica qué dato lo origina y qué cambia según la decisión.
 
-- [x] **D1 · RESUELTA (revisor, 2026-11-13): separar la toma 12 h.** DDI018 queda solo para IBP (CONTRAINDICADA). Nueva regla **DDI061** rilpivirina oral + anti-H2 (famotidina, ranitidina, cimetidina), **MODERATE**, manejo: «Separar la toma 12 h entre el anti-H2 y la rilpivirina oral». *Interpretación a confirmar:* la gravedad MODERATE la he asignado yo (la decisión indica solo el manejo); el texto anterior «≥12 h antes o ≥4 h después» se ha sustituido por la pauta indicada por el revisor.
+- [x] **D1 · RESUELTA (revisor, 2026-11-13): separar la toma 12 h.** DDI018 queda solo para IBP (CONTRAINDICADA). Nueva regla **DDI061** rilpivirina oral + anti-H2 (famotidina, ranitidina, cimetidina), **MODERATE**, manejo: «Separar la toma 12 h entre el anti-H2 y la rilpivirina oral». **Confirmado por el revisor (2026-11-14):** gravedad MODERATE y pauta única de 12 h (se retira la alternativa «≥4 h después»).
 - [ ] **D2 · Rekambys (rilpivirina IM) se resuelve como `rilpivirine`.** DDI018 es una interacción de absorción oral y se dispararía con la forma intramuscular (la nota de aplicabilidad lo advierte). *Propuesta:* canónico propio `rilpivirine (long-acting injectable)` excluido de DDI018. Lo mismo aplica a "cabotegravir/rilpivirina IM", ya existente.
 - [x] **D3 · RESUELTA (revisor, 2026-11-13): eliminar las reglas duplicadas.** Una prueba exige ahora que ningún par de medicamentos active dos reglas. Criterio: una regla totalmente redundante se **retira** (se conserva con `status: "merged"` y `merged_into` por trazabilidad, igual que las cascadas fusionadas, y no se ejecuta); en un solapamiento parcial **gana la regla más específica** y el par duplicado se quita de la general.
   - DDI007 → retirada en DDI024 (mismo par, gravedad y manejo).
@@ -35,7 +35,7 @@ Cada punto indica qué dato lo origina y qué cambia según la decisión.
   - DDI004: excluye efavirenz + warfarina/acenocumarol (lo cubre DDI031).
   - DDI012: sin nevirapina (lo cubre DDI039).
   - DDI009: sin quetiapina ni pimozida (lo cubre DDI019).
-  - DDI014: sin acetato cálcico, que es un quelante del fósforo (lo cubre DDI059, MODERATE). *A confirmar:* con este criterio, bictegravir/dolutegravir + acetato cálcico pasa a mostrarse como MODERATE en vez de MAJOR.
+  - DDI014: sin acetato cálcico, que es un quelante del fósforo (lo cubre DDI059, MODERATE). **Confirmado por el revisor (2026-11-14):** bictegravir/dolutegravir + acetato cálcico se muestra como MODERATE (DDI059).
 - [ ] **D4 · DDI009 ("cualquier ARV que prolonga el QT"):** el texto incluye "rilpivirina a dosis altas", indetectable en la nota; se ha **excluido** rilpivirina para no alertar con la dosis estándar. Se han enumerado macrólidos, fluoroquinolonas, azoles, antipsicóticos y tricíclicos.
 - [ ] **D5 · DDI024 nombra "NNRTIs":** se ha restringido a efavirenz y nevirapina (más rifampicina, nombrada en la regla). Etravirina, rilpivirina y doravirina quedan fuera.
 - [ ] **D6 · DDI036 (hipérico) "cualquier pauta ARV (IP/r, INSTI, INNTI)":** enumerados IP, potenciadores, INSTI e INNTI. Quedan fuera los INTI (cubiertos por DDI053 para TAF), lenacapavir, maraviroc y fostemsavir.
