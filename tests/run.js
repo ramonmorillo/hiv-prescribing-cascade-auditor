@@ -15,8 +15,10 @@ const suites = [
   './legacy-nlp.test.js',
   './fixed-dose-classification.test.js',
   './kb-audit.test.js',
+  './kb-ddi-coverage.test.js',
   './kb-validation-presentation.test.js',
   './medication-status-interactions.test.js',
+  './discontinuation-scope.test.js',
   './multi-candidate-cascades.test.js',
   './final-adjustments.test.js',
   './static-i18n.test.js',
@@ -30,6 +32,8 @@ const suites = [
   './reviewed-input-edge-cases.test.js',
   './report-contract.test.js',
   './report-wiring.test.js',
+  './ddi-display.test.js',
+  './coverage-warning.test.js',
   './site-redesign.test.js',
   './unified-problem-extraction.test.js'
 ];

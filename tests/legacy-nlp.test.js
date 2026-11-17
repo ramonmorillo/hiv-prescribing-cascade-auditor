@@ -29,7 +29,11 @@ function run() {
     h2m && h2m.confidence === 'high' && ['dict', 'alias'].indexOf(h2m.match_type) !== -1);
 
   const h3 = resolve('Regimen actual: atazanavir / ritonavir.').map((m) => m.canonical);
-  assert('H3: slash combination resolved', h3.includes('atazanavir/ritonavir'));
+  /* Fase 0: a slash composite expands to its ingredients (same contract as
+     H1/Kaletra). The former expectation — a single "atazanavir/ritonavir"
+     canonical — hid ritonavir from every interaction rule. */
+  assert('H3: slash combination resolved to both ingredients',
+    h3.includes('atazanavir') && h3.includes('ritonavir') && !h3.some((c) => c.indexOf('/') !== -1));
 
   const h4 = resolve('Paciente con oxibutinína y estreñimiento.').map((m) => m.canonical);
   assert('H4: orthographic variant (accent) resolves to oxybutynin', h4.includes('oxybutynin'));

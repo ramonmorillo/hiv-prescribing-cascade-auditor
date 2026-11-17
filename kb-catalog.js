@@ -90,6 +90,7 @@
     var vih = (kb.vihModifiers && kb.vihModifiers.art_related_cascades) || [];
     var activeCore = core.filter(function (e) { return e && e.status !== 'merged'; }).length;
     var activeVih = vih.filter(function (e) { return e && e.status !== 'merged'; }).length;
+    var activeDdi = ((kb.ddiWatchlist && kb.ddiWatchlist.interactions) || []).filter(function (e) { return e && e.status !== 'merged'; }).length;
     function file(key, collection, active) {
       var data = kb[key];
       return {
@@ -102,7 +103,7 @@
     return [
       file('coreCascades', 'cascades', kb.coreCascades ? activeCore : undefined),
       file('vihModifiers', 'art_related_cascades', kb.vihModifiers ? activeVih : undefined),
-      file('ddiWatchlist', 'interactions'),
+      file('ddiWatchlist', 'interactions', kb.ddiWatchlist ? activeDdi : undefined),
       file('symptomDictionary', 'symptoms'),
       file('clinicalProblems', 'problems'),
       file('clinicalModifiers', 'clinical_modifiers'),

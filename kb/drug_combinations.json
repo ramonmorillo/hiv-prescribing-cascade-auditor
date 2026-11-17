@@ -1,8 +1,9 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Fixed-dose combination products. Maps a brand/trade name to its individual active ingredients so the cascade-detection and classification pipeline can reason about each ingredient (drug class, cascade membership) while preserving traceability back to the prescribed brand (e.g. 'Biktarvy → bictegravir / emtricitabine / tenofovir alafenamide'). Track-independent, like drug_dictionary.json: lives at kb/ root, not inside a PROD/DEV subfolder.",
-  "last_updated": "2026-09-21",
+  "last_updated": "2026-11-13",
   "changelog": [
+    "1.3.0 (2026-11-13): Fase 0 — added Genvoya, Stribild, Odefsey, Eviplera, Atripla, Delstrigo and the co-administered DRV/r and ATV/r units; Prezcobix as alias of Rezolsta; removed the single-ingredient aliases that collapsed Genvoya/Stribild to elvitegravir (losing cobicistat) and Odefsey to rilpivirine. Pending clinical validation.",
     "1.2.0 (2026-09-21): added Symtuza, Rezolsta, Evotaz, and Kaletra as fixed-dose combinations and removed their single-drug alias mappings so every active ingredient is preserved.",
     "1.1.0 (2026-09-14): added Dovato, Triumeq, Juluca, Kivexa/Epzicom, Truvada, Descovy — these brands were previously miscatalogued in drug_dictionary.json as single-ingredient variants (Dovato/Triumeq/Juluca collapsed to dolutegravir only; Kivexa/Epzicom collapsed to abacavir only) or in app.js MANUAL_ALIASES with a factually incomplete/incorrect single ingredient (Truvada and Descovy were both mapped to tenofovir disoproxil fumarate alone; Descovy actually contains tenofovir ALAFENAMIDE, not disoproxil fumarate). See kb/CHANGELOG.md for the full audit rationale."
   ],
@@ -30,7 +31,8 @@
       "aliases": [
         "rezolsta",
         "drv/c",
-        "darunavir/cobicistat"
+        "darunavir/cobicistat",
+        "prezcobix"
       ],
       "activeIngredients": [
         "darunavir",
@@ -201,6 +203,155 @@
       "therapeuticClass_es": "Corticoide inhalado + broncodilatador de acción prolongada (ICS/LABA)",
       "therapeuticClass_en": "Inhaled corticosteroid + long-acting bronchodilator (ICS/LABA)",
       "hivDrug": false
+    },
+    {
+      "brand": "Genvoya",
+      "aliases": [
+        "genvoya",
+        "evg/c/ftc/taf",
+        "elvitegravir/cobicistat/emtricitabina/tenofovir alafenamida",
+        "elvitegravir/cobicistat/emtricitabine/tenofovir alafenamide"
+      ],
+      "activeIngredients": [
+        "elvitegravir",
+        "cobicistat",
+        "emtricitabine",
+        "tenofovir alafenamide"
+      ],
+      "therapeuticClass_es": "INSTI potenciado + pareja de INTI",
+      "therapeuticClass_en": "Boosted INSTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Stribild",
+      "aliases": [
+        "stribild",
+        "evg/c/ftc/tdf",
+        "elvitegravir/cobicistat/emtricitabina/tenofovir disoproxilo",
+        "elvitegravir/cobicistat/emtricitabine/tenofovir disoproxil fumarate"
+      ],
+      "activeIngredients": [
+        "elvitegravir",
+        "cobicistat",
+        "emtricitabine",
+        "tenofovir disoproxil fumarate"
+      ],
+      "therapeuticClass_es": "INSTI potenciado + pareja de INTI",
+      "therapeuticClass_en": "Boosted INSTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Odefsey",
+      "aliases": [
+        "odefsey",
+        "rpv/ftc/taf",
+        "rilpivirina/emtricitabina/tenofovir alafenamida",
+        "rilpivirine/emtricitabine/tenofovir alafenamide"
+      ],
+      "activeIngredients": [
+        "rilpivirine",
+        "emtricitabine",
+        "tenofovir alafenamide"
+      ],
+      "therapeuticClass_es": "INNTI + pareja de INTI",
+      "therapeuticClass_en": "NNRTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Eviplera",
+      "aliases": [
+        "eviplera",
+        "complera",
+        "rpv/ftc/tdf",
+        "rilpivirina/emtricitabina/tenofovir disoproxilo",
+        "rilpivirine/emtricitabine/tenofovir disoproxil fumarate"
+      ],
+      "activeIngredients": [
+        "rilpivirine",
+        "emtricitabine",
+        "tenofovir disoproxil fumarate"
+      ],
+      "therapeuticClass_es": "INNTI + pareja de INTI",
+      "therapeuticClass_en": "NNRTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Atripla",
+      "aliases": [
+        "atripla",
+        "efv/ftc/tdf",
+        "efavirenz/emtricitabina/tenofovir disoproxilo",
+        "efavirenz/emtricitabine/tenofovir disoproxil fumarate"
+      ],
+      "activeIngredients": [
+        "efavirenz",
+        "emtricitabine",
+        "tenofovir disoproxil fumarate"
+      ],
+      "therapeuticClass_es": "INNTI + pareja de INTI",
+      "therapeuticClass_en": "NNRTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Delstrigo",
+      "aliases": [
+        "delstrigo",
+        "dor/3tc/tdf",
+        "doravirina/lamivudina/tenofovir disoproxilo",
+        "doravirine/lamivudine/tenofovir disoproxil fumarate"
+      ],
+      "activeIngredients": [
+        "doravirine",
+        "lamivudine",
+        "tenofovir disoproxil fumarate"
+      ],
+      "therapeuticClass_es": "INNTI + pareja de INTI",
+      "therapeuticClass_en": "NNRTI + NRTI backbone",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Darunavir + ritonavir",
+      "aliases": [
+        "drv/r",
+        "drv/rtv",
+        "darunavir/ritonavir",
+        "darunavir/rtv",
+        "darunavir potenciado con ritonavir"
+      ],
+      "activeIngredients": [
+        "darunavir",
+        "ritonavir"
+      ],
+      "coadministration": true,
+      "therapeuticClass_es": "IP potenciado",
+      "therapeuticClass_en": "Boosted PI",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "brand": "Atazanavir + ritonavir",
+      "aliases": [
+        "atv/r",
+        "atv/rtv",
+        "atazanavir/ritonavir",
+        "atazanavir/rtv",
+        "atazanavir potenciado con ritonavir"
+      ],
+      "activeIngredients": [
+        "atazanavir",
+        "ritonavir"
+      ],
+      "coadministration": true,
+      "therapeuticClass_es": "IP potenciado",
+      "therapeuticClass_en": "Boosted PI",
+      "hivDrug": true,
+      "review_status": "pending_clinical_validation"
     }
   ]
 }

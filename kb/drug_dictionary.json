@@ -1,7 +1,7 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Drug name normalization dictionary for prescribing cascade detection. Maps spelling variants, Spanish INNs, common brand names, and abbreviations to a canonical English generic name.",
-  "last_updated": "2026-06-16",
+  "last_updated": "2026-11-13",
   "entries": [
     {
       "canonical": "amlodipine",
@@ -1694,11 +1694,7 @@
       "drug_class": "Anticoagulant / Vitamin K Antagonist",
       "variants": [
         "warfarina",
-        "acenocoumarol",
-        "acenocumarol",
-        "sintrom",
-        "coumadin",
-        "acenocumarolo"
+        "coumadin"
       ]
     },
     {
@@ -2056,7 +2052,9 @@
         "tenofovir disoproxil fumarato",
         "tenofovir disoproxil",
         "tdf",
-        "viread"
+        "viread",
+        "tenofovir disoproxilo",
+        "tenofovir disoproxilo fumarato"
       ]
     },
     {
@@ -2189,7 +2187,7 @@
         "rilpivirine",
         "rpv",
         "edurant",
-        "odefsey"
+        "rekambys"
       ]
     },
     {
@@ -2226,9 +2224,7 @@
       "drug_class": "Antiretroviral / INSTI",
       "variants": [
         "elvitegravir",
-        "evg",
-        "genvoya",
-        "stribild"
+        "evg"
       ]
     },
     {
@@ -2607,6 +2603,593 @@
         "almagato",
         "maalox"
       ]
+    },
+    {
+      "canonical": "sildenafil",
+      "drug_class": "PDE5 Inhibitor",
+      "variants": [
+        "sildenafilo",
+        "viagra",
+        "revatio"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "tadalafil",
+      "drug_class": "PDE5 Inhibitor",
+      "variants": [
+        "tadalafilo",
+        "cialis",
+        "adcirca"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "vardenafil",
+      "drug_class": "PDE5 Inhibitor",
+      "variants": [
+        "vardenafilo",
+        "levitra"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "methadone",
+      "drug_class": "Opioid",
+      "variants": [
+        "metadona",
+        "metasedin"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "alfentanil",
+      "drug_class": "Opioid",
+      "variants": [
+        "alfentanilo",
+        "limifen"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "aceclofenac",
+      "drug_class": "NSAID",
+      "variants": [
+        "aceclofenaco",
+        "airtal"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dexketoprofen",
+      "drug_class": "NSAID",
+      "variants": [
+        "dexketoprofeno",
+        "enantyum"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ketoprofen",
+      "drug_class": "NSAID",
+      "variants": [
+        "ketoprofeno"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "indomethacin",
+      "drug_class": "NSAID",
+      "variants": [
+        "indometacina",
+        "indomethacine"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "piroxicam",
+      "drug_class": "NSAID",
+      "variants": [
+        "feldene"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "etoricoxib",
+      "drug_class": "NSAID / COX-2 Inhibitor",
+      "variants": [
+        "arcoxia"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "amikacin",
+      "drug_class": "Antibiotic / Aminoglycoside",
+      "variants": [
+        "amikacina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "gentamicin",
+      "drug_class": "Antibiotic / Aminoglycoside",
+      "variants": [
+        "gentamicina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "tobramycin",
+      "drug_class": "Antibiotic / Aminoglycoside",
+      "variants": [
+        "tobramicina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "erythromycin",
+      "drug_class": "Antibiotic / Macrolide",
+      "variants": [
+        "eritromicina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "moxifloxacin",
+      "drug_class": "Antibiotic / Fluoroquinolone",
+      "variants": [
+        "moxifloxacino"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "norfloxacin",
+      "drug_class": "Antibiotic / Fluoroquinolone",
+      "variants": [
+        "norfloxacino"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ofloxacin",
+      "drug_class": "Antibiotic / Fluoroquinolone",
+      "variants": [
+        "ofloxacino"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "itraconazole",
+      "drug_class": "Antifungal / Azole",
+      "variants": [
+        "itraconazol"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ketoconazole",
+      "drug_class": "Antifungal / Azole",
+      "variants": [
+        "ketoconazol"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "posaconazole",
+      "drug_class": "Antifungal / Azole",
+      "variants": [
+        "posaconazol",
+        "noxafil"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "voriconazole",
+      "drug_class": "Antifungal / Azole",
+      "variants": [
+        "voriconazol",
+        "vfend"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "chlorpromazine",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "clorpromazina",
+        "largactil"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "clozapine",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "clozapina",
+        "leponex"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "amisulpride",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "amisulprida",
+        "solian"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "paliperidone",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "paliperidona",
+        "invega",
+        "xeplion"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ziprasidone",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "ziprasidona",
+        "zeldox"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "pimozide",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "pimozida",
+        "orap"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "lurasidone",
+      "drug_class": "Antipsychotic",
+      "variants": [
+        "lurasidona",
+        "latuda"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "doxepin",
+      "drug_class": "Tricyclic Antidepressant",
+      "variants": [
+        "doxepina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "imipramine",
+      "drug_class": "Tricyclic Antidepressant",
+      "variants": [
+        "imipramina",
+        "tofranil"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "nortriptyline",
+      "drug_class": "Tricyclic Antidepressant",
+      "variants": [
+        "nortriptilina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "phenobarbital",
+      "drug_class": "Antiepileptic / Barbiturate",
+      "variants": [
+        "fenobarbital",
+        "phenobarbitone"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dronedarone",
+      "drug_class": "Antiarrhythmic",
+      "variants": [
+        "dronedarona",
+        "multaq"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dofetilide",
+      "drug_class": "Antiarrhythmic",
+      "variants": [
+        "dofetilida"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "felodipine",
+      "drug_class": "Calcium Channel Blocker",
+      "variants": [
+        "felodipino",
+        "plendil"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ergotamine",
+      "drug_class": "Ergot Alkaloid / Antimigraine",
+      "variants": [
+        "ergotamina",
+        "cafergot"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dihydroergotamine",
+      "drug_class": "Ergot Alkaloid / Antimigraine",
+      "variants": [
+        "dihidroergotamina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ethinylestradiol",
+      "drug_class": "Hormonal Contraceptive / Estrogen",
+      "variants": [
+        "etinilestradiol",
+        "ethinyl estradiol"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "levonorgestrel",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "desogestrel",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [
+        "cerazet"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "norethisterone",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [
+        "noretisterona",
+        "norethindrone"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "drospirenone",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [
+        "drospirenona"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "norgestimate",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [
+        "norgestimato"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "gestodene",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [
+        "gestodeno"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dienogest",
+      "drug_class": "Hormonal Contraceptive / Progestogen",
+      "variants": [],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "etonogestrel",
+      "drug_class": "Hormonal Contraceptive / Progestogen Implant",
+      "variants": [
+        "implanon",
+        "nexplanon"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "calcium acetate",
+      "drug_class": "Phosphate Binder",
+      "variants": [
+        "acetato calcico",
+        "acetato de calcio",
+        "royen"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "sevelamer",
+      "drug_class": "Phosphate Binder",
+      "variants": [
+        "sevelamero",
+        "renagel",
+        "renvela"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "lanthanum",
+      "drug_class": "Phosphate Binder",
+      "variants": [
+        "lantano",
+        "carbonato de lantano",
+        "lanthanum carbonate",
+        "fosrenol"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "magnesium oxide",
+      "drug_class": "Antacid / Mineral Supplement",
+      "variants": [
+        "oxido de magnesio"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "almagate",
+      "drug_class": "Antacid",
+      "variants": [
+        "almagato",
+        "almax"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "magaldrate",
+      "drug_class": "Antacid",
+      "variants": [
+        "magaldrato"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "cimetidine",
+      "drug_class": "H2 Blocker",
+      "variants": [
+        "cimetidina"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "hypericum",
+      "drug_class": "Herbal / Enzyme Inducer",
+      "variants": [
+        "hiperico",
+        "hierba de san juan",
+        "st johns wort",
+        "st. johns wort",
+        "hypericum perforatum"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "ibrutinib",
+      "drug_class": "Antineoplastic / Kinase Inhibitor",
+      "variants": [
+        "imbruvica"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "imatinib",
+      "drug_class": "Antineoplastic / Kinase Inhibitor",
+      "variants": [
+        "glivec"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "dasatinib",
+      "drug_class": "Antineoplastic / Kinase Inhibitor",
+      "variants": [
+        "sprycel"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "nilotinib",
+      "drug_class": "Antineoplastic / Kinase Inhibitor",
+      "variants": [
+        "tasigna"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "venetoclax",
+      "drug_class": "Antineoplastic / BCL-2 Inhibitor",
+      "variants": [
+        "venclyxto"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "irinotecan",
+      "drug_class": "Antineoplastic / Topoisomerase Inhibitor",
+      "variants": [
+        "irinotecano",
+        "campto"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "etoposide",
+      "drug_class": "Antineoplastic / Topoisomerase Inhibitor",
+      "variants": [
+        "etoposido",
+        "vepesid"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "cyclophosphamide",
+      "drug_class": "Antineoplastic / Alkylating Agent",
+      "variants": [
+        "ciclofosfamida",
+        "genoxal"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "bedaquiline",
+      "drug_class": "Antitubercular",
+      "variants": [
+        "bedaquilina",
+        "sirturo"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "riluzole",
+      "drug_class": "Neuroprotective / ALS",
+      "variants": [
+        "riluzol",
+        "rilutek"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "saquinavir",
+      "drug_class": "Antiretroviral / PI",
+      "variants": [
+        "invirase"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "maraviroc",
+      "drug_class": "Antiretroviral / CCR5 Antagonist",
+      "variants": [
+        "celsentri"
+      ],
+      "review_status": "pending_clinical_validation"
+    },
+    {
+      "canonical": "acenocoumarol",
+      "drug_class": "Anticoagulant / Vitamin K Antagonist",
+      "variants": [
+        "acenocumarol",
+        "acenocumarolo",
+        "sintrom"
+      ],
+      "review_status": "pending_clinical_validation"
     }
   ],
   "pharmacological_properties_note": "pharmacological_properties describe clinically relevant effects independent of the therapeutic class label (e.g. 'sedative' for trazodone, classified as an antidepressant/SARI). They are used for safety alerts (concomitant sedatives), never to infer an indication or a diagnosis."

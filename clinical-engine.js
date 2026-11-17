@@ -412,6 +412,27 @@ function buildDrugResolver(kb) {
     });
   });
 
+  /* Slash-composite labels bootstrapped from cascade examples (e.g.
+     "darunavir/ritonavir") must expand to their ingredients, exactly like a
+     combination brand. Left as a canonical of their own they hid the
+     booster from every interaction rule (Fase 0 audit: DRV/r + simvastatin
+     produced no alert) and contradicted the CaseModel contract that stores
+     pharmacologically distinct ingredients. Only composites whose every part
+     is a curated dictionary medicine are expanded. */
+  Object.keys(resolver.byVariant).forEach(function (key) {
+    if (key.indexOf('/') === -1 || resolver.combosByVariant[key]) return;
+    var meta = resolver.byVariant[key];
+    if (meta.match_type !== 'exact' && meta.match_type !== 'combo') return;
+    var ingredients = key.split('/').map(function (part) {
+      var partMeta = resolver.byVariant[part.trim()];
+      return partMeta && partMeta.match_type === 'dict' ? partMeta.canonical : null;
+    });
+    if (ingredients.length < 2 || ingredients.some(function (c) { return !c; })) return;
+    resolver.combosByVariant[key] = {
+      brand: meta.variant, aliases: [key], activeIngredients: ingredients, composite_label: true
+    };
+  });
+
   var escaped = Object.keys(resolver.byVariant)
     .sort(function (a, b) { return b.length - a.length; })
     .map(function (term) { return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
@@ -515,11 +536,74 @@ function classifyMedicationMention(noteText, mention) {
   } else if (/\bsi\s+(desarrolla|presenta|aparece|ocurre|desarrollara|desarrollar[aá])\b|\ben caso de\b/.test(clauseBefore) || /\b(podria|podr[ií]a|se valorara|se valorar[aá]|se plantea|se plantearia|se plantear[ií]a)\b/.test(sentence)) {
     assertion = /\bsi\s+(desarrolla|presenta|aparece|ocurre)\b/.test(clauseBefore) ? 'conditional' : 'hypothetical';
     status = 'conditional_future'; temporality = 'future';
-  } else if (/\b(se )?(suspendio|suspendi[oó]|suspendido|suspendida|retirado|retirada|interrumpio|interrumpi[oó])\b/.test(sentence) ||
+  } else if (/\bsin(?:\s+tratamiento\s+(?:con|de))?$/.test(clauseBefore) ||
+             /\bno\s+longer\s+(?:taking|takes|on|receiving)$/.test(clauseBefore) ||
+             /\bya\s+no\s+(?:lo|la|los|las)\s+(?:toma|tomaba|recibe|usa|utiliza)\b/.test(afterMentionClause(text, index, mention))) {
+    /* "Sin amlodipino actualmente", "no longer taking X", "X: ya no lo toma" */
+    assertion = 'negated'; status = 'not_taking'; temporality = 'current';
+  } else if (isGovernedDiscontinuation(clauseBefore, afterMentionClause(text, index, mention), afterMentionSentence(text, index, mention)) ||
              /\b(tomo|tom[oó]|recibio|recibi[oó])\b/.test(clauseBefore) && /\bhasta\b/.test(sentence)) {
     assertion = 'affirmed'; status = 'discontinued'; temporality = 'historical';
   }
   return { assertion: assertion, status: status, temporality: temporality };
+}
+
+/* Text after the mention, normalized, up to the end of its own clause. */
+function afterMentionClause(text, index, mention) {
+  var after = text.slice(index + mentionLength(mention));
+  var end = after.search(/[.;\n]|\s+y\s+(?:se\s+)?(?:inicia|inici[oó]|pauta|paut[oó]|cambia|cambi[oó]|contin[uú]a|mantiene|a[nñ]ade|añadi[oó])|\s+and\s+(?:started|continues|switched)|\bpero\b|\bbut\b/i);
+  return normalizeDrugText(end < 0 ? after : after.slice(0, end));
+}
+
+/* Text after the mention up to the sentence end (crosses "pero"), capped
+ * so a back-reference cannot reach a distant clause. */
+function afterMentionSentence(text, index, mention) {
+  var after = text.slice(index + mentionLength(mention));
+  var end = after.search(/[.;\n]/);
+  return normalizeDrugText((end < 0 ? after : after.slice(0, end)).slice(0, 90));
+}
+
+/* HAL-01 (Fase 0): discontinuation must GOVERN this mention, not merely
+ * occur somewhere in the sentence. The previous sentence-wide test missed
+ * common phrasings ("dejó de tomar X", "se retiró X", "X previo") and, worse,
+ * deactivated the NEW drug in "se suspendió X y se inició Y". A trigger
+ * counts only when it ends immediately before the mention (clauseBefore is
+ * already cut at sentence/adversative boundaries) or starts right after it,
+ * allowing a dose in between ("amlodipino 5 mg suspendido en 2024"). */
+var DISCONTINUATION_BEFORE = new RegExp('(?:' + [
+  '\\b(?:dejo|deja|dejaba|ha\\s+dejado|habia\\s+dejado|dejado|dejar)\\s+de\\s+(?:tomar|usar|recibir|utilizar)(?:\\s+(?:el|la|los|las))?',
+  '\\b(?:dejo|ha\\s+dejado)\\s+(?:el|la|los|las)',
+  '\\b(?:se\\s+)?(?:ha\\s+)?(?:suspendio|suspende|suspendido|suspendimos|suspendemos|retiro|retira|retirado|retiramos|retiran|interrumpio|interrumpe|interrumpido|interrumpimos|discontinua|discontinuo)(?:\\s+(?:el|la|los|las|tratamiento\\s+con))?',
+  '\\b(?:tar|tratamiento|pauta|regimen|terapia)?\\s*(?:previo|previa|anterior|antiguo|antigua)\\s*:?(?:\\s+con)?',
+  '\\b(?:previamente|anteriormente|antes)\\s+(?:con|tomaba|recibia|en\\s+tratamiento\\s+con)',
+  '\\b(?:stopped|discontinued|ceased|withdrew)(?:\\s+taking)?(?:\\s+the)?',
+  '\\b(?:previously|formerly)\\s+on',
+  '\\b(?:prior|previous|former)\\s+(?:art|regimen|treatment|therapy)?\\s*:?(?:\\s+with)?'
+].join('|') + ')\\s*$');
+
+var DISCONTINUATION_AFTER = new RegExp('^\\s*[:(,\\-]?\\s*(?:[0-9][^a-z]*(?:mg|mcg|g|ml|ui|comp\\w*)?\\b[^a-z]*)?(?:' + [
+  '(?:(?:fue|fueron|ha|han|habia|habian|hubo|sido|se|esta|estaba|queda|quedo|qued[oó])\\s+){0,3}(?:suspendido|suspendida|suspendidos|retirado|retirada|retirados|interrumpido|interrumpida|discontinuado|discontinuada|suspendio|retiro)\\b',
+  '(?:lo|la|los|las)\\s+(?:dejo|ha\\s+dejado|suspendio|suspendimos|retiro|retiramos)\\b',
+  '(?:en\\s+el\\s+pasado|previamente)\\b',
+  '(?:was\\s+|has\\s+been\\s+)?(?:discontinued|stopped|withdrawn)\\b',
+  '(?:previously|in\\s+the\\s+past)\\b'
+].join('|') + ')');
+
+/* "Efavirenz previo." / "efavirenz (previo)" — but not "amlodipino, previo
+ * control de TA", where "previo" opens an unrelated phrase. */
+var PREVIOUS_AFTER = /^\s*\(?\s*(?:previo|previa|anterior)\s*\)?\s*(?:$|[,(]|\d|desde|hasta|en\s+\d)/;
+
+/* "Tomó X durante 2022, pero fue suspendida…": a passive participle with no
+ * new subject after an adversative refers back to the same medicine. */
+var PASSIVE_BACK_REFERENCE = /^[^.;]*?\b(?:pero|aunque|but|although)\s+(?:fue|ha\s+sido|se\s+ha|se|was|has\s+been)\s+(?:suspendid[oa]s?|retirad[oa]s?|interrumpid[oa]s?|suspendio|retiro|interrumpio|discontinued|stopped|withdrawn)\s*(?:$|,|\(|(?:en|el|a|hace|desde|tras|por|in|on|after|due)\b|\d)/;
+/* "Tomó X durante 2022": past simple bounded in time. */
+var PAST_BOUNDED_INTAKE_BEFORE = /\b(?:tomo|recibio|took|received)$/;
+var PAST_BOUNDED_INTAKE_AFTER = /^\s*(?:[0-9][^a-z]*(?:mg|mcg|g|ml)?\b[^a-z]*)?(?:durante|entre|between|for\s+\d|during)\b/;
+
+function isGovernedDiscontinuation(clauseBefore, afterClause, afterSentence) {
+  return DISCONTINUATION_BEFORE.test(clauseBefore || '') || DISCONTINUATION_AFTER.test(afterClause || '') ||
+    PREVIOUS_AFTER.test(afterClause || '') || PASSIVE_BACK_REFERENCE.test(afterSentence || '') ||
+    (PAST_BOUNDED_INTAKE_BEFORE.test(clauseBefore || '') && PAST_BOUNDED_INTAKE_AFTER.test(afterClause || ''));
 }
 
 function medicationExclusionReason(m) {
@@ -2050,27 +2134,72 @@ function parseInteractionParticipants(value) {
     .map(function (v) { return normalizeDrugText(v); }).filter(Boolean);
 }
 
+/* Participants of one side of a DDI rule. Explicit canonical lists
+ * (participants_a / participants_b, kb/dev/ddi_participants.js) are
+ * authoritative; parsing the free-text label is only a fallback for rules
+ * that predate them, and tests/kb-ddi-coverage.test.js forbids that fallback
+ * in shipped KBs because class labels ("Proton pump inhibitors") can never
+ * match a medication. */
+function interactionSide(rule, side) {
+  var explicit = rule['participants_' + side];
+  if (Array.isArray(explicit) && explicit.length) {
+    return explicit.map(function (v) { return normalizeDrugText(v); }).filter(Boolean);
+  }
+  return parseInteractionParticipants(rule['drug_' + side]);
+}
+
+function isExcludedInteractionPair(rule, a, b) {
+  return (rule.excluded_pairs || []).some(function (pair) {
+    var x = normalizeDrugText(pair[0]), y = normalizeDrugText(pair[1]);
+    return (x === a && y === b) || (x === b && y === a);
+  });
+}
+
+var DDI_SEVERITY_RANK = { CONTRAINDICATED: 4, MAJOR: 3, MODERATE: 2, MINOR: 1 };
+
 /* DDI activation is a single, auditable gateway. Ingredient rules require an
  * exact canonical participant on both sides; class matching is only available
- * to rules explicitly marked class_based. */
+ * to rules explicitly marked class_based. Results are ordered by severity so
+ * every surface lists contraindications first. */
 function evaluateCurrentInteractions(kb, activeMedications) {
   var meds = activeMedications || [];
   var names = meds.map(function (m) { return normalizeDrugText(m.normalized_name); });
   var classes = meds.map(function (m) { return normalizeDrugText(m.drug_class); });
+  var present = function (n) { return names.indexOf(n) !== -1; };
   return (((kb || {}).ddiWatchlist || {}).interactions || []).filter(function (rule) {
+    /* Retired duplicates stay in the file for traceability, never fire. */
+    if (rule.status === 'merged') return false;
     var scope = rule.match_scope || 'ingredient_specific';
     if (scope === 'class_based') {
       return classes.indexOf(normalizeDrugText(rule.drug_a_class)) !== -1 &&
         classes.indexOf(normalizeDrugText(rule.drug_b_class)) !== -1;
     }
     if (scope === 'regimen_based') return false; // requires a dedicated regimen matcher
-    return parseInteractionParticipants(rule.drug_a).some(function (n) { return names.indexOf(n) !== -1; }) &&
-      parseInteractionParticipants(rule.drug_b).some(function (n) { return names.indexOf(n) !== -1; });
-  }).map(function (rule) {
-    var participants = names.filter(function (n) {
-      return parseInteractionParticipants(rule.drug_a).concat(parseInteractionParticipants(rule.drug_b)).indexOf(n) !== -1;
+    var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');
+    /* Both sides must be satisfied by DIFFERENT medicines: a drug listed on
+       both sides (e.g. ritonavir as booster and as "any ARV") never
+       interacts with itself. A pair listed in excluded_pairs is handled by
+       a more specific rule, so one medicine pair never yields two alerts. */
+    return a.some(function (na) {
+      return present(na) && b.some(function (nb) {
+        return nb !== na && present(nb) && !isExcludedInteractionPair(rule, na, nb);
+      });
     });
-    return Object.assign({}, rule, { match_scope: rule.match_scope || 'ingredient_specific', active_participants: participants });
+  }).map(function (rule) {
+    var a = interactionSide(rule, 'a'), b = interactionSide(rule, 'b');
+    var participantsA = names.filter(function (n, i) { return a.indexOf(n) !== -1 && names.indexOf(n) === i; });
+    var participantsB = names.filter(function (n, i) { return b.indexOf(n) !== -1 && names.indexOf(n) === i; });
+    var participants = names.filter(function (n, i) {
+      return (a.indexOf(n) !== -1 || b.indexOf(n) !== -1) && names.indexOf(n) === i;
+    });
+    return Object.assign({}, rule, {
+      match_scope: rule.match_scope || 'ingredient_specific',
+      active_participants: participants,
+      active_participants_a: participantsA,
+      active_participants_b: participantsB
+    });
+  }).sort(function (x, y) {
+    return (DDI_SEVERITY_RANK[y.severity] || 0) - (DDI_SEVERITY_RANK[x.severity] || 0);
   });
 }
 
@@ -3445,6 +3574,68 @@ function medicationsWithoutDocumentedIndication(activeMentions, indicationByCano
   return out;
 }
 
+/* ------------------------------------------------------------------
+ * Coverage check: prescription-like text that resolved to no medicine.
+ *
+ * Fase 0 audit: "Norvir + sildenafilo 50 mg + metadona 80 mg" returned only
+ * ritonavir and an empty missingInformation, so every downstream surface
+ * looked complete. A word immediately followed by a dose or a dosing
+ * frequency is treated as a probable medication; if no resolved mention
+ * covers it, it is reported — never guessed, never added to the medication
+ * list. Laboratory values are excluded by unit (mg/dL, g/L, mmol/L…) and
+ * by a short list of measurement words.
+ * ------------------------------------------------------------------ */
+var DOSE_PATTERN = /(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:mg|mcg|µg|μg|g|ml|ui|u)\b|\d+(?:[.,]\d+)?\s*(?:comp(?:rimidos?)?|caps?(?:ulas?)?|sobres?|gotas|puffs?|inhalaciones|tablets?)\b)/gi;
+var LAB_UNIT_TAIL = /^\s*\/\s*(?:dl|l|ml|mmol|min|m2|m²|kg\/min|dia\s+de\s+excrecion)\b/i;
+var NOT_A_MEDICATION_WORD = {
+  dosis: 1, maxima: 1, maximo: 1, max: 1, hasta: 1, total: 1, inicial: 1, cada: 1, unos: 1, unas: 1,
+  desde: 1, tras: 1, durante: 1, previa: 1, previo: 1, actual: 1, diaria: 1, diario: 1, ultima: 1,
+  peso: 1, talla: 1, proteinuria: 1, albuminuria: 1, cociente: 1, excrecion: 1, diuresis: 1, ingesta: 1,
+  creatinina: 1, glucosa: 1, glucemia: 1, colesterol: 1, trigliceridos: 1, potasio: 1, sodio: 1,
+  ferritina: 1, hemoglobina: 1, albumina: 1, carga: 1, viral: 1, copias: 1, celulas: 1,
+  toma: 1, tomaba: 1, tomar: 1, recibe: 1, pauta: 1, aumenta: 1, reduce: 1, baja: 1, sube: 1, cambio: 1,
+  dose: 1, daily: 1, twice: 1, once: 1, every: 1, initial: 1, current: 1
+};
+
+function detectUnrecognizedMedicationCandidates(noteText, mentions) {
+  var text = noteText || '';
+  var spans = (mentions || []).filter(function (m) { return m.original_start_index != null; }).map(function (m) {
+    return { start: m.original_start_index, end: m.original_start_index + mentionLength(m) };
+  });
+  var found = [];
+  var seen = {};
+  var match;
+  DOSE_PATTERN.lastIndex = 0;
+  while ((match = DOSE_PATTERN.exec(text)) !== null) {
+    var doseStart = match.index;
+    if (LAB_UNIT_TAIL.test(text.slice(doseStart + match[0].length))) continue;
+    var clauseStart = Math.max(text.lastIndexOf('.', doseStart - 1), text.lastIndexOf(';', doseStart - 1),
+      text.lastIndexOf('\n', doseStart - 1), text.lastIndexOf(',', doseStart - 1), text.lastIndexOf('—', doseStart - 1)) + 1;
+    /* Decimal comma/point inside the number itself is not a clause boundary. */
+    if (clauseStart > 0 && /\d/.test(text.charAt(clauseStart - 2)) && /\d/.test(text.charAt(clauseStart))) {
+      clauseStart = Math.max(text.lastIndexOf('.', clauseStart - 2), text.lastIndexOf('\n', clauseStart - 2), text.lastIndexOf(';', clauseStart - 2)) + 1;
+    }
+    var before = text.slice(clauseStart, doseStart);
+    /* Any resolved medicine ending in this clause before the dose owns it. */
+    var owned = spans.some(function (s) { return s.end <= doseStart && s.end > clauseStart; });
+    if (owned) continue;
+    var words = before.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]*/g) || [];
+    var candidate = null;
+    for (var i = words.length - 1; i >= 0 && i >= words.length - 3; i--) {
+      var norm = normalizeDrugText(words[i]);
+      if (norm.length < 4 || NOT_A_MEDICATION_WORD[norm]) continue;
+      candidate = words[i];
+      break;
+    }
+    if (!candidate) continue;
+    var key = normalizeDrugText(candidate);
+    if (seen[key]) continue;
+    seen[key] = true;
+    found.push({ term: candidate, dose_text: match[0].trim(), evidence_span: (before + match[0]).trim(), start_index: doseStart });
+  }
+  return found;
+}
+
 function buildCaseModel(noteText, kb, options) {
   options = options || {};
   var lang = options.lang || 'es';
@@ -3456,7 +3647,7 @@ function buildCaseModel(noteText, kb, options) {
     return {
       medications: [], activeMedications: [], allMedicationMentions: [], inactiveOrNegatedMedications: [],
       currentInteractions: [], activeProblems: [], clinicalMeasurements: [], events: [],
-      possibleCascades: [], globalMedicationAlerts: [], missingInformation: [],
+      possibleCascades: [], globalMedicationAlerts: [], missingInformation: [], unrecognizedMedicationCandidates: [],
       drug_classes: []
     };
   }
@@ -3681,6 +3872,22 @@ function buildCaseModel(noteText, kb, options) {
   var inactiveOrNegatedMedications = allMedicationMentions.filter(function (m) { return !isActiveMedication(m); });
   var currentInteractions = evaluateCurrentInteractions(kb, medications);
 
+  /* Coverage: prescription-like text no medicine resolved (all mentions,
+     active or not, count as recognised — a negated drug is still known). */
+  var unrecognizedMedicationCandidates = detectUnrecognizedMedicationCandidates(corrected, mentions);
+  if (unrecognizedMedicationCandidates.length) {
+    var unrecognizedTerms = unrecognizedMedicationCandidates.map(function (c) { return c.term; });
+    missingInformation.unshift({
+      type: 'unrecognized_medication_candidates',
+      finding_category: 'incomplete_coverage',
+      terms: unrecognizedTerms,
+      message_es: 'Cobertura incompleta: ' + unrecognizedTerms.length + ' término(s) con pauta posológica no se han reconocido como medicamento (' +
+        unrecognizedTerms.join(', ') + '). No se han evaluado para cascadas ni interacciones; revíselos y, si procede, añádalos en la revisión de medicamentos.',
+      message_en: 'Incomplete coverage: ' + unrecognizedTerms.length + ' term(s) with a dosing pattern were not recognised as a medicine (' +
+        unrecognizedTerms.join(', ') + '). They were not evaluated for cascades or interactions; review them and, if appropriate, add them in the medication review.'
+    });
+  }
+
   var undocumented = medicationsWithoutDocumentedIndication(activeMentions, indicationByCanonical, activeProblems);
   if (undocumented.length) {
     missingInformation.push({
@@ -3715,6 +3922,7 @@ function buildCaseModel(noteText, kb, options) {
     possibleCascades: allSignals,
     globalMedicationAlerts: globalAlertsResult.alerts,
     missingInformation: missingInformation,
+    unrecognizedMedicationCandidates: unrecognizedMedicationCandidates,
     symptomsDetected: symptomsDetected,
     reviewedInputApplication: reviewedInput ? cloneJson(reviewedInput.application || null) : null,
     reviewAudit: reviewedInput ? cloneJson(reviewedInput.audit || null) : null

@@ -2,7 +2,7 @@
 
 **Auditor de Cascadas de Prescripción en VIH**
 
-Versión de software: **1.0.0** · Base de conocimiento: **2.0.0 (PROD)**
+Versión de software: **1.0.0** · Base de conocimiento PROD: cascadas 2.1.0 · VIH 1.3.0 · interacciones 1.5.0
 Autores: **Ramón Morillo Verdugo y Cecilia Solís Martín** · Licencia: consulte `LICENSE` si existe, o contacte con los autores.
 
 ---
@@ -41,6 +41,8 @@ La herramienta está orientada a la revisión farmacoterapéutica de:
    - *Fármaco-fármaco*: para cada candidata (fármaco índice, problema intermedio, fármaco posterior) se verifica explícitamente si el problema intermedio está documentado, negado, es un antecedente, o solo se infiere de la coincidencia de clases — antes de asignar `supported_possible_cascade`, `possible_but_incomplete`, `pharmacological_match_only`, `not_evaluable` o `discarded`.
    - *Puente sintomático*: identificación de síntomas en el texto que pueden ser efectos adversos de un fármaco activo y que a su vez son tratados por otro fármaco activo.
    - Las alertas que dependen del conjunto de la medicación (carga anticolinérgica, carga depresora del SNC, duplicidad de AINE) se muestran por separado, nunca dentro de la explicación de una cascada concreta.
+   - *Interacciones fármaco-fármaco*: las reglas de `ddi_watchlist.json` activadas por la medicación reconocida se muestran en una sección propia (pasos 4 y 6, texto clínico y CSV), ordenadas por gravedad. La ausencia de alerta no descarta interacciones no incluidas en la base de conocimiento.
+   - *Cobertura*: el texto con pauta posológica que no se reconoce como medicamento se señala como cobertura incompleta; nunca se presenta un resultado tranquilizador mientras haya términos sin reconocer.
 
 4. **Verificación clínica interactiva**: el clínico puede clasificar cada hallazgo como "confirmado", "posible" o "descartado", añadir notas y señales de alerta — esta validación profesional es independiente de (y prevalece sobre) la clasificación automática del sistema.
 
@@ -196,14 +198,18 @@ La rama principal debe aceptar cambios mediante pull request y exigir que la sui
 
 La base de conocimiento es el componente editorial central de la herramienta. Se distribuye como ficheros JSON estáticos y puede actualizarse de forma independiente al código de la aplicación. Para una descripción detallada de la estructura, los campos y los criterios de inclusión de cada fichero, consulte **[`KB_REFERENCE.md`](KB_REFERENCE.md)**.
 
-Resumen de los cuatro ficheros PROD:
+Resumen de los ficheros principales (recuento verificado contra `kb/prod/` el 2026-11-13; «activas» excluye las reglas fusionadas, que se conservan por trazabilidad pero no se ejecutan):
 
-| Fichero | Contenido | Entradas | Versión |
+| Fichero | Contenido | Entradas (activas) | Versión |
 |---------|-----------|----------|---------|
-| `kb_core_cascades.json` | Cascadas de prescripción genéricas, aplicables a cualquier paciente poliedicado | 40 | 2.0.0 |
-| `kb_vih_modifiers.json` | Cascadas específicas de la farmacología antirretroviral | 8 | 1.1.0 |
-| `ddi_watchlist.json` | Interacciones fármaco-fármaco relevantes para las cascadas en PVVIH | 10 | 1.1.0 |
-| `kb_symptoms.json` | Diccionario de síntomas/efectos adversos para detección por puente sintomático | 10 | 1.2.0 |
+| `kb_core_cascades.json` | Cascadas de prescripción genéricas, aplicables a cualquier paciente polimedicado | 90 (78) | 2.1.0 |
+| `kb_vih_modifiers.json` | Cascadas específicas de la farmacología antirretroviral | 33 (33) | 1.3.0 |
+| `ddi_watchlist.json` | Interacciones fármaco-fármaco en PVVIH, con participantes explícitos por regla; ningún par de medicamentos activa dos reglas | 61 (59) | 1.5.0 |
+| `kb_symptoms.json` | Diccionario de síntomas/efectos adversos para detección por puente sintomático | 10 (10) | 1.2.0 |
+| `drug_dictionary.json` | Principios activos, DCI en español, marcas y abreviaturas | 320 | 1.3.0 |
+| `drug_combinations.json` | Combinaciones a dosis fija y pautas coadministradas (DRV/r, ATV/r) | 20 | 1.3.0 |
+
+Los cambios de la Fase 0 (participantes de interacciones, 68 principios activos y 8 combinaciones nuevas) están **pendientes de validación clínica**: véase [`docs/validation/fase0-ddi-participants.md`](docs/validation/fase0-ddi-participants.md).
 
 ---
 
@@ -235,7 +241,7 @@ La herramienta no ha completado una evaluación regulatoria formal ni dispone de
 | Parámetro | Valor |
 |-----------|-------|
 | Versión de software | 1.0.0 |
-| Versión KB PROD | 2.0.0 (core) / 1.1.0 (VIH, DDI) / 1.2.0 (síntomas) |
+| Versión KB PROD | 2.1.0 (core) / 1.3.0 (VIH) / 1.5.0 (DDI) / 1.2.0 (síntomas) |
 | Lenguaje | JavaScript ES2020 (vanilla) |
 | Frameworks | Ninguno |
 | Almacenamiento | `localStorage` (clave: `hiv_cascade_state`) |

@@ -1,7 +1,7 @@
 {
-  "version": "1.3.0",
+  "version": "1.5.0",
   "description": "Drug-drug interaction watchlist relevant to prescribing cascades in PLHIV",
-  "last_updated": "2026-03-11",
+  "last_updated": "2026-11-13",
   "severity_levels": {
     "CONTRAINDICATED": "Do not use together; risk of severe/fatal adverse event",
     "MAJOR": "Potentially life-threatening or requiring major management change",
@@ -23,7 +23,15 @@
       "management_es": "Contraindicado. Usar rosuvastatina (dosis máx 10mg), pravastatina o pitavastatina en su lugar.",
       "management_en": "Contraindicated. Use rosuvastatin (max 10mg), pravastatin, or pitavastatin instead.",
       "cascade_relevance_es": "Cascada: IP/r → dislipidemia → estatina. El riesgo crítico es si se prescribe simvastatina/lovastatina.",
-      "cascade_relevance_en": "Cascade: PI/r → dyslipidemia → statin. Critical risk if simvastatin/lovastatin is prescribed."
+      "cascade_relevance_en": "Cascade: PI/r → dyslipidemia → statin. Critical risk if simvastatin/lovastatin is prescribed.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "simvastatin",
+        "lovastatin"
+      ]
     },
     {
       "id": "DDI002",
@@ -39,7 +47,18 @@
       "management_es": "Si necesario, dosis muy reducidas con supervisión: sildenafilo máx 25mg/48h, tadalafilo máx 10mg/72h.",
       "management_en": "If necessary, very reduced doses with supervision: sildenafil max 25mg/48h, tadalafil max 10mg/72h.",
       "cascade_relevance_es": "Cascada: ISRS/antipsicótico → disfunción sexual → iPDE5. Riesgo aumentado si hay IP/r.",
-      "cascade_relevance_en": "Cascade: SSRI/antipsychotic → sexual dysfunction → PDE5i. Increased risk with PI/r."
+      "cascade_relevance_en": "Cascade: SSRI/antipsychotic → sexual dysfunction → PDE5i. Increased risk with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "sildenafil",
+        "tadalafil",
+        "vardenafil"
+      ],
+      "applicability_note_es": "Con lopinavir/ritonavir, el sildenafilo a dosis de hipertensión arterial pulmonar (>20 mg) está CONTRAINDICADO (antigua DDI054, fusionada aquí): considerar un TAR sin IP/r o, si no es posible, bosentán o iloprost. La dosis no se verifica en la nota.",
+      "applicability_note_en": "With lopinavir/ritonavir, sildenafil at pulmonary arterial hypertension doses (>20 mg) is CONTRAINDICATED (former DDI054, merged here): consider a PI/r-free ART or, if impossible, bosentan or iloprost. Dose is not verified from the note."
     },
     {
       "id": "DDI003",
@@ -56,13 +75,19 @@
       "management_es": "Monitorizar función renal. Considerar reducción de dosis de metformina. Evitar metformina si TFGe <45.",
       "management_en": "Monitor renal function. Consider reducing metformin dose. Avoid metformin if eGFR <45.",
       "cascade_relevance_es": "La interacción específica dolutegravir–metformina requiere vigilancia; no se extrapola a otros INSTI.",
-      "cascade_relevance_en": "The specific dolutegravir–metformin interaction requires monitoring; it is not extrapolated to other INSTIs."
+      "cascade_relevance_en": "The specific dolutegravir–metformin interaction requires monitoring; it is not extrapolated to other INSTIs.",
+      "participants_a": [
+        "dolutegravir"
+      ],
+      "participants_b": [
+        "metformin"
+      ]
     },
     {
       "id": "DDI004",
       "drug_a": "Efavirenz / Nevirapine / Rifampicin",
       "drug_a_class": "CYP3A4/CYP2B6 inducer",
-      "drug_b": "Warfarin / Direct oral anticoagulants",
+      "drug_b": "Warfarin / Acenocoumarol / Direct oral anticoagulants",
       "drug_b_class": "Anticoagulant",
       "severity": "MAJOR",
       "mechanism_es": "Inducción de CYP3A4/CYP2C9 → reducción de niveles de anticoagulantes → riesgo trombótico o necesidad de ajuste de dosis",
@@ -72,7 +97,30 @@
       "management_es": "Monitorizar INR frecuentemente con warfarina. Con ACODs, considerar alternativas ARV. No hay datos suficientes para muchos ACODs con EFV.",
       "management_en": "Monitor INR frequently with warfarin. With DOACs, consider alternative ARVs. Insufficient data for many DOACs with EFV.",
       "cascade_relevance_es": "Pueden prescribirse anticoagulantes como parte de una cascada (p.ej., FA inducida por HTA no controlada).",
-      "cascade_relevance_en": "Anticoagulants may be prescribed as part of a cascade (e.g., AF induced by uncontrolled hypertension)."
+      "cascade_relevance_en": "Anticoagulants may be prescribed as part of a cascade (e.g., AF induced by uncontrolled hypertension).",
+      "participants_a": [
+        "efavirenz",
+        "nevirapine",
+        "rifampicin"
+      ],
+      "participants_b": [
+        "warfarin",
+        "acenocoumarol",
+        "dabigatran",
+        "rivaroxaban",
+        "apixaban",
+        "edoxaban"
+      ],
+      "excluded_pairs": [
+        [
+          "efavirenz",
+          "warfarin"
+        ],
+        [
+          "efavirenz",
+          "acenocoumarol"
+        ]
+      ]
     },
     {
       "id": "DDI005",
@@ -88,7 +136,17 @@
       "management_es": "Contraindicado con midazolam/triazolam orales. El midazolam IV puede usarse con monitorización estricta.",
       "management_en": "Contraindicated with oral midazolam/triazolam. IV midazolam may be used with strict monitoring.",
       "cascade_relevance_es": "Cascada: EFV/ARV → insomnio → benzodiacepina. Riesgo crítico si hay IP/r concomitante.",
-      "cascade_relevance_en": "Cascade: EFV/ARV → insomnia → benzodiazepine. Critical risk if PI/r concomitant."
+      "cascade_relevance_en": "Cascade: EFV/ARV → insomnia → benzodiazepine. Critical risk if PI/r concomitant.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "midazolam",
+        "triazolam"
+      ],
+      "applicability_note_es": "La regla aplica a midazolam/triazolam ORALES; la vía no se verifica en la nota.",
+      "applicability_note_en": "The rule applies to ORAL midazolam/triazolam; route is not verified from the note."
     },
     {
       "id": "DDI006",
@@ -104,7 +162,13 @@
       "management_es": "Reducir significativamente la dosis de colchicina. Considerar alternativas para la gota (AINEs con precaución, corticoides).",
       "management_en": "Significantly reduce colchicine dose. Consider alternatives for gout (NSAIDs with caution, corticosteroids).",
       "cascade_relevance_es": "Cascada: Tiazida → gota → colchicina. En PVVIH con IP/r, riesgo de toxicidad grave por colchicina.",
-      "cascade_relevance_en": "Cascade: Thiazide → gout → colchicine. In PLHIV on PI/r, risk of severe colchicine toxicity."
+      "cascade_relevance_en": "Cascade: Thiazide → gout → colchicine. In PLHIV on PI/r, risk of severe colchicine toxicity.",
+      "participants_a": [
+        "ritonavir"
+      ],
+      "participants_b": [
+        "colchicine"
+      ]
     },
     {
       "id": "DDI007",
@@ -120,7 +184,17 @@
       "management_es": "Monitorizar síntomas de abstinencia; puede requerirse aumento de dosis de metadona de 30-50%.",
       "management_en": "Monitor for withdrawal symptoms; methadone dose increase of 30-50% may be required.",
       "cascade_relevance_es": "Puede desencadenar cascada: EFV → reducción de niveles de metadona → síntomas de abstinencia → nuevos opioides prescritos.",
-      "cascade_relevance_en": "Can trigger cascade: EFV → reduced methadone levels → withdrawal symptoms → new opioids prescribed."
+      "cascade_relevance_en": "Can trigger cascade: EFV → reduced methadone levels → withdrawal symptoms → new opioids prescribed.",
+      "participants_a": [
+        "efavirenz"
+      ],
+      "participants_b": [
+        "methadone"
+      ],
+      "status": "merged",
+      "merged_into": "DDI024",
+      "merge_reason_es": "Duplicada: efavirenz + metadona está incluida en DDI024 con la misma gravedad y manejo.",
+      "merge_reason_en": "Duplicate: efavirenz + methadone is included in DDI024 with the same severity and management."
     },
     {
       "id": "DDI008",
@@ -136,7 +210,28 @@
       "management_es": "Evitar AINEs regulares en pacientes con TDF. Si necesarios, usar brevemente y monitorizar función renal.",
       "management_en": "Avoid regular NSAIDs in patients on TDF. If needed, use briefly and monitor renal function.",
       "cascade_relevance_es": "Cascada: TDF + AINE → nefrotoxicidad → medicamentos adicionales. Importante identificar.",
-      "cascade_relevance_en": "Cascade: TDF + NSAID → nephrotoxicity → additional medications. Important to identify."
+      "cascade_relevance_en": "Cascade: TDF + NSAID → nephrotoxicity → additional medications. Important to identify.",
+      "participants_a": [
+        "tenofovir disoproxil fumarate"
+      ],
+      "participants_b": [
+        "ibuprofen",
+        "naproxen",
+        "diclofenac",
+        "dexketoprofen",
+        "ketoprofen",
+        "indomethacin",
+        "meloxicam",
+        "piroxicam",
+        "aceclofenac",
+        "celecoxib",
+        "etoricoxib",
+        "gentamicin",
+        "amikacin",
+        "tobramycin"
+      ],
+      "applicability_note_es": "Los contrastes yodados no se detectan en la nota: valorar si hay exposición prevista.",
+      "applicability_note_en": "Iodinated contrast agents are not detected from the note: check for planned exposure."
     },
     {
       "id": "DDI009",
@@ -152,7 +247,42 @@
       "management_es": "Monitorizar ECG. Evitar combinaciones de múltiples agentes que prolongan QT. Verificar electrolitos.",
       "management_en": "Monitor ECG. Avoid combinations of multiple QT-prolonging agents. Check electrolytes.",
       "cascade_relevance_es": "Cascada: Antipsicótico (cascada del ISRS) + ARV que prolonga QT = riesgo aditivo.",
-      "cascade_relevance_en": "Cascade: Antipsychotic (from SSRI cascade) + QT-prolonging ARV = additive risk."
+      "cascade_relevance_en": "Cascade: Antipsychotic (from SSRI cascade) + QT-prolonging ARV = additive risk.",
+      "participants_a": [
+        "saquinavir",
+        "lopinavir"
+      ],
+      "participants_b": [
+        "clarithromycin",
+        "erythromycin",
+        "azithromycin",
+        "levofloxacin",
+        "moxifloxacin",
+        "ciprofloxacin",
+        "ofloxacin",
+        "norfloxacin",
+        "fluconazole",
+        "itraconazole",
+        "ketoconazole",
+        "voriconazole",
+        "posaconazole",
+        "haloperidol",
+        "olanzapine",
+        "risperidone",
+        "aripiprazole",
+        "ziprasidone",
+        "chlorpromazine",
+        "amisulpride",
+        "paliperidone",
+        "clozapine",
+        "amitriptyline",
+        "nortriptyline",
+        "imipramine",
+        "clomipramine",
+        "doxepin"
+      ],
+      "applicability_note_es": "Rilpivirina solo prolonga el QT a dosis supraterapéuticas: no se incluye como desencadenante. Revisar ECG y electrolitos.",
+      "applicability_note_en": "Rilpivirine prolongs QT only at supratherapeutic doses and is not used as a trigger. Check ECG and electrolytes."
     },
     {
       "id": "DDI010",
@@ -168,7 +298,14 @@
       "management_es": "Preferir beclometasona inhalada (menos susceptible a CYP3A4) o valorar cambio de ARV sin cobicistat.",
       "management_en": "Prefer inhaled beclomethasone (less susceptible to CYP3A4) or consider switching to ARV without cobicistat.",
       "cascade_relevance_es": "Cascada doble: Cobicistat + corticoide inhalado → Cushing → hiperglucemia → antidiabético; osteoporosis → bisfosfonato.",
-      "cascade_relevance_en": "Double cascade: Cobicistat + inhaled corticosteroid → Cushing → hyperglycemia → antidiabetic; osteoporosis → bisphosphonate."
+      "cascade_relevance_en": "Double cascade: Cobicistat + inhaled corticosteroid → Cushing → hyperglycemia → antidiabetic; osteoporosis → bisphosphonate.",
+      "participants_a": [
+        "cobicistat"
+      ],
+      "participants_b": [
+        "fluticasone",
+        "budesonide"
+      ]
     },
     {
       "id": "DDI011",
@@ -184,11 +321,18 @@
       "management_es": "Iniciar atorvastatina a la dosis más baja posible (10mg/día máximo con RTV/COBI). Monitorizar CK.",
       "management_en": "Start atorvastatin at lowest possible dose (10mg/day max with RTV/COBI). Monitor CK.",
       "cascade_relevance_es": "Cascada: IP/r → dislipidemia → estatina. Atorvastatina se tolera pero con limitación de dosis.",
-      "cascade_relevance_en": "Cascade: PI/r → dyslipidemia → statin. Atorvastatin tolerated but with dose limitation."
+      "cascade_relevance_en": "Cascade: PI/r → dyslipidemia → statin. Atorvastatin tolerated but with dose limitation.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "atorvastatin"
+      ]
     },
     {
       "id": "DDI012",
-      "drug_a": "Efavirenz / Nevirapine / Etravirine",
+      "drug_a": "Efavirenz / Etravirine (nevirapine: see DDI039)",
       "drug_a_class": "NNRTI (CYP3A4 inducer)",
       "drug_b": "Oral contraceptives (estrogen/progestogen)",
       "drug_b_class": "Hormonal contraceptive",
@@ -200,7 +344,21 @@
       "management_es": "Usar método anticonceptivo alternativo o adicional (DIU, implante). No confiar en anticonceptivos hormonales orales con EFV.",
       "management_en": "Use alternative or additional contraception (IUD, implant). Do not rely on oral hormonal contraceptives with EFV.",
       "cascade_relevance_es": "El fracaso anticonceptivo es una consecuencia directa de la interacción EFV-ACO.",
-      "cascade_relevance_en": "Contraceptive failure is a direct consequence of the EFV-OCP interaction."
+      "cascade_relevance_en": "Contraceptive failure is a direct consequence of the EFV-OCP interaction.",
+      "participants_a": [
+        "efavirenz",
+        "etravirine"
+      ],
+      "participants_b": [
+        "ethinylestradiol",
+        "levonorgestrel",
+        "desogestrel",
+        "norethisterone",
+        "drospirenone",
+        "norgestimate",
+        "gestodene",
+        "dienogest"
+      ]
     },
     {
       "id": "DDI013",
@@ -216,7 +374,16 @@
       "management_es": "Reducción drástica de dosis de inmunosupresor (tacrolimus: 0.5-1mg/semana) con monitorización de niveles. Especialista requerido.",
       "management_en": "Drastic dose reduction of immunosuppressant (tacrolimus: 0.5-1mg/week) with level monitoring. Specialist required.",
       "cascade_relevance_es": "Relevante en trasplantados con VIH. Cascada de toxicidad renal puede desencadenarse.",
-      "cascade_relevance_en": "Relevant in HIV-positive transplant patients. Renal toxicity cascade may be triggered."
+      "cascade_relevance_en": "Relevant in HIV-positive transplant patients. Renal toxicity cascade may be triggered.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "tacrolimus",
+        "cyclosporine",
+        "sirolimus"
+      ]
     },
     {
       "id": "DDI014",
@@ -232,7 +399,20 @@
       "management_es": "Separar la toma al menos 2h (DTG/RAL) o 6h (BIC). No tomar con antiácidos que contienen Ca/Mg/Al.",
       "management_en": "Separate administration by at least 2h (DTG/RAL) or 6h (BIC). Do not take with Ca/Mg/Al-containing antacids.",
       "cascade_relevance_es": "El uso de antiácidos (cascada por reflujo) puede comprometer la eficacia del TAR.",
-      "cascade_relevance_en": "Antacid use (cascade from reflux) may compromise ART efficacy."
+      "cascade_relevance_en": "Antacid use (cascade from reflux) may compromise ART efficacy.",
+      "participants_a": [
+        "dolutegravir",
+        "bictegravir",
+        "raltegravir"
+      ],
+      "participants_b": [
+        "calcium carbonate",
+        "magnesium hydroxide",
+        "magnesium oxide",
+        "aluminum hydroxide",
+        "almagate",
+        "magaldrate"
+      ]
     },
     {
       "id": "DDI015",
@@ -248,7 +428,14 @@
       "management_es": "Contraindicado. Usar rifabutina en lugar de rifampicina cuando se requiere un rifamicínico con IP/r.",
       "management_en": "Contraindicated. Use rifabutin instead of rifampicin when a rifamycin is required with PI/r.",
       "cascade_relevance_es": "Coinfección TB-VIH: la elección de rifamicínico es crítica para evitar fracaso del TAR.",
-      "cascade_relevance_en": "TB-HIV coinfection: choice of rifamycin is critical to avoid ART failure."
+      "cascade_relevance_en": "TB-HIV coinfection: choice of rifamycin is critical to avoid ART failure.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "rifampicin"
+      ]
     },
     {
       "id": "DDI016",
@@ -264,7 +451,14 @@
       "management_es": "Contraindicado con cualquier rifamicina. Cambiar TAR a DTG (+ dosis extra de DTG con rifampicina) o RAL.",
       "management_en": "Contraindicated with any rifamycin. Switch ART to DTG (+ extra DTG dose with rifampicin) or RAL.",
       "cascade_relevance_es": "Coinfección TB-VIH: EVG/COBI es incompatible con regímenes basados en rifamicina.",
-      "cascade_relevance_en": "TB-HIV coinfection: EVG/COBI is incompatible with rifamycin-based regimens."
+      "cascade_relevance_en": "TB-HIV coinfection: EVG/COBI is incompatible with rifamycin-based regimens.",
+      "participants_a": [
+        "elvitegravir"
+      ],
+      "participants_b": [
+        "rifampicin",
+        "rifabutin"
+      ]
     },
     {
       "id": "DDI017",
@@ -280,23 +474,45 @@
       "management_es": "Contraindicado en ATZ no potenciado. Con ATZ/r: evitar IBP; si imprescindible, dosis máx omeprazol 20mg/día, separar ≥12h.",
       "management_en": "Contraindicated with unboosted ATV. With ATV/r: avoid PPIs; if essential, max omeprazole 20mg/day, separate ≥12h.",
       "cascade_relevance_es": "Cascada: ARV → náuseas → IBP (prescrito para gastroprotección). Puede comprometer la eficacia del ATZ.",
-      "cascade_relevance_en": "Cascade: ARV → nausea → PPI (prescribed for gastroprotection). May compromise ATV efficacy."
+      "cascade_relevance_en": "Cascade: ARV → nausea → PPI (prescribed for gastroprotection). May compromise ATV efficacy.",
+      "participants_a": [
+        "atazanavir"
+      ],
+      "participants_b": [
+        "omeprazole",
+        "esomeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "rabeprazole"
+      ]
     },
     {
       "id": "DDI018",
       "drug_a": "Rilpivirine",
       "drug_a_class": "NNRTI (CYP3A4 substrate, pH-dependent absorption)",
-      "drug_b": "Proton pump inhibitors / H2 blockers",
-      "drug_b_class": "Acid-suppressing agents",
+      "drug_b": "Proton pump inhibitors",
+      "drug_b_class": "Proton pump inhibitor",
       "severity": "CONTRAINDICATED",
       "mechanism_es": "Aumento del pH gástrico → reducción de absorción de rilpivirina (pH-dependiente) → niveles subóptimos",
       "mechanism_en": "Raised gastric pH → reduced rilpivirine absorption (pH-dependent) → subtherapeutic levels",
       "consequence_es": "Fracaso virológico, selección de resistencias a NNRTI (K101E, E138A/K/Q, V179L, Y188L, H221Y, F227C, M230I)",
       "consequence_en": "Virological failure, NNRTI resistance selection (K101E, E138A/K/Q, V179L, Y188L, H221Y, F227C, M230I)",
-      "management_es": "Contraindicado con IBP. Los antiH2 deben tomarse ≥12h antes o ≥4h después de RPV. Considerar cambiar a regímen alternativo.",
-      "management_en": "Contraindicated with PPIs. H2 blockers must be taken ≥12h before or ≥4h after RPV. Consider switching to alternative regimen.",
+      "management_es": "Contraindicado con IBP. Considerar cambiar a régimen alternativo. Para anti-H2 véase DDI061.",
+      "management_en": "Contraindicated with PPIs. Consider switching to alternative regimen. For H2 blockers see DDI061.",
       "cascade_relevance_es": "Cascada: RPV → intolerancia GI o indicación de IBP → comprometida eficacia del TAR.",
-      "cascade_relevance_en": "Cascade: RPV → GI intolerance or PPI indication → compromised ART efficacy."
+      "cascade_relevance_en": "Cascade: RPV → GI intolerance or PPI indication → compromised ART efficacy.",
+      "participants_a": [
+        "rilpivirine"
+      ],
+      "participants_b": [
+        "omeprazole",
+        "esomeprazole",
+        "pantoprazole",
+        "lansoprazole",
+        "rabeprazole"
+      ],
+      "applicability_note_es": "Aplica a rilpivirina ORAL, no a la intramuscular.",
+      "applicability_note_en": "Applies to ORAL rilpivirine, not the intramuscular form."
     },
     {
       "id": "DDI019",
@@ -312,7 +528,16 @@
       "management_es": "Pimozida/lurasidona contraindicadas. Quetiapina: iniciar a dosis muy bajas (12.5-25mg) con monitorización ECG estricta.",
       "management_en": "Pimozide/lurasidone contraindicated. Quetiapine: start at very low doses (12.5-25mg) with strict ECG monitoring.",
       "cascade_relevance_es": "Cascada: ISRS → depresión refractaria → antipsicótico añadido. Riesgo grave con IP/r concomitante.",
-      "cascade_relevance_en": "Cascade: SSRI → refractory depression → antipsychotic added. Serious risk with concomitant PI/r."
+      "cascade_relevance_en": "Cascade: SSRI → refractory depression → antipsychotic added. Serious risk with concomitant PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "quetiapine",
+        "pimozide",
+        "lurasidone"
+      ]
     },
     {
       "id": "DDI020",
@@ -328,7 +553,14 @@
       "management_es": "Contraindicado. Buscar alternativa antiarrítmica y/o cambiar régimen ARV sin RTV.",
       "management_en": "Contraindicated. Seek alternative antiarrhythmic and/or switch ARV regimen without RTV.",
       "cascade_relevance_es": "Cascada cardiovascular: FA → amiodarona prescrita → toxicidad grave con RTV.",
-      "cascade_relevance_en": "Cardiovascular cascade: AF → amiodarone prescribed → severe toxicity with RTV."
+      "cascade_relevance_en": "Cardiovascular cascade: AF → amiodarone prescribed → severe toxicity with RTV.",
+      "participants_a": [
+        "ritonavir"
+      ],
+      "participants_b": [
+        "amiodarone",
+        "dronedarone"
+      ]
     },
     {
       "id": "DDI021",
@@ -344,7 +576,14 @@
       "management_es": "Contraindicado. Preferir otras alternativas en EPOC/asma (beclometasona + formoterol, tiotropio).",
       "management_en": "Contraindicated. Prefer other alternatives in COPD/asthma (beclomethasone + formoterol, tiotropium).",
       "cascade_relevance_es": "Cascada respiratoria: EPOC → LABA prescrito → riesgo cardíaco con IP/r.",
-      "cascade_relevance_en": "Respiratory cascade: COPD → LABA prescribed → cardiac risk with PI/r."
+      "cascade_relevance_en": "Respiratory cascade: COPD → LABA prescribed → cardiac risk with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "salmeterol"
+      ]
     },
     {
       "id": "DDI022",
@@ -360,7 +599,14 @@
       "management_es": "Contraindicado con dosis estándar. Si necesario: doblar dosis de voriconazol (200→400mg/12h) y monitorizar EFV.",
       "management_en": "Contraindicated at standard doses. If necessary: double voriconazole dose (200→400mg/12h) and monitor EFV.",
       "cascade_relevance_es": "Micosis invasiva en PVVIH: la interacción EFV-voriconazol puede llevar a fracaso antifúngico.",
-      "cascade_relevance_en": "Invasive fungal infection in PLHIV: EFV-voriconazole interaction may lead to antifungal failure."
+      "cascade_relevance_en": "Invasive fungal infection in PLHIV: EFV-voriconazole interaction may lead to antifungal failure.",
+      "participants_a": [
+        "efavirenz",
+        "nevirapine"
+      ],
+      "participants_b": [
+        "voriconazole"
+      ]
     },
     {
       "id": "DDI023",
@@ -376,7 +622,16 @@
       "management_es": "Evitar si posible. Preferir lamotrigina, levetiracetam o lacosamida. Si imprescindible, monitorizar niveles ARV y antiepiléptico.",
       "management_en": "Avoid if possible. Prefer lamotrigine, levetiracetam, or lacosamide. If essential, monitor ARV and antiepileptic levels.",
       "cascade_relevance_es": "Cascada neurológica: convulsiones → antiepiléptico inductor → comprometida eficacia del TAR.",
-      "cascade_relevance_en": "Neurological cascade: seizures → inducing antiepileptic → compromised ART efficacy."
+      "cascade_relevance_en": "Neurological cascade: seizures → inducing antiepileptic → compromised ART efficacy.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "carbamazepine",
+        "phenytoin",
+        "phenobarbital"
+      ]
     },
     {
       "id": "DDI024",
@@ -392,7 +647,15 @@
       "management_es": "Monitorizar síntomas. Aumentar dosis de metadona gradualmente (30-50%). Puede requerir dosis adicionales.",
       "management_en": "Monitor symptoms. Gradually increase methadone dose (30-50%). May require additional doses.",
       "cascade_relevance_es": "Los síntomas de abstinencia pueden llevar a prescripción de nuevos opioides/analgésicos (cascada).",
-      "cascade_relevance_en": "Withdrawal symptoms may lead to prescription of new opioids/analgesics (cascade)."
+      "cascade_relevance_en": "Withdrawal symptoms may lead to prescription of new opioids/analgesics (cascade).",
+      "participants_a": [
+        "efavirenz",
+        "nevirapine",
+        "rifampicin"
+      ],
+      "participants_b": [
+        "methadone"
+      ]
     },
     {
       "id": "DDI025",
@@ -408,7 +671,13 @@
       "management_es": "Doblar la dosis de DTG a 50mg/12h durante la duración de rifampicina. Monitorizar respuesta virológica.",
       "management_en": "Double DTG dose to 50mg/12h for duration of rifampicin. Monitor virological response.",
       "cascade_relevance_es": "Coinfección TB-VIH con DTG: la dosis debe ajustarse, de lo contrario hay riesgo de fracaso.",
-      "cascade_relevance_en": "TB-HIV coinfection with DTG: dose must be adjusted, otherwise failure risk."
+      "cascade_relevance_en": "TB-HIV coinfection with DTG: dose must be adjusted, otherwise failure risk.",
+      "participants_a": [
+        "dolutegravir"
+      ],
+      "participants_b": [
+        "rifampicin"
+      ]
     },
     {
       "id": "DDI026",
@@ -424,7 +693,14 @@
       "management_es": "Contraindicado. No se puede doblar la dosis de BIC (no hay evidencia de rescate). Cambiar TAR a DTG o RAL.",
       "management_en": "Contraindicated. BIC dose cannot be doubled (no rescue evidence). Switch ART to DTG or RAL.",
       "cascade_relevance_es": "Coinfección TB-VIH: BIC/TAF/FTC no puede usarse con rifamicinas; requiere cambio de régimen.",
-      "cascade_relevance_en": "TB-HIV coinfection: BIC/TAF/FTC cannot be used with rifamycins; regimen change required."
+      "cascade_relevance_en": "TB-HIV coinfection: BIC/TAF/FTC cannot be used with rifamycins; regimen change required.",
+      "participants_a": [
+        "bictegravir"
+      ],
+      "participants_b": [
+        "rifampicin",
+        "rifabutin"
+      ]
     },
     {
       "id": "DDI027",
@@ -440,7 +716,14 @@
       "management_es": "Reducir dosis de claritromicina 50% (a 500mg/día) si TFGe 30-60; 75% si <30. Considerar azitromicina.",
       "management_en": "Reduce clarithromycin dose 50% (to 500mg/day) if eGFR 30-60; 75% if <30. Consider azithromycin.",
       "cascade_relevance_es": "Claritromicina es un antibiótico común en infecciones respiratorias; monitorización necesaria con IP/r.",
-      "cascade_relevance_en": "Clarithromycin is a common antibiotic for respiratory infections; monitoring required with PI/r."
+      "cascade_relevance_en": "Clarithromycin is a common antibiotic for respiratory infections; monitoring required with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "clarithromycin"
+      ]
     },
     {
       "id": "DDI028",
@@ -456,7 +739,13 @@
       "management_es": "Usar la menor dosis posible de rosuvastatina (máx 10mg/día con LPV/r). Monitorizar CK y síntomas musculares.",
       "management_en": "Use lowest possible rosuvastatin dose (max 10mg/day with LPV/r). Monitor CK and muscle symptoms.",
       "cascade_relevance_es": "Cascada: IP → dislipidemia → estatina. Rosuvastatina es una alternativa preferida pero con limitación de dosis.",
-      "cascade_relevance_en": "Cascade: PI → dyslipidemia → statin. Rosuvastatin is a preferred alternative but with dose limitation."
+      "cascade_relevance_en": "Cascade: PI → dyslipidemia → statin. Rosuvastatin is a preferred alternative but with dose limitation.",
+      "participants_a": [
+        "lopinavir"
+      ],
+      "participants_b": [
+        "rosuvastatin"
+      ]
     },
     {
       "id": "DDI029",
@@ -472,7 +761,14 @@
       "management_es": "Si necesario, usar la dosis más baja posible de trazodona con monitorización. Considerar alternativas.",
       "management_en": "If necessary, use lowest possible trazodone dose with monitoring. Consider alternatives.",
       "cascade_relevance_es": "Cascada: ISRS + depresión refractaria → trazodona añadida → toxicidad con IP/r.",
-      "cascade_relevance_en": "Cascade: SSRI + refractory depression → trazodone added → toxicity with PI/r."
+      "cascade_relevance_en": "Cascade: SSRI + refractory depression → trazodone added → toxicity with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "trazodone"
+      ]
     },
     {
       "id": "DDI030",
@@ -488,13 +784,22 @@
       "management_es": "Iniciar BCC a dosis bajas y ajustar con monitorización de TA. Monitorizar signos de toxicidad por BCC.",
       "management_en": "Start CCB at low doses and adjust with BP monitoring. Monitor for CCB toxicity signs.",
       "cascade_relevance_es": "Cascada: HTA → amlodipino → edema periférico → diurético. El IP/r amplifica el efecto hipotensor del BCC.",
-      "cascade_relevance_en": "Cascade: HTN → amlodipine → peripheral edema → diuretic. PI/r amplifies the hypotensive effect of CCB."
+      "cascade_relevance_en": "Cascade: HTN → amlodipine → peripheral edema → diuretic. PI/r amplifies the hypotensive effect of CCB.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "amlodipine",
+        "felodipine",
+        "nifedipine"
+      ]
     },
     {
       "id": "DDI031",
       "drug_a": "Efavirenz / Etravirine",
       "drug_a_class": "NNRTI (CYP3A4 inducer)",
-      "drug_b": "Warfarin",
+      "drug_b": "Warfarin / Acenocoumarol",
       "drug_b_class": "Anticoagulant (CYP2C9 substrate)",
       "severity": "MAJOR",
       "mechanism_es": "Inducción de CYP2C9 y CYP3A4 → reducción de warfarina → INR imprevisible, riesgo trombótico",
@@ -504,7 +809,15 @@
       "management_es": "Monitorizar INR frecuentemente. Ajustar dosis de warfarina según INR. Considerar ACOD con ARV alternativo.",
       "management_en": "Monitor INR frequently. Adjust warfarin dose per INR. Consider DOAC with alternative ARV.",
       "cascade_relevance_es": "Cascada: FA/trombosis → anticoagulación → variación de INR por EFV.",
-      "cascade_relevance_en": "Cascade: AF/thrombosis → anticoagulation → INR variation from EFV."
+      "cascade_relevance_en": "Cascade: AF/thrombosis → anticoagulation → INR variation from EFV.",
+      "participants_a": [
+        "efavirenz",
+        "etravirine"
+      ],
+      "participants_b": [
+        "warfarin",
+        "acenocoumarol"
+      ]
     },
     {
       "id": "DDI032",
@@ -520,7 +833,18 @@
       "management_es": "Reducir dosis de opioide con monitorización estrecha. Tener naloxona disponible. Preferir morfina/hidromorfona (menos afectadas).",
       "management_en": "Reduce opioid dose with close monitoring. Have naloxone available. Prefer morphine/hydromorphone (less affected).",
       "cascade_relevance_es": "Cascada: dolor crónico → opioide prescrito → riesgo de depresión respiratoria con IP/r.",
-      "cascade_relevance_en": "Cascade: chronic pain → opioid prescribed → respiratory depression risk with PI/r."
+      "cascade_relevance_en": "Cascade: chronic pain → opioid prescribed → respiratory depression risk with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "fentanyl",
+        "alfentanil",
+        "buprenorphine"
+      ],
+      "applicability_note_es": "La regla se refiere a vía parenteral/transdérmica; la vía no se verifica en la nota.",
+      "applicability_note_en": "The rule refers to parenteral/transdermal routes; route is not verified from the note."
     },
     {
       "id": "DDI033",
@@ -536,7 +860,13 @@
       "management_es": "Monitorizar niveles de lamotrigina y respuesta clínica. Puede requerirse aumento de dosis de lamotrigina.",
       "management_en": "Monitor lamotrigine levels and clinical response. Lamotrigine dose increase may be required.",
       "cascade_relevance_es": "Cascada neurológica: epilepsia + VIH → la eficacia de la lamotrigina puede verse comprometida con LPV/r.",
-      "cascade_relevance_en": "Neurological cascade: epilepsy + HIV → lamotrigine efficacy may be compromised with LPV/r."
+      "cascade_relevance_en": "Neurological cascade: epilepsy + HIV → lamotrigine efficacy may be compromised with LPV/r.",
+      "participants_a": [
+        "lopinavir"
+      ],
+      "participants_b": [
+        "lamotrigine"
+      ]
     },
     {
       "id": "DDI034",
@@ -552,7 +882,13 @@
       "management_es": "Monitorizar signos de sangrado. Si se requiere antiagregación, valorar alternativas (prasugrel, ticagrelor) con precaución.",
       "management_en": "Monitor for bleeding signs. If antiplatelet needed, consider alternatives (prasugrel, ticagrelor) with caution.",
       "cascade_relevance_es": "Cascada cardiovascular: stent/SCA → clopidogrel → riesgo hemorrágico aumentado con EFV.",
-      "cascade_relevance_en": "Cardiovascular cascade: stent/ACS → clopidogrel → increased bleeding risk with EFV."
+      "cascade_relevance_en": "Cardiovascular cascade: stent/ACS → clopidogrel → increased bleeding risk with EFV.",
+      "participants_a": [
+        "efavirenz"
+      ],
+      "participants_b": [
+        "clopidogrel"
+      ]
     },
     {
       "id": "DDI035",
@@ -568,7 +904,17 @@
       "management_es": "Minimizar uso de corticoides sistémicos. Preferir corticoides con bajo perfil CYP3A4 (prednisolona en dosis bajas). Monitorizar.",
       "management_en": "Minimize systemic corticosteroid use. Prefer low CYP3A4 profile corticosteroids (low-dose prednisolone). Monitor.",
       "cascade_relevance_es": "Cascada: inflamación crónica → corticoide sistémico → síndrome de Cushing iatrogénico con IP/r.",
-      "cascade_relevance_en": "Cascade: chronic inflammation → systemic corticosteroid → iatrogenic Cushing with PI/r."
+      "cascade_relevance_en": "Cascade: chronic inflammation → systemic corticosteroid → iatrogenic Cushing with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "dexamethasone",
+        "methylprednisolone"
+      ],
+      "applicability_note_es": "La regla se refiere a uso sistémico prolongado; la duración no se verifica en la nota.",
+      "applicability_note_en": "The rule refers to prolonged systemic use; duration is not verified from the note."
     },
     {
       "id": "DDI036",
@@ -584,7 +930,27 @@
       "management_es": "Contraindicado con cualquier ARV. Informar al paciente de no usar suplementos de hierba de San Juan.",
       "management_en": "Contraindicated with any ARV. Counsel patient not to use St. John's Wort supplements.",
       "cascade_relevance_es": "Remedio popular para depresión: puede desencadenar fracaso del TAR si el paciente no lo comunica al prescriptor.",
-      "cascade_relevance_en": "Popular remedy for depression: can trigger ART failure if patient does not disclose to prescriber."
+      "cascade_relevance_en": "Popular remedy for depression: can trigger ART failure if patient does not disclose to prescriber.",
+      "participants_a": [
+        "darunavir",
+        "atazanavir",
+        "lopinavir",
+        "ritonavir",
+        "cobicistat",
+        "dolutegravir",
+        "raltegravir",
+        "bictegravir",
+        "elvitegravir",
+        "cabotegravir",
+        "efavirenz",
+        "rilpivirine",
+        "nevirapine",
+        "doravirine",
+        "etravirine"
+      ],
+      "participants_b": [
+        "hypericum"
+      ]
     },
     {
       "id": "DDI037",
@@ -600,7 +966,16 @@
       "management_es": "Reducir dosis de benzodiacepina. Considerar lorazepam u oxazepam (no metabolizados por CYP3A4). Monitorizar sedación.",
       "management_en": "Reduce benzodiazepine dose. Consider lorazepam or oxazepam (not CYP3A4-metabolized). Monitor sedation.",
       "cascade_relevance_es": "Cascada: ansiedad/insomnio → benzodiacepina → sedación excesiva o dependencia, especialmente con IP/r.",
-      "cascade_relevance_en": "Cascade: anxiety/insomnia → benzodiazepine → excessive sedation or dependence, especially with PI/r."
+      "cascade_relevance_en": "Cascade: anxiety/insomnia → benzodiazepine → excessive sedation or dependence, especially with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "alprazolam",
+        "clonazepam",
+        "diazepam"
+      ]
     },
     {
       "id": "DDI038",
@@ -616,7 +991,13 @@
       "management_es": "Contraindicado o con extrema precaución. Considerar cambio de ARV para quimioterapia con irinotecán.",
       "management_en": "Contraindicated or extreme caution. Consider ARV switch for irinotecan-based chemotherapy.",
       "cascade_relevance_es": "Oncología-VIH: la coexistencia de cáncer y VIH requiere revisión rigurosa de interacciones quimio-ARV.",
-      "cascade_relevance_en": "Oncology-HIV: coexistence of cancer and HIV requires rigorous review of chemo-ARV interactions."
+      "cascade_relevance_en": "Oncology-HIV: coexistence of cancer and HIV requires rigorous review of chemo-ARV interactions.",
+      "participants_a": [
+        "atazanavir"
+      ],
+      "participants_b": [
+        "irinotecan"
+      ]
     },
     {
       "id": "DDI039",
@@ -632,7 +1013,21 @@
       "management_es": "Usar método anticonceptivo no hormonal o de larga duración (DIU de cobre, implante LNG con precaución). No confiar en ACO.",
       "management_en": "Use non-hormonal or long-acting contraception (copper IUD, LNG implant with caution). Do not rely on OCP.",
       "cascade_relevance_es": "Mujeres con VIH en NVP tienen riesgo de fallo anticonceptivo hormonal.",
-      "cascade_relevance_en": "Women with HIV on NVP are at risk of hormonal contraceptive failure."
+      "cascade_relevance_en": "Women with HIV on NVP are at risk of hormonal contraceptive failure.",
+      "participants_a": [
+        "nevirapine"
+      ],
+      "participants_b": [
+        "ethinylestradiol",
+        "levonorgestrel",
+        "desogestrel",
+        "norethisterone",
+        "drospirenone",
+        "norgestimate",
+        "gestodene",
+        "dienogest",
+        "etonogestrel"
+      ]
     },
     {
       "id": "DDI040",
@@ -648,7 +1043,14 @@
       "management_es": "Reducir dosis de ibrutinib a 140mg/día con inhibidores moderados de CYP3A4. Contraindicado con inhibidores potentes (RTV/COBI).",
       "management_en": "Reduce ibrutinib dose to 140mg/day with moderate CYP3A4 inhibitors. Contraindicated with potent inhibitors (RTV/COBI).",
       "cascade_relevance_es": "Linfoma-VIH: ibrutinib es común en LLC/MCL; la interacción con IP/r puede ser grave.",
-      "cascade_relevance_en": "Lymphoma-HIV: ibrutinib common in CLL/MCL; interaction with PI/r can be serious."
+      "cascade_relevance_en": "Lymphoma-HIV: ibrutinib common in CLL/MCL; interaction with PI/r can be serious.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "ibrutinib"
+      ]
     },
     {
       "id": "DDI041",
@@ -664,7 +1066,13 @@
       "management_es": "ATZ siempre potenciado con TDF. Monitorizar función renal regularmente. Considerar cambio a TAF si nefrotoxicidad.",
       "management_en": "ATV always boosted with TDF. Monitor renal function regularly. Consider switching to TAF if nephrotoxicity.",
       "cascade_relevance_es": "ATZ/r + TDF: vigilar la función renal para evitar cascada nefrotoxicidad → medicamentos renales.",
-      "cascade_relevance_en": "ATV/r + TDF: watch renal function to avoid nephrotoxicity → renal drugs cascade."
+      "cascade_relevance_en": "ATV/r + TDF: watch renal function to avoid nephrotoxicity → renal drugs cascade.",
+      "participants_a": [
+        "atazanavir"
+      ],
+      "participants_b": [
+        "tenofovir disoproxil fumarate"
+      ]
     },
     {
       "id": "DDI042",
@@ -680,7 +1088,16 @@
       "management_es": "Ketoconazol contraindicado con IP/r. Itraconazol: máx 200mg/día. Voriconazol: considerar alternativa fluconazol/posaconazol.",
       "management_en": "Ketoconazole contraindicated with PI/r. Itraconazole: max 200mg/day. Voriconazole: consider fluconazole/posaconazole alternative.",
       "cascade_relevance_es": "Infección fúngica invasiva en PVVIH: la combinación azol+IP/r requiere vigilancia estricta.",
-      "cascade_relevance_en": "Invasive fungal infection in PLHIV: azole+PI/r combination requires strict vigilance."
+      "cascade_relevance_en": "Invasive fungal infection in PLHIV: azole+PI/r combination requires strict vigilance.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "itraconazole",
+        "ketoconazole",
+        "voriconazole"
+      ]
     },
     {
       "id": "DDI043",
@@ -696,7 +1113,13 @@
       "management_es": "Doblar dosis de RAL a 800mg/12h durante rifampicina. La formulación HD (1200mg/día) puede no ser adecuada con rifampicina.",
       "management_en": "Double RAL dose to 800mg/12h during rifampicin. HD formulation (1200mg/day) may not be adequate with rifampicin.",
       "cascade_relevance_es": "Coinfección TB-VIH con RAL: doblar dosis es la estrategia recomendada.",
-      "cascade_relevance_en": "TB-HIV coinfection with RAL: dose doubling is the recommended strategy."
+      "cascade_relevance_en": "TB-HIV coinfection with RAL: dose doubling is the recommended strategy.",
+      "participants_a": [
+        "raltegravir"
+      ],
+      "participants_b": [
+        "rifampicin"
+      ]
     },
     {
       "id": "DDI044",
@@ -712,7 +1135,14 @@
       "management_es": "Puede usarse con monitorización. Preferir ACO con norgestimate. Considerar métodos alternativos si preocupa la tolerancia.",
       "management_en": "May be used with monitoring. Prefer OCP with norgestimate. Consider alternative methods if tolerability concerns.",
       "cascade_relevance_es": "A diferencia de EFV/NVP, el COBI tiende a aumentar más que disminuir la exposición hormonal.",
-      "cascade_relevance_en": "Unlike EFV/NVP, COBI tends to increase rather than decrease hormonal exposure."
+      "cascade_relevance_en": "Unlike EFV/NVP, COBI tends to increase rather than decrease hormonal exposure.",
+      "participants_a": [
+        "cobicistat"
+      ],
+      "participants_b": [
+        "ethinylestradiol",
+        "norgestimate"
+      ]
     },
     {
       "id": "DDI045",
@@ -728,7 +1158,14 @@
       "management_es": "Monitorizar función renal (dabigatrán es principalmente renal). Considerar reducción de dosis. Valorar rivaroxabán/apixabán con precaución.",
       "management_en": "Monitor renal function (dabigatran primarily renal). Consider dose reduction. Consider rivaroxaban/apixaban with caution.",
       "cascade_relevance_es": "Cascada: FA/TEV → anticoagulación con ACOD → riesgo hemorrágico amplificado por inhibidores P-gp.",
-      "cascade_relevance_en": "Cascade: AF/VTE → DOAC anticoagulation → bleeding risk amplified by P-gp inhibitors."
+      "cascade_relevance_en": "Cascade: AF/VTE → DOAC anticoagulation → bleeding risk amplified by P-gp inhibitors.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "dabigatran"
+      ]
     },
     {
       "id": "DDI046",
@@ -744,7 +1181,15 @@
       "management_es": "Contraindicado rivaroxabán con IP/r. Apixabán: usar con precaución extrema o contraindicado según ficha técnica. Preferir warfarina o cambiar ARV.",
       "management_en": "Rivaroxaban contraindicated with PI/r. Apixaban: use with extreme caution or contraindicated per label. Prefer warfarin or switch ARV.",
       "cascade_relevance_es": "Cascada: FA/ETV → ACOD → riesgo hemorrágico crítico con inhibidores potentes de CYP3A4/P-gp.",
-      "cascade_relevance_en": "Cascade: AF/stroke → DOAC → critical bleeding risk with potent CYP3A4/P-gp inhibitors."
+      "cascade_relevance_en": "Cascade: AF/stroke → DOAC → critical bleeding risk with potent CYP3A4/P-gp inhibitors.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "rivaroxaban",
+        "apixaban"
+      ]
     },
     {
       "id": "DDI047",
@@ -760,7 +1205,13 @@
       "management_es": "Contraindicado. Dofetilida no debe usarse en pacientes en DTG. Valorar alternativa de ARV o antiarrítmico.",
       "management_en": "Contraindicated. Dofetilide must not be used in patients on DTG. Evaluate alternative ARV or antiarrhythmic.",
       "cascade_relevance_es": "Arritmia en PVVIH + DTG: el uso de dofetilida está absolutamente contraindicado.",
-      "cascade_relevance_en": "Arrhythmia in PLHIV + DTG: dofetilide use is absolutely contraindicated."
+      "cascade_relevance_en": "Arrhythmia in PLHIV + DTG: dofetilide use is absolutely contraindicated.",
+      "participants_a": [
+        "dolutegravir"
+      ],
+      "participants_b": [
+        "dofetilide"
+      ]
     },
     {
       "id": "DDI048",
@@ -776,7 +1227,14 @@
       "management_es": "Monitorizar toxicidad y eficacia oncológica. Considerar cambio a TAR sin inductores enzimáticos (DTG, BIC, RAL) para quimioterapia.",
       "management_en": "Monitor oncological toxicity and efficacy. Consider switching to enzyme-non-inducing ART (DTG, BIC, RAL) for chemotherapy.",
       "cascade_relevance_es": "VIH-oncología: EFV puede perturbar la farmacocinética de quimioterapia, con consecuencias clínicas.",
-      "cascade_relevance_en": "HIV-oncology: EFV may disrupt chemotherapy pharmacokinetics with clinical consequences."
+      "cascade_relevance_en": "HIV-oncology: EFV may disrupt chemotherapy pharmacokinetics with clinical consequences.",
+      "participants_a": [
+        "efavirenz"
+      ],
+      "participants_b": [
+        "etoposide",
+        "cyclophosphamide"
+      ]
     },
     {
       "id": "DDI049",
@@ -792,7 +1250,15 @@
       "management_es": "Contraindicado. Usar triptanes (con precaución) para la migraña en lugar de ergóticos.",
       "management_en": "Contraindicated. Use triptans (with caution) for migraine instead of ergot derivatives.",
       "cascade_relevance_es": "Cascada: migraña → ergótico prescrito → ergotismo con IP/r.",
-      "cascade_relevance_en": "Cascade: migraine → ergot prescribed → ergotism with PI/r."
+      "cascade_relevance_en": "Cascade: migraine → ergot prescribed → ergotism with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "ergotamine",
+        "dihydroergotamine"
+      ]
     },
     {
       "id": "DDI050",
@@ -808,7 +1274,16 @@
       "management_es": "Monitorizar respuesta clínica. Puede requerirse ajuste de dosis del ISRS. EFV tiene efecto depresor intrínseco en algunos pacientes.",
       "management_en": "Monitor clinical response. SSRI dose adjustment may be required. EFV has intrinsic depressant effect in some patients.",
       "cascade_relevance_es": "Cascada: EFV → síntomas neuropsiquiátricos → ISRS prescrito → posible reducción de su eficacia.",
-      "cascade_relevance_en": "Cascade: EFV → neuropsychiatric symptoms → SSRI prescribed → possible reduction in its efficacy."
+      "cascade_relevance_en": "Cascade: EFV → neuropsychiatric symptoms → SSRI prescribed → possible reduction in its efficacy.",
+      "participants_a": [
+        "efavirenz",
+        "nevirapine"
+      ],
+      "participants_b": [
+        "sertraline",
+        "citalopram",
+        "escitalopram"
+      ]
     },
     {
       "id": "DDI051",
@@ -824,7 +1299,14 @@
       "management_es": "Contraindicado. Considerar tamsulosina con precaución extrema o cirugía para HBP. Doxazosina con monitorización.",
       "management_en": "Contraindicated. Consider tamsulosin with extreme caution or surgery for BPH. Doxazosin with monitoring.",
       "cascade_relevance_es": "Cascada: HBP → alfa-bloqueante → colapso cardiovascular con IP/r.",
-      "cascade_relevance_en": "Cascade: BPH → alpha-blocker → cardiovascular collapse with PI/r."
+      "cascade_relevance_en": "Cascade: BPH → alpha-blocker → cardiovascular collapse with PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "alfuzosin"
+      ]
     },
     {
       "id": "DDI052",
@@ -840,7 +1322,14 @@
       "management_es": "Reducir rifabutina a 150mg/día (o 150mg 3x/semana) con IP/r. Vigilar uveítis y recuento de neutrófilos.",
       "management_en": "Reduce rifabutin to 150mg/day (or 150mg 3x/week) with PI/r. Monitor for uveitis and neutrophil count.",
       "cascade_relevance_es": "Rifabutina es la rifamicina preferida con IP/r en coinfección TB-MAC-VIH, pero requiere ajuste de dosis.",
-      "cascade_relevance_en": "Rifabutin is the preferred rifamycin with PI/r in TB-MAC-HIV coinfection but requires dose adjustment."
+      "cascade_relevance_en": "Rifabutin is the preferred rifamycin with PI/r in TB-MAC-HIV coinfection but requires dose adjustment.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "rifabutin"
+      ]
     },
     {
       "id": "DDI053",
@@ -856,7 +1345,15 @@
       "management_es": "Evitar inductores potentes de P-gp con TAF. Si rifampicina requerida, cambiar TDF a TDF (paradójicamente mejor opción) o TAF+DTG con dosis ajustada.",
       "management_en": "Avoid potent P-gp inducers with TAF. If rifampicin required, switch to TDF (paradoxically better) or TAF+DTG with adjusted dose.",
       "cascade_relevance_es": "TAF, aunque tiene menor nefrotoxicidad que TDF, también tiene interacciones farmacocinéticas relevantes.",
-      "cascade_relevance_en": "TAF, though less nephrotoxic than TDF, also has relevant pharmacokinetic interactions."
+      "cascade_relevance_en": "TAF, though less nephrotoxic than TDF, also has relevant pharmacokinetic interactions.",
+      "participants_a": [
+        "tenofovir alafenamide"
+      ],
+      "participants_b": [
+        "rifampicin",
+        "carbamazepine",
+        "hypericum"
+      ]
     },
     {
       "id": "DDI054",
@@ -872,7 +1369,19 @@
       "management_es": "Contraindicado. Para HAP en PVVIH, considerar cambio de TAR a un régimen sin IP/r. Si imposible, usar bosentan o iloprost.",
       "management_en": "Contraindicated. For PAH in PLHIV, consider switching ART to PI/r-free regimen. If impossible, use bosentan or iloprost.",
       "cascade_relevance_es": "HAP en PVVIH: el sildenafil para HAP es incompatible con regímenes que contienen LPV/r.",
-      "cascade_relevance_en": "PAH in PLHIV: sildenafil for PAH is incompatible with LPV/r-containing regimens."
+      "cascade_relevance_en": "PAH in PLHIV: sildenafil for PAH is incompatible with LPV/r-containing regimens.",
+      "participants_a": [
+        "lopinavir"
+      ],
+      "participants_b": [
+        "sildenafil"
+      ],
+      "applicability_note_es": "Contraindicada solo a dosis de hipertensión arterial pulmonar (>20 mg); la dosis no se verifica. Para uso en disfunción eréctil véase DDI002.",
+      "applicability_note_en": "Contraindicated only at pulmonary arterial hypertension doses (>20 mg); dose is not verified. For erectile dysfunction use see DDI002.",
+      "status": "merged",
+      "merged_into": "DDI002",
+      "merge_reason_es": "Duplicada a nivel de pauta con DDI002 (lopinavir/ritonavir + sildenafilo); la contraindicación a dosis de HAP se conserva como nota de aplicabilidad de DDI002.",
+      "merge_reason_en": "Regimen-level duplicate of DDI002 (lopinavir/ritonavir + sildenafil); the PAH-dose contraindication is kept as a DDI002 applicability note."
     },
     {
       "id": "DDI055",
@@ -888,7 +1397,13 @@
       "management_es": "Monitorizar función hepática frecuentemente. Ajustar dosis si necesario. Datos limitados.",
       "management_en": "Monitor liver function frequently. Adjust dose if needed. Limited data.",
       "cascade_relevance_es": "Interacción relevante en PVVIH con ELA concurrente en tratamiento con riluzol y DTG.",
-      "cascade_relevance_en": "Relevant interaction in PLHIV with concurrent ALS treated with riluzole and DTG."
+      "cascade_relevance_en": "Relevant interaction in PLHIV with concurrent ALS treated with riluzole and DTG.",
+      "participants_a": [
+        "dolutegravir"
+      ],
+      "participants_b": [
+        "riluzole"
+      ]
     },
     {
       "id": "DDI056",
@@ -904,7 +1419,14 @@
       "management_es": "Contraindicado durante la fase de inicio de venetoclax. Si necesario, cambiar TAR a régimen sin IP/r/COBI.",
       "management_en": "Contraindicated during venetoclax ramp-up phase. If necessary, switch ART to non-PI/r/COBI regimen.",
       "cascade_relevance_es": "VIH-oncología: LLC tratada con venetoclax y TAR con IP/r es una combinación de alto riesgo.",
-      "cascade_relevance_en": "HIV-oncology: CLL treated with venetoclax and PI/r-based ART is a high-risk combination."
+      "cascade_relevance_en": "HIV-oncology: CLL treated with venetoclax and PI/r-based ART is a high-risk combination.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "venetoclax"
+      ]
     },
     {
       "id": "DDI057",
@@ -920,7 +1442,16 @@
       "management_es": "Monitorizar niveles plasmáticos del ITK si posible. Considerar cambio de TAR a DTG, BIC o RAL.",
       "management_en": "Monitor TKI plasma levels if possible. Consider switching ART to DTG, BIC, or RAL.",
       "cascade_relevance_es": "VIH-leucemia: la interacción EFV-ITK puede comprometer la eficacia del tratamiento oncológico.",
-      "cascade_relevance_en": "HIV-leukemia: EFV-TKI interaction may compromise oncological treatment efficacy."
+      "cascade_relevance_en": "HIV-leukemia: EFV-TKI interaction may compromise oncological treatment efficacy.",
+      "participants_a": [
+        "efavirenz",
+        "etravirine"
+      ],
+      "participants_b": [
+        "imatinib",
+        "dasatinib",
+        "nilotinib"
+      ]
     },
     {
       "id": "DDI058",
@@ -936,7 +1467,14 @@
       "management_es": "Monitorizar ECG semanalmente durante la co-administración. Corregir hipopotasemia/hipomagnesemia. Evaluar beneficio-riesgo.",
       "management_en": "Monitor ECG weekly during co-administration. Correct hypokalaemia/hypomagnesemia. Evaluate benefit-risk.",
       "cascade_relevance_es": "TB-MDR + VIH: bedaquilina + IP/r es una combinación de uso creciente pero con riesgo cardíaco.",
-      "cascade_relevance_en": "MDR-TB + HIV: bedaquiline + PI/r is an increasingly used but cardiotoxic combination."
+      "cascade_relevance_en": "MDR-TB + HIV: bedaquiline + PI/r is an increasingly used but cardiotoxic combination.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "bedaquiline"
+      ]
     },
     {
       "id": "DDI059",
@@ -952,7 +1490,16 @@
       "management_es": "Separar administración al menos 2h. Los fijadores de fosfato deben tomarse con comidas, coordinar horario del TAR.",
       "management_en": "Separate administration by at least 2h. Phosphate binders taken with meals, coordinate ART timing.",
       "cascade_relevance_es": "Cascada renal: insuficiencia renal → fijadores de fosfato → posible interacción con INSTI en PVVIH.",
-      "cascade_relevance_en": "Renal cascade: renal failure → phosphate binders → possible interaction with INSTI in PLHIV."
+      "cascade_relevance_en": "Renal cascade: renal failure → phosphate binders → possible interaction with INSTI in PLHIV.",
+      "participants_a": [
+        "dolutegravir",
+        "bictegravir"
+      ],
+      "participants_b": [
+        "sevelamer",
+        "calcium acetate",
+        "lanthanum"
+      ]
     },
     {
       "id": "DDI060",
@@ -968,7 +1515,41 @@
       "management_es": "Monitorizar niveles de digoxina al inicio y con cambios de TAR. Reducir dosis de digoxina si necesario.",
       "management_en": "Monitor digoxin levels at start and with ART changes. Reduce digoxin dose if necessary.",
       "cascade_relevance_es": "Cascada cardiológica: IC → digoxina → toxicidad digitalica potenciada por IP/r.",
-      "cascade_relevance_en": "Cardiology cascade: HF → digoxin → digitalis toxicity potentiated by PI/r."
+      "cascade_relevance_en": "Cardiology cascade: HF → digoxin → digitalis toxicity potentiated by PI/r.",
+      "participants_a": [
+        "ritonavir",
+        "cobicistat"
+      ],
+      "participants_b": [
+        "digoxin"
+      ]
+    },
+    {
+      "id": "DDI061",
+      "drug_a": "Rilpivirine (oral)",
+      "drug_a_class": "NNRTI (pH-dependent absorption)",
+      "drug_b": "H2 blockers (famotidine, ranitidine, cimetidine)",
+      "drug_b_class": "H2 receptor antagonist",
+      "severity": "MODERATE",
+      "mechanism_es": "Aumento del pH gástrico → reducción de absorción de rilpivirina (pH-dependiente) → niveles subóptimos",
+      "mechanism_en": "Raised gastric pH → reduced rilpivirine absorption (pH-dependent) → subtherapeutic levels",
+      "consequence_es": "Riesgo de fracaso virológico y selección de resistencias a INNTI si las tomas no se separan.",
+      "consequence_en": "Risk of virological failure and NNRTI resistance selection if intakes are not separated.",
+      "management_es": "Separar la toma 12 h entre el anti-H2 y la rilpivirina oral.",
+      "management_en": "Separate H2 blocker and oral rilpivirine intake by 12 h.",
+      "cascade_relevance_es": "Cascada: RPV → síntomas dispépticos → anti-H2 → eficacia del TAR comprometida si no se separan las tomas.",
+      "cascade_relevance_en": "Cascade: RPV → dyspeptic symptoms → H2 blocker → compromised ART efficacy if intakes are not separated.",
+      "source": "Clinical reviewer decision D1, 2026-11-13 (split from DDI018)",
+      "participants_a": [
+        "rilpivirine"
+      ],
+      "participants_b": [
+        "famotidine",
+        "ranitidine",
+        "cimetidine"
+      ],
+      "applicability_note_es": "Aplica a rilpivirina ORAL, no a la intramuscular.",
+      "applicability_note_en": "Applies to ORAL rilpivirine, not the intramuscular form."
     }
   ]
 }

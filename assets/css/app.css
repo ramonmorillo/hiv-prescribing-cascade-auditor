@@ -1120,10 +1120,10 @@ select.input { padding-right: 2rem; }
   .app-layout { display: block; padding: 0; max-width: none; }
   .step-content { border: 0; box-shadow: none; padding: 0; min-height: 0; }
   .report { border: 0; }
-  .report__header, .report__meta, .finding__evidence, .tag, .chain__node, .dims, .note, .alert-card {
+  .report__header, .report__meta, .finding__evidence, .tag, .chain__node, .dims, .note, .alert-card, .ddi-card {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .finding { break-inside: avoid; box-shadow: none; }
+  .finding, .ddi-card { break-inside: avoid; box-shadow: none; }
   .finding__evidence[open] > summary, .finding__evidence > summary { color: var(--ink-700); }
   .report__section { break-inside: auto; }
   .callout { break-inside: avoid; }
@@ -1160,3 +1160,34 @@ select.input { padding-right: 2rem; }
 }
 .case-card__head { flex-direction: column; align-items: flex-start; gap: 2px; }
 .save-indicator { text-align: left; }
+
+/* ── Drug-drug interaction cards (Fase 0) ──────────────────────────────
+   Severity is carried by text AND colour (never colour alone). Colours
+   reuse the existing red/amber/ink tokens; text/background pairs keep
+   contrast ≥ 7:1. */
+.ddi-summary { margin: 0 0 var(--sp-2); font-size: var(--text-sm); }
+.ddi-scope { margin-top: var(--sp-2); font-size: var(--text-xs); }
+.ddi-card {
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--ink-200);
+  border-left: 4px solid var(--ink-300);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--ink-50);
+  font-size: var(--text-sm);
+  color: var(--ink-900);
+}
+.ddi-card--contraindicated { border-color: var(--red-200); border-left-color: var(--red-700); background: var(--red-50); color: #7F1D1D; }
+.ddi-card--major { border-color: var(--amber-200); border-left-color: #D97706; background: var(--amber-50); color: #713F12; }
+.ddi-card__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
+.ddi-card__severity { font-weight: 700; text-transform: uppercase; letter-spacing: .02em; font-size: var(--text-xs); }
+.ddi-card__drugs { font-weight: 600; overflow-wrap: anywhere; }
+.ddi-card__id { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); opacity: .85; }
+.ddi-card__body { margin: var(--sp-2) 0 0; display: grid; gap: 2px; }
+.ddi-card__row { display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: var(--sp-2); }
+.ddi-card__row dt { font-weight: 600; }
+.ddi-card__row dd { margin: 0; }
+@media (max-width: 560px) {
+  .ddi-card__row { grid-template-columns: 1fr; gap: 0; }
+  .ddi-card__id { margin-left: 0; }
+}
